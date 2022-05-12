@@ -13,25 +13,21 @@ import {
 } from '../../../../../src/DomainRequest';
 import { Fields as MainFields } from '../../fields';
 import { ExpandableFields as MainExpandableFields } from '../../expandables';
-import { DomainRequestName } from '../../..';
+import { DomainRequestName } from '../../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super(
-         {} as any,
-         {
-            id: validateId,
-            firstname: validateString,
-            lastname: validateString,
-            yearOfBirth: validateNumber,
-            nationalCardId: validateString,
-            countryId: validateString,
-         },
-         'student',
-      );
+      super('student', {
+         id: validateId,
+         firstname: validateString,
+         lastname: validateString,
+         yearOfBirth: validateNumber,
+         nationalCardId: validateString,
+         countryId: validateString,
+      });
    }
 
    protected buildRequest(

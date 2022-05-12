@@ -100,9 +100,8 @@ export abstract class DomainRequestBuilder<
    private static readonly MAX_LIMIT = 5000;
 
    constructor(
-      protected readonly user: DomainUser,
-      private readonly validatorFilterMap: { [Property in keyof Fields]: Validator },
       private readonly name: Name,
+      private readonly validatorFilterMap: { [Property in keyof Fields]: Validator },
    ) {}
 
    protected abstract buildRequest(
@@ -258,12 +257,10 @@ export abstract class DomainRequestBuilder<
          throw new Error('Request builder not initialized with Expandables Requests builders');
       }
       const ret: any = {};
-      console.log('this.expReqBuilders:', this.name, this.expReqBuilders);
       for (const key in this.expReqBuilders) {
          if (dontDoThese.includes(key)) {
             continue;
          }
-         console.log('key:', key);
          const input = inputFieldsToSelect[this.camelToInputStyle(key)] as Tree;
          ret[key] = (this.expReqBuilders[key] as DomainRequestBuilder<Name, DomainFields, DomainExpandables>).build(
             input,
@@ -381,6 +378,6 @@ export function validateBoolean(val: any): { valid: boolean; reason: string } {
    return { valid, reason: 'not a boolean' };
 }
 
-export abstract class DomainUser {
-   abstract getRole(): string;
-}
+// export abstract class DomainUser {
+//    abstract getRole(): string;
+// }

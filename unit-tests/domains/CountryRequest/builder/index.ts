@@ -1,9 +1,9 @@
 import { Builder as DomainBuilder, DomainRequestBuilder, initDomainRequest } from '../../../../src/DomainRequest';
 import { DomainRequestName } from '../../types';
 import { Role } from '../../User';
-import { ExpandableFields } from '../expandables';
-import { Fields } from '../fields';
 import * as Admin from './roles/Admin';
+// import { RequestBuilder as RestrictedRequestBuilder } from './roles/Restricted';
+import { Fields, ExpandableFields } from '../types';
 
 // type Request = DomainRequest<Fields, ExpandableFields>;
 type RequestBuilder = DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields>;
@@ -12,7 +12,7 @@ type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, 
 export function init(builders: {
    [Property in DomainRequestName]: Builder;
 }): void {
-   initDomainRequest(builders, 'student', ['country', 'courseApplication']);
+   initDomainRequest(builders, 'country', []);
 }
 
 export function getRoleRequestBuilder(role: Role): RequestBuilder {

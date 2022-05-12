@@ -9,7 +9,7 @@ import {
    DomainRequestBuilder,
 } from '../../src/DomainRequest';
 import { Role } from './User';
-import { DomainRequestName } from '.';
+import { DomainRequestName } from './types';
 
 type RequestBuilder<Fields extends DomainFields, Expandables extends DomainExpandables> = DomainRequestBuilder<
    DomainRequestName,
@@ -27,10 +27,10 @@ type Builder<Fields extends DomainFields, Expandables extends DomainExpandables>
 const builders: {
    [Property in DomainRequestName]: Builder<any, any>;
 } = {
-   student: Student.getRequestBuilder(),
-   country: Country.getRequestBuilder(),
-   courseApplication: CourseApplication.getRequestBuilder(),
-   course: Course.getRequestBuilder(),
+   student: Student.getAllRolesRequestBuilders(),
+   country: Country.getAllRolesRequestBuilders(),
+   courseApplication: CourseApplication.getAllRolesRequestBuilders(),
+   course: Course.getAllRolesRequestBuilders(),
 };
 
 const inits: {

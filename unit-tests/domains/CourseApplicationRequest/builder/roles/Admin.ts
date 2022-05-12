@@ -12,22 +12,18 @@ import {
 } from '../../../../../src/DomainRequest';
 import { Fields as MainFields } from '../../fields';
 import { ExpandableFields as MainExpandableFields } from '../../expandables';
-import { DomainRequestName } from '../../..';
+import { DomainRequestName } from '../../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super(
-         {} as any,
-         {
-            id: validateId,
-            studentId: validateString,
-            courseId: validateString,
-         },
-         'courseApplication',
-      );
+      super('courseApplication', {
+         id: validateId,
+         studentId: validateString,
+         courseId: validateString,
+      });
    }
 
    protected buildRequest(

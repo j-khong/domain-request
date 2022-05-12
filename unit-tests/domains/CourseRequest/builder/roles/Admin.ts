@@ -1,6 +1,5 @@
-import { DomainRequestName } from '../..';
+import { DomainRequestName } from '../../../types';
 import {
-   DomainFields,
    DomainRequest,
    DomainRequestBuilder,
    FilteringFields,
@@ -8,25 +7,20 @@ import {
    Options,
    OptionsErrors,
    RequestableFields,
-   Tree,
    validateId,
    validateString,
-} from '../../../../src/DomainRequest';
-import { ExpandableFields as MainExpandableFields, Fields as MainFields } from '../types';
+} from '../../../../../src/DomainRequest';
+import { ExpandableFields as MainExpandableFields, Fields as MainFields } from '../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super(
-         {} as any,
-         {
-            id: validateId,
-            name: validateString,
-         },
-         'country',
-      );
+      super('course', {
+         id: validateId,
+         name: validateString,
+      });
    }
 
    protected buildRequest(
@@ -35,9 +29,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          filters: FilteringFields<MainFields>;
          errors: FilteringFieldsErrors;
       },
-      expandables: {
-         [Property in keyof MainExpandableFields]: DomainRequest<MainExpandableFields[Property], DomainFields>;
-      },
+      expandables: any,
       options: {
          options: Options<MainFields>;
          errors: OptionsErrors;
