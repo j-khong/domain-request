@@ -22,6 +22,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
       super('country', {
          id: validateId,
          name: validateString,
+         timezone: validateString,
       });
    }
 
@@ -46,6 +47,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
       return {
          id: '',
          name: '',
+         timezone: '',
       };
    }
 
@@ -53,6 +55,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
       return {
          id: false,
          name: false,
+         timezone: false,
       };
    }
 }

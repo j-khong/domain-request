@@ -6,7 +6,7 @@ import {
    Options,
    OptionsErrors,
    RequestableFields,
-   Tree,
+   validateBoolean,
    validateId,
    validateNumber,
    validateString,
@@ -27,6 +27,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          yearOfBirth: validateNumber,
          nationalCardId: validateString,
          countryId: validateString,
+         hasScholarship: validateBoolean,
       });
    }
 
@@ -53,6 +54,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          yearOfBirth: 0,
          nationalCardId: '',
          countryId: '',
+         hasScholarship: false,
       };
    }
 
@@ -64,6 +66,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          yearOfBirth: false,
          nationalCardId: false,
          countryId: false,
+         hasScholarship: false,
       };
    }
 }

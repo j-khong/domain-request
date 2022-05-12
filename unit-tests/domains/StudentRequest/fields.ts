@@ -5,4 +5,5 @@ export interface Fields {
    yearOfBirth: number;
    nationalCardId: string;
    countryId: string;
+   hasScholarship: boolean;
 }
