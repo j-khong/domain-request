@@ -1,0 +1,12 @@
+import { DomainRequestName } from '..';
+import { DomainRequest, DomainRequestBuilder } from '../../../src/DomainRequest';
+export interface Fields {
+   id: string;
+   name: string;
+}
+
+export interface ExpandableFields {}
+export interface ExpandableExpFields {}
+
+export type Request = DomainRequest<Fields, ExpandableFields>;
+export type RequestBuilder = DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields>;

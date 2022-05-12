@@ -167,7 +167,7 @@ function processOneToManyExpandables<
    ExpandableFields extends DomainExpandables,
    TableFields extends string,
 >(
-   expandable: DomainRequest<any, any>,
+   expandable: DomainRequest<DomainFields, DomainExpandables>,
    tableName: string,
    tableDetails: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>[keyof ExpandableFields],
 ): {

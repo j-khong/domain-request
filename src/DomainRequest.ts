@@ -10,12 +10,9 @@ export interface DomainFields {
    [key: string]: any;
 }
 
-// export type DomainExpandables<Fields extends {[key:string]:any}, Expandables  extends DomainExpandables<any, any>> = {
-export interface DomainExpandables {
-   [key: string]: any;
-}
+export interface DomainExpandables extends DomainFields {}
 
-export interface Options<Fields> {
+export interface Options<Fields extends DomainFields> {
    limit: number;
    orderby?: keyof Fields;
 }
@@ -23,6 +20,34 @@ export type OptionsErrors = Array<{
    optionName: string;
    reason: string;
 }>;
+
+export function initDomainRequest<
+   DomainRequestName extends string,
+   Role extends string,
+   Fields extends DomainFields,
+   Expandables extends DomainExpandables,
+>(
+   builders: {
+      [Property in DomainRequestName]: Builder<
+         Role,
+         DomainRequestName,
+         Fields,
+         Expandables,
+         DomainRequestBuilder<DomainRequestName, Fields, Expandables>
+      >;
+   },
+   domainRequestToInit: DomainRequestName,
+   expandables: DomainRequestName[],
+): void {
+   const requestBuilder = builders[domainRequestToInit];
+   for (const keyRole in requestBuilder) {
+      const ret: any = {};
+      for (const expName of expandables) {
+         ret[expName] = builders[expName][keyRole];
+      }
+      requestBuilder[keyRole].init(ret);
+   }
+}
 
 export abstract class DomainRequest<Fields extends DomainFields, Expandables extends DomainExpandables> {
    private readonly options: Options<Fields>;
@@ -67,11 +92,17 @@ export abstract class DomainRequest<Fields extends DomainFields, Expandables ext
    }
 }
 
-export abstract class DomainRequestBuilder<Fields extends DomainFields, Expandables extends DomainExpandables> {
+export abstract class DomainRequestBuilder<
+   Name extends string,
+   Fields extends DomainFields,
+   Expandables extends DomainExpandables,
+> {
    private static readonly MAX_LIMIT = 5000;
+
    constructor(
       protected readonly user: DomainUser,
       private readonly validatorFilterMap: { [Property in keyof Fields]: Validator },
+      private readonly name: Name,
    ) {}
 
    protected abstract buildRequest(
@@ -87,7 +118,10 @@ export abstract class DomainRequestBuilder<Fields extends DomainFields, Expandab
       },
    ): DomainRequest<Fields, Expandables>;
 
-   build(input: Tree): {
+   build(
+      input: Tree,
+      dontDoThese: string[],
+   ): {
       request: DomainRequest<Fields, Expandables>;
       errors: Array<{
          fieldName: string;
@@ -99,7 +133,7 @@ export abstract class DomainRequestBuilder<Fields extends DomainFields, Expandab
       const sanitizedFields = this.sanitizeFieldsToSelect(fields);
       const sanitizedFilters = this.sanitizeFilters(filters);
       const sanitizedOptions = this.sanitizeOptions(options);
-      const expandablesRequests = this.buildExpandablesRequests(fields);
+      const expandablesRequests = this.buildExpandablesRequests(fields, dontDoThese);
 
       return {
          request: this.buildRequest(sanitizedFields, sanitizedFilters, expandablesRequests, sanitizedOptions),
@@ -207,7 +241,37 @@ export abstract class DomainRequestBuilder<Fields extends DomainFields, Expandab
       };
    }
 
-   protected abstract buildExpandablesRequests(inputFieldsToSelect: Tree): { [key: string]: DomainRequest<any, any> };
+   private expReqBuilders:
+      | {
+           [Property in keyof Expandables]: DomainRequestBuilder<Name, DomainFields, DomainExpandables>;
+        }
+      | undefined;
+
+   init(expandablesRequestsBuilders: {
+      [Property in keyof Expandables]: DomainRequestBuilder<Name, DomainFields, DomainExpandables>;
+   }): void {
+      this.expReqBuilders = expandablesRequestsBuilders;
+   }
+
+   private buildExpandablesRequests(inputFieldsToSelect: Tree, dontDoThese: string[]): any {
+      if (this.expReqBuilders === undefined) {
+         throw new Error('Request builder not initialized with Expandables Requests builders');
+      }
+      const ret: any = {};
+      console.log('this.expReqBuilders:', this.name, this.expReqBuilders);
+      for (const key in this.expReqBuilders) {
+         if (dontDoThese.includes(key)) {
+            continue;
+         }
+         console.log('key:', key);
+         const input = inputFieldsToSelect[this.camelToInputStyle(key)] as Tree;
+         ret[key] = (this.expReqBuilders[key] as DomainRequestBuilder<Name, DomainFields, DomainExpandables>).build(
+            input,
+            [...dontDoThese, this.name],
+         ).request;
+      }
+      return ret;
+   }
 
    protected splitValues(input: Tree): {
       fields: { [key: string]: any };
@@ -238,10 +302,12 @@ export abstract class DomainRequestBuilder<Fields extends DomainFields, Expandab
 
 export type Builder<
    Role extends string,
-   User extends DomainUser,
-   RequestBuilder extends DomainRequestBuilder<any, any>,
+   Name extends string,
+   Fields extends DomainFields,
+   Expandables extends DomainExpandables,
+   RequestBuilder extends DomainRequestBuilder<Name, Fields, Expandables>,
 > = {
-   [Property in Role]: (user: User) => RequestBuilder;
+   [Property in Role]: RequestBuilder;
 };
 
 export type Validator = (val: any) => { valid: boolean; reason: string };
