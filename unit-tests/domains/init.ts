@@ -50,3 +50,9 @@ export function init() {
       init(builders);
    }
 }
+
+export function getBuilders(): {
+   [Property in DomainRequestName]: Builder<any, any>;
+} {
+   return builders;
+}

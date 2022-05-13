@@ -119,7 +119,7 @@ export abstract class DomainRequestBuilder<
 
    build(
       input: Tree,
-      dontDoThese: string[],
+      dontDoThese: Name[],
    ): {
       request: DomainRequest<Fields, Expandables>;
       errors: Array<{
@@ -127,16 +127,16 @@ export abstract class DomainRequestBuilder<
          reason: string;
       }>;
    } {
-      const { fields, filters, options } = this.splitValues(input);
+      const { fields, filters, options, expandables } = this.splitValues(input);
 
       const sanitizedFields = this.sanitizeFieldsToSelect(fields);
       const sanitizedFilters = this.sanitizeFilters(filters);
       const sanitizedOptions = this.sanitizeOptions(options);
-      const expandablesRequests = this.buildExpandablesRequests(fields, dontDoThese);
+      const expandablesRequests = this.buildExpandablesRequests(expandables, dontDoThese);
 
       return {
-         request: this.buildRequest(sanitizedFields, sanitizedFilters, expandablesRequests, sanitizedOptions),
-         errors: sanitizedFilters.errors,
+         request: this.buildRequest(sanitizedFields, sanitizedFilters, expandablesRequests.requests, sanitizedOptions),
+         errors: [...sanitizedFilters.errors, ...expandablesRequests.errors],
       };
    }
 
@@ -252,20 +252,33 @@ export abstract class DomainRequestBuilder<
       this.expReqBuilders = expandablesRequestsBuilders;
    }
 
-   private buildExpandablesRequests(inputFieldsToSelect: Tree, dontDoThese: string[]): any {
+   private buildExpandablesRequests(
+      inputFieldsToSelect: Tree,
+      dontDoThese: Name[],
+   ): {
+      requests: {
+         [Property in keyof Expandables]: DomainRequest<Fields, Expandables>;
+      };
+      errors: Array<{
+         fieldName: string;
+         reason: string;
+      }>;
+   } {
       if (this.expReqBuilders === undefined) {
          throw new Error('Request builder not initialized with Expandables Requests builders');
       }
-      const ret: any = {};
+      const ret: any = { requests: {}, errors: [] };
       for (const key in this.expReqBuilders) {
-         if (dontDoThese.includes(key)) {
+         if (dontDoThese.includes(key as unknown as Name)) {
             continue;
          }
          const input = inputFieldsToSelect[this.camelToInputStyle(key)] as Tree;
-         ret[key] = (this.expReqBuilders[key] as DomainRequestBuilder<Name, DomainFields, DomainExpandables>).build(
+         const built = (this.expReqBuilders[key] as DomainRequestBuilder<Name, DomainFields, DomainExpandables>).build(
             input,
             [...dontDoThese, this.name],
-         ).request;
+         );
+         ret.requests[key] = built.request;
+         ret.errors.push(...built.errors);
       }
       return ret;
    }
@@ -274,10 +287,12 @@ export abstract class DomainRequestBuilder<
       fields: { [key: string]: any };
       filters: { [key: string]: any };
       options: { [key: string]: any };
+      expandables: { [key: string]: any };
    } {
       let fields = {};
       let filters = {};
       let options = {};
+      let expandables = {};
       if (input !== undefined) {
          if (input.fields !== undefined) {
             fields = input.fields;
@@ -288,11 +303,15 @@ export abstract class DomainRequestBuilder<
          if (input.options !== undefined) {
             options = input.options;
          }
+         if (input.expandables !== undefined) {
+            expandables = input.expandables;
+         }
       }
       return {
          fields,
          filters,
          options,
+         expandables,
       };
    }
 }
