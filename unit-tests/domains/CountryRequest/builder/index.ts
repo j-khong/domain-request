@@ -5,7 +5,8 @@ import * as Admin from './roles/Admin';
 // import { RequestBuilder as RestrictedRequestBuilder } from './roles/Restricted';
 import { Fields, ExpandableFields } from '../types';
 
-// type Request = DomainRequest<Fields, ExpandableFields>;
+export * from './persistence/database';
+
 type RequestBuilder = DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields>;
 type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, RequestBuilder>;
 

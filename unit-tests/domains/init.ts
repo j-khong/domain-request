@@ -7,9 +7,39 @@ import {
    DomainExpandables,
    DomainFields,
    DomainRequestBuilder,
+   DomainRequest,
 } from '../../src/DomainRequest';
 import { Role } from './User';
 import { DomainRequestName } from './types';
+import { Result } from './CountryRequest';
+
+export function init(): void {
+   for (const requestNameKey in inits) {
+      const init = inits[requestNameKey as DomainRequestName];
+      init(builders);
+   }
+}
+
+export function getBuildersAndFetchers(): {
+   [Property in DomainRequestName]: {
+      builder: Builder<any, any>;
+      fetch: (req: DomainRequest<any, any>) => Result;
+   };
+} {
+   return all;
+}
+
+export function getBuilders(): {
+   [Property in DomainRequestName]: Builder<any, any>;
+} {
+   return builders;
+}
+
+export function getDataFetchers(): {
+   [Property in DomainRequestName]: (req: DomainRequest<any, any>) => Result;
+} {
+   return dataFetchers;
+}
 
 type RequestBuilder<Fields extends DomainFields, Expandables extends DomainExpandables> = DomainRequestBuilder<
    DomainRequestName,
@@ -44,15 +74,47 @@ const inits: {
    course: Course.init,
 };
 
-export function init() {
-   for (const requestNameKey in inits) {
-      const init = inits[requestNameKey as DomainRequestName];
-      init(builders);
-   }
-}
+const dataFetchers: {
+   [Property in DomainRequestName]: (req: DomainRequest<any, any>) => Result;
+} = {
+   student: <Fields extends DomainFields, Expandables extends DomainExpandables>(
+      req: DomainRequest<Fields, Expandables>,
+   ): Result => {
+      return {};
+   },
+   course: <Fields extends DomainFields, Expandables extends DomainExpandables>(
+      req: DomainRequest<Fields, Expandables>,
+   ): Result => {
+      return {};
+   },
+   courseApplication: <Fields extends DomainFields, Expandables extends DomainExpandables>(
+      req: DomainRequest<Fields, Expandables>,
+   ): Result => {
+      return {};
+   },
+   country: Country.fetch,
+};
 
-export function getBuilders(): {
-   [Property in DomainRequestName]: Builder<any, any>;
-} {
-   return builders;
-}
+const all: {
+   [Property in DomainRequestName]: {
+      builder: Builder<any, any>;
+      fetch: (req: DomainRequest<any, any>) => Result;
+   };
+} = {
+   student: {
+      builder: builders.student,
+      fetch: dataFetchers.student,
+   },
+   country: {
+      builder: builders.country,
+      fetch: dataFetchers.country,
+   },
+   course: {
+      builder: builders.course,
+      fetch: dataFetchers.course,
+   },
+   courseApplication: {
+      builder: builders.courseApplication,
+      fetch: dataFetchers.courseApplication,
+   },
+};

@@ -44,22 +44,24 @@ export type DomainExpandableFieldsToTableFieldsMap<
 };
 
 export async function fetch<Fields, ExpandableFields, TableFields extends string>(
+   tableConfig: {
+      tableName: string;
+      tablePrimaryKey: string;
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>;
+      domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>;
+   },
    select: (sql: string) => Promise<any>,
-   tableName: string,
-   tablePrimaryKey: string,
    req: DomainRequest<Fields, ExpandableFields>,
-   domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-   domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
 ): Promise<void> {
    // fetch results with
    //  fields of the domain
    //  expanded fields of oneToOne Domains
    const res = generateSQLRequests(
-      tableName,
-      tablePrimaryKey,
+      tableConfig.tableName,
+      tableConfig.tablePrimaryKey,
       req,
-      domainFieldsToTableFieldsMap,
-      domainExpandableFieldsToTable,
+      tableConfig.domainFieldsToTableFieldsMap,
+      tableConfig.domainExpandableFieldsToTable,
    );
    if (res === undefined) {
       return;
@@ -127,37 +129,38 @@ function generateSQLRequestsOneToMany<Fields, ExpandableFields, TableFields exte
    const expandables = req.getExpandables();
    for (const expKey in expandables) {
       const expandable = expandables[expKey];
-      const data = processOneToManyExpandables(expandable, tableName, domainExpandableFieldsToTable[expKey]);
-      if (data.fieldsToSelect.size === 0) {
-         return ret;
-      }
+      //  TODO fix
+      // const data = processOneToManyExpandables(expandable, tableName, domainExpandableFieldsToTable[expKey]);
+      // if (data.fieldsToSelect.size === 0) {
+      //    return ret;
+      // }
 
-      ret.fieldsToSelect = data.fieldsToSelect;
-      const joins: string[] = [];
-      for (const [key, value] of data.joins) {
-         joins.push(
-            `LEFT JOIN ${key} ON ${value.relationship} ${
-               value.filters.length > 0 ? ` AND ${value.filters.join(' AND ')}` : ''
-            }`,
-         );
-      }
+      // ret.fieldsToSelect = data.fieldsToSelect;
+      // const joins: string[] = [];
+      // for (const [key, value] of data.joins) {
+      //    joins.push(
+      //       `LEFT JOIN ${key} ON ${value.relationship} ${
+      //          value.filters.length > 0 ? ` AND ${value.filters.join(' AND ')}` : ''
+      //       }`,
+      //    );
+      // }
 
-      const pk = `${tableName}.${tablePrimaryKey}`;
+      // const pk = `${tableName}.${tablePrimaryKey}`;
 
-      const select = `SELECT ${pk}, ${Array.from(ret.fieldsToSelect.values())
-         .map((v) => v.fullFieldToSelect)
-         .join(', ')}`;
-      const from = `FROM ${tableName}`;
-      const filters: string[] = []; //processFilters(expandable, domainFieldsToTableFieldsMap);
-      let where = `WHERE ${pk} IN (${ids.join(', ')})`;
-      where += filters.length === 0 ? '' : `AND ${filters.map((v) => `${tableName}.${v}`).join(' AND ')}`;
+      // const select = `SELECT ${pk}, ${Array.from(ret.fieldsToSelect.values())
+      //    .map((v) => v.fullFieldToSelect)
+      //    .join(', ')}`;
+      // const from = `FROM ${tableName}`;
+      // const filters: string[] = []; //processFilters(expandable, domainFieldsToTableFieldsMap);
+      // let where = `WHERE ${pk} IN (${ids.join(', ')})`;
+      // where += filters.length === 0 ? '' : `AND ${filters.map((v) => `${tableName}.${v}`).join(' AND ')}`;
 
-      const sql = `${select}
-      ${from}
-      ${joins.join('\n')}
-      ${where}
-      LIMIT ${expandable.getOptions().limit}`;
-      ret.resultsSql = sql;
+      // const sql = `${select}
+      // ${from}
+      // ${joins.join('\n')}
+      // ${where}
+      // LIMIT ${expandable.getOptions().limit}`;
+      // ret.resultsSql = sql;
    }
    return ret;
 }
