@@ -32,14 +32,18 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          errors: FilteringFieldsErrors;
       },
       expandables: {
-         [Property in keyof MainExpandableFields]: DomainRequest<MainExpandableFields[Property], DomainFields>;
+         [Property in keyof MainExpandableFields]: DomainRequest<
+            DomainRequestName,
+            MainExpandableFields[Property],
+            DomainFields
+         >;
       },
       options: {
          options: Options<MainFields>;
          errors: OptionsErrors;
       },
    ): Request {
-      return new Request(fields, filters.filters, expandables, options.options);
+      return new Request(this.name, fields, filters.filters, expandables, options.options, 'id');
    }
 
    buildDefaultFields(): Fields {
@@ -59,4 +63,4 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
    }
 }
 
-class Request extends DomainRequest<Fields, ExpandableFields> {}
+class Request extends DomainRequest<DomainRequestName, Fields, ExpandableFields> {}

@@ -643,7 +643,7 @@ function test(input: Tree, role: Role, expected: Expected) {
    }
 }
 
-function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<F, Exp>, expected: Expected): void {
+function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<string, F, Exp>, expected: Expected): void {
    const actualFieldsKeys = Object.keys(request.getFields()) as Array<keyof F>;
    expect(actualFieldsKeys.length, `${name} fields length`).to.equals(Object.keys(expected.fields).length);
    for (const key of actualFieldsKeys) {

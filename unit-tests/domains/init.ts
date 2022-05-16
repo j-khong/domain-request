@@ -26,7 +26,7 @@ export function getBuildersAndFetchers(): {
    [Property in DomainRequestName]: {
       builder: Builder<any, any>;
       dataFetcher: {
-         fetch: (req: DomainRequest<any, any>) => Result;
+         fetch: (req: DomainRequest<DomainRequestName, any, any>) => Promise<Result>;
       };
    };
 } {
@@ -41,7 +41,7 @@ export function getBuilders(): {
 
 export function getDataFetchers(): {
    [Property in DomainRequestName]: {
-      fetch: (req: DomainRequest<any, any>) => Result;
+      fetch: (req: DomainRequest<DomainRequestName, any, any>) => Promise<Result>;
    };
 } {
    return dataFetchers;
@@ -85,7 +85,7 @@ const inits: {
 
 const dataFetchers: {
    [Property in DomainRequestName]: {
-      fetch: (req: DomainRequest<any, any>) => Result;
+      fetch: (req: DomainRequest<DomainRequestName, any, any>) => Promise<Result>;
    };
 } = {
    student: { fetch: Student.DataFetch.fetch },
@@ -98,7 +98,7 @@ const all: {
    [Property in DomainRequestName]: {
       builder: Builder<any, any>;
       dataFetcher: {
-         fetch: (req: DomainRequest<any, any>) => Result;
+         fetch: (req: DomainRequest<DomainRequestName, any, any>) => Promise<Result>;
       };
    };
 } = {

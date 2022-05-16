@@ -52,18 +52,30 @@ export function initDomainRequest<
    }
 }
 
-export abstract class DomainRequest<Fields extends DomainFields, Expandables extends DomainExpandables> {
+type NaturalKey = string | number | symbol;
+export abstract class DomainRequest<
+   Name extends string,
+   Fields extends DomainFields,
+   Expandables extends DomainExpandables,
+> {
    private readonly options: Options<Fields>;
-
+   private readonly naturalKey: NaturalKey;
    constructor(
+      private readonly name: Name,
       private readonly fields: RequestableFields<Fields>,
       private readonly filters: FilteringFields<Fields>,
       private readonly expandables: {
-         [Property in keyof Expandables]: DomainRequest<Expandables[Property], any>;
+         [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
       },
       options: Options<Fields>,
+      naturalKey: keyof Fields,
    ) {
       this.options = options;
+      this.naturalKey = naturalKey;
+   }
+
+   getName(): Name {
+      return this.name;
    }
 
    getOptions(): Options<Fields> {
@@ -84,14 +96,30 @@ export abstract class DomainRequest<Fields extends DomainFields, Expandables ext
       return this.fields;
    }
 
+   setField(key: keyof RequestableFields<Fields>, value: boolean): void {
+      this.fields[key] = value;
+   }
+
    getFilters(): FilteringFields<Fields> {
       return this.filters;
    }
 
+   setFilter(filter: {
+      key: keyof FilteringFields<Fields>;
+      operator: Operator;
+      value: FilteringFields<Fields>[keyof FilteringFields<Fields>];
+   }): void {
+      (this.filters as any)[filter.key] = { operator: filter.operator, value: filter.value };
+   }
+
    getExpandables(): {
-      [Property in keyof Expandables]: DomainRequest<Expandables[Property], any>;
+      [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
    } {
       return this.expandables;
+   }
+
+   getNaturalKey(): NaturalKey {
+      return this.naturalKey;
    }
 }
 
@@ -103,7 +131,7 @@ export abstract class DomainRequestBuilder<
    private static readonly MAX_LIMIT = 5000;
 
    constructor(
-      private readonly name: Name,
+      protected readonly name: Name,
       private readonly validatorFilterMap: { [Property in keyof Fields]: Validator },
    ) {}
 
@@ -118,13 +146,13 @@ export abstract class DomainRequestBuilder<
          options: Options<Fields>;
          errors: OptionsErrors;
       },
-   ): DomainRequest<Fields, Expandables>;
+   ): DomainRequest<Name, Fields, Expandables>;
 
    build(
       input: Tree,
       dontDoThese: Name[],
    ): {
-      request: DomainRequest<Fields, Expandables>;
+      request: DomainRequest<Name, Fields, Expandables>;
       errors: Array<{
          fieldName: string;
          reason: string;
@@ -263,7 +291,7 @@ export abstract class DomainRequestBuilder<
       dontDoThese: Name[],
    ): {
       requests: {
-         [Property in keyof Expandables]: DomainRequest<Fields, Expandables>;
+         [Property in keyof Expandables]: DomainRequest<Name, Fields, Expandables>;
       };
       errors: Array<{
          fieldName: string;
@@ -345,7 +373,8 @@ const operators = [
    'greaterThanOrEquals',
    'lesserThan',
    'lesserThanOrEquals',
-   'contains',
+   'contains', // for strings
+   'includes', // for numbers list
 ] as const;
 export type Operator = typeof operators[number];
 export function getOperators(): Operator[] {
@@ -372,7 +401,9 @@ export type CamelToSnakeCase<S extends string> = S extends `${infer T}${infer U}
    ? `${T extends Capitalize<T> ? '_' : ''}${Lowercase<T>}${CamelToSnakeCase<U>}`
    : S;
 
-//    const snakeToCamel = (str: string) => str.replace(/_[a-z]/g, (part) => `${part.charAt(1).toUpperCase()}`);
+export function snakeToCamel<IN extends string, OUT extends string>(str: IN): OUT {
+   return str.replace(/_[a-z]/g, (part) => `${part.charAt(1).toUpperCase()}`) as OUT;
+}
 
 export function camelToSnake<IN extends string, OUT extends string>(str: IN): OUT {
    return str.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`) as OUT;

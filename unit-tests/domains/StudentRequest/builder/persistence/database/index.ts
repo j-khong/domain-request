@@ -4,16 +4,15 @@ import {
    fetch as fetchResults,
    TableConfig,
    SelectMethod,
-   toNumber,
+   toTableId,
    toString,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields, Request, Result } from '../../../types';
 import * as Country from '../../../../CountryRequest';
 import * as CourseApplication from '../../../../CourseApplicationRequest';
 
-export function fetch(req: Request): Result {
-   const r = fetchResults(tableConfig, req);
-   return {};
+export async function fetch(req: Request): Promise<Result> {
+   return fetchResults(tableConfig, req);
 }
 
 const tableName = 'student';
@@ -30,7 +29,7 @@ type TableFields =
    | 'has_scholarship';
 
 const domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields> = {
-   id: { name: 'id', convert: toNumber },
+   id: { name: 'id', convert: toTableId },
    firstname: { name: 'firstname', convert: toString },
    lastname: { name: 'lastname', convert: toString },
    yearOfBirth: { name: 'year_of_birth', convert: toString },

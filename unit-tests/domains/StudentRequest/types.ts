@@ -1,6 +1,7 @@
 import * as CAR from '../CourseApplicationRequest';
 import * as CR from '../CountryRequest';
-import { DomainRequest } from '../../../src/DomainRequest';
+import { DomainRequest, DomainResult } from '../../../src';
+import { DomainRequestName } from '../types';
 
 export interface Fields {
    id: string;
@@ -17,6 +18,6 @@ export interface ExpandableFields {
    courseApplication: CAR.Fields;
 }
 
-export type Request = DomainRequest<Fields, ExpandableFields>;
+export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 
-export type Result = {};
+export type Result = DomainResult;

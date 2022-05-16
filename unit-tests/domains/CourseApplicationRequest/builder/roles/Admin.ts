@@ -37,7 +37,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          errors: OptionsErrors;
       },
    ): Request {
-      return new Request(fields, filters.filters, expandables, options.options);
+      return new Request(this.name, fields, filters.filters, expandables, options.options, 'id');
    }
 
    buildDefaultFields(): Fields {
@@ -57,4 +57,4 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
    }
 }
 
-class Request extends DomainRequest<Fields, any> {}
+class Request extends DomainRequest<DomainRequestName, Fields, any> {}

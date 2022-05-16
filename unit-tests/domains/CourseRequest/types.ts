@@ -1,4 +1,5 @@
-import { DomainRequest } from '../../../src/DomainRequest';
+import { DomainRequest, DomainResult } from '../../../src';
+import { DomainRequestName } from '../types';
 
 export interface Fields {
    id: string;
@@ -7,6 +8,6 @@ export interface Fields {
 
 export interface ExpandableFields {}
 
-export type Request = DomainRequest<Fields, ExpandableFields>;
+export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 
-export type Result = {};
+export type Result = DomainResult;

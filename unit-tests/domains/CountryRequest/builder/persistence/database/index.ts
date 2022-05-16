@@ -4,14 +4,13 @@ import {
    fetch as fetchResults,
    SelectMethod,
    TableConfig,
-   toNumber,
    toString,
+   toTableId,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields, Request, Result } from '../../../types';
 
-export function fetch(req: Request): Result {
-   const r = fetchResults(tableConfig, req);
-   return {};
+export function fetch(req: Request): Promise<Result> {
+   return fetchResults(tableConfig, req);
 }
 
 const tableName = 'country';
@@ -21,7 +20,7 @@ const tablePrimaryKey: Key = 'id';
 type TableFields = Key | 'name' | 'timezone';
 
 const domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields> = {
-   id: { name: 'id', convert: toNumber },
+   id: { name: 'id', convert: toTableId },
    name: { name: 'name', convert: toString },
    timezone: { name: 'timezone', convert: toString },
 };

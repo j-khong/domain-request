@@ -1,6 +1,7 @@
-import { DomainRequest } from '../../../src/DomainRequest';
+import { DomainRequest, DomainResult } from '../../../src';
 import * as CR from '../CourseRequest';
 import * as SRF from '../StudentRequest';
+import { DomainRequestName } from '../types';
 
 export interface Fields {
    id: string;
@@ -13,6 +14,6 @@ export interface ExpandableFields {
    course: CR.Fields;
 }
 
-export type Request = DomainRequest<Fields, ExpandableFields>;
+export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 
-export type Result = {};
+export type Result = DomainResult;
