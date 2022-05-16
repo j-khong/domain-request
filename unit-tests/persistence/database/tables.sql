@@ -1,0 +1,54 @@
+DROP TABLE IF EXISTS `course_application`;
+DROP TABLE IF EXISTS `student`;
+DROP TABLE IF EXISTS `country`;
+DROP TABLE IF EXISTS `course`;
+
+
+CREATE TABLE `country` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `timezone` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `country__NK` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `course` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `course__NK` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `student` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `firstname` varchar(255) NOT NULL,
+  `lastname` varchar(255) NOT NULL,
+  `year_of_birth` unsigned smallint NOT NULL,
+  `national_card_id` varchar(255) NOT NULL,
+  `has_scholarship` boolean NOT NULL,
+  `country_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `student__NK` (`national_card_id`, `country_id`),
+  KEY `student__IDX_country_id` (`country_id`),
+  CONSTRAINT `student__FK_country_id` FOREIGN KEY (`country_id`) REFERENCES `country` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `course_application` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `course_application__NK` (`student_id`, `course_id`),
+  KEY `course_application__IDX_student_id` (`student_id`),
+  CONSTRAINT `course_application__FK_student_id` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`),
+  KEY `course_application__IDX_course_id` (`course_id`),
+  CONSTRAINT `course_application__FK_course_id` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
+
+INSERT INTO `country` (`name`, `timezone`) VALUES
+('france', 'Europe/Paris');
+
+INSERT INTO `course` (`name`) VALUES
+('Math 101');

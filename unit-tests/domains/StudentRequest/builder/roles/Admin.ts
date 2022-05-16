@@ -11,9 +11,8 @@ import {
    validateNumber,
    validateString,
 } from '../../../../../src/DomainRequest';
-import { Fields as MainFields } from '../../fields';
-import { ExpandableFields as MainExpandableFields } from '../../expandables';
 import { DomainRequestName } from '../../../types';
+import { Fields as MainFields, ExpandableFields as MainExpandableFields } from '../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;

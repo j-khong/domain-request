@@ -14,16 +14,15 @@ export function fetch(req: Request): Result {
    return {};
 }
 
-const tableName = 'country';
+const tableName = 'course';
 type Key = 'id';
 const tablePrimaryKey: Key = 'id';
 
-type TableFields = Key | 'name' | 'timezone';
+type TableFields = Key | 'name';
 
 const domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields> = {
    id: { name: 'id', convert: toNumber },
    name: { name: 'name', convert: toString },
-   timezone: { name: 'timezone', convert: toString },
 };
 
 export const tableConfig = new TableConfig<Fields, ExpandableFields, TableFields>(

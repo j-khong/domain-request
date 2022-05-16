@@ -1,12 +1,10 @@
 import 'mocha';
 import { expect } from 'chai';
-import { getRoleRequestBuilder, Fields } from './domains/StudentRequest';
+import { getRoleRequestBuilder } from './domains/StudentRequest';
 import { DomainRequest, DomainRequestBuilder, Tree } from '../src/DomainRequest';
 
 import { init, getBuilders } from './domains/init';
-import { Role } from './domains/User';
-import { ExpandableFields } from './domains/StudentRequest/builder/roles/Admin';
-import { DomainRequestName } from './domains/types';
+import { DomainRequestName, Role } from './domains/types';
 
 init();
 describe('request simple fields (no expandables)', () => {
@@ -35,14 +33,14 @@ describe('request simple fields (no expandables)', () => {
          const role = 'admin';
          const input = {
             fields: {
-               id: true,
+               year_of_birth: true,
                firstname: true,
             },
          };
 
          const expected = getDefaultExpected(role);
-         expected.fields.id = true;
          expected.fields.firstname = true;
+         expected.fields.yearOfBirth = true;
 
          test(input, role, expected);
       });
@@ -296,7 +294,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.options.limit = 10;
+         expected.options.pagination.limit = 10;
          test(input, role, expected);
       });
 
@@ -314,7 +312,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.options.limit = 5000;
+         expected.options.pagination.limit = 5000;
          test(input, role, expected);
       });
    });
@@ -600,7 +598,9 @@ describe('request with 1 to many expandables', () => {
 interface Expected {
    fields: Tree;
    filters: Tree;
-   options: Tree;
+   options: {
+      pagination: { offset: number; limit: number };
+   };
    expandables: any;
    errors: Array<{ fieldName: string; reason: string }>;
 }
@@ -656,7 +656,8 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<F, E
       expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
    }
 
-   expect(request.getOptions().limit).to.equals(expected.options.limit);
+   expect(request.getOptions().pagination.limit).to.equals(expected.options.pagination.limit);
+   expect(request.getOptions().pagination.offset).to.equals(expected.options.pagination.offset);
 
    const actualExpKeys = Object.keys(request.getExpandables()) as Array<keyof Exp>;
    expect(actualExpKeys.length, `${name} expandables length`).to.equals(Object.keys(expected.expandables).length);
@@ -709,7 +710,7 @@ function buildExpected(requestBuilder: DomainRequestBuilder<DomainRequestName, a
    return {
       fields: defaultFields,
       filters: {},
-      options: { limit: 100 },
+      options: { pagination: { offset: 0, limit: 100 } },
       expandables: {},
       errors: [],
    };

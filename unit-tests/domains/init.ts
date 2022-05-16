@@ -9,21 +9,25 @@ import {
    DomainRequestBuilder,
    DomainRequest,
 } from '../../src/DomainRequest';
-import { Role } from './User';
-import { DomainRequestName } from './types';
+import { DomainRequestName, Role } from './types';
 import { Result } from './CountryRequest';
+import { SelectMethod } from '../../src/persistence/database';
+import { select } from '../persistence/database/dbUtils';
 
 export function init(): void {
    for (const requestNameKey in inits) {
       const init = inits[requestNameKey as DomainRequestName];
-      init(builders);
+      init.initBuilder(builders);
+      init.initDataFetcher(select);
    }
 }
 
 export function getBuildersAndFetchers(): {
    [Property in DomainRequestName]: {
       builder: Builder<any, any>;
-      fetch: (req: DomainRequest<any, any>) => Result;
+      dataFetcher: {
+         fetch: (req: DomainRequest<any, any>) => Result;
+      };
    };
 } {
    return all;
@@ -36,7 +40,9 @@ export function getBuilders(): {
 }
 
 export function getDataFetchers(): {
-   [Property in DomainRequestName]: (req: DomainRequest<any, any>) => Result;
+   [Property in DomainRequestName]: {
+      fetch: (req: DomainRequest<any, any>) => Result;
+   };
 } {
    return dataFetchers;
 }
@@ -64,57 +70,52 @@ const builders: {
 };
 
 const inits: {
-   [Property in DomainRequestName]: (allbuilders: {
-      [Property in DomainRequestName]: Builder<any, any>;
-   }) => void;
+   [Property in DomainRequestName]: {
+      initBuilder: (allbuilders: {
+         [Property in DomainRequestName]: Builder<any, any>;
+      }) => void;
+      initDataFetcher: (select: SelectMethod) => void;
+   };
 } = {
-   student: Student.init,
-   country: Country.init,
-   courseApplication: CourseApplication.init,
-   course: Course.init,
+   student: { initBuilder: Student.init, initDataFetcher: Student.DataFetch.init },
+   country: { initBuilder: Country.init, initDataFetcher: Country.DataFetch.init },
+   courseApplication: { initBuilder: CourseApplication.init, initDataFetcher: CourseApplication.DataFetch.init },
+   course: { initBuilder: Course.init, initDataFetcher: Course.DataFetch.init },
 };
 
 const dataFetchers: {
-   [Property in DomainRequestName]: (req: DomainRequest<any, any>) => Result;
+   [Property in DomainRequestName]: {
+      fetch: (req: DomainRequest<any, any>) => Result;
+   };
 } = {
-   student: <Fields extends DomainFields, Expandables extends DomainExpandables>(
-      req: DomainRequest<Fields, Expandables>,
-   ): Result => {
-      return {};
-   },
-   course: <Fields extends DomainFields, Expandables extends DomainExpandables>(
-      req: DomainRequest<Fields, Expandables>,
-   ): Result => {
-      return {};
-   },
-   courseApplication: <Fields extends DomainFields, Expandables extends DomainExpandables>(
-      req: DomainRequest<Fields, Expandables>,
-   ): Result => {
-      return {};
-   },
-   country: Country.fetch,
+   student: { fetch: Student.DataFetch.fetch },
+   course: { fetch: Course.DataFetch.fetch },
+   courseApplication: { fetch: CourseApplication.DataFetch.fetch },
+   country: { fetch: Country.DataFetch.fetch },
 };
 
 const all: {
    [Property in DomainRequestName]: {
       builder: Builder<any, any>;
-      fetch: (req: DomainRequest<any, any>) => Result;
+      dataFetcher: {
+         fetch: (req: DomainRequest<any, any>) => Result;
+      };
    };
 } = {
    student: {
       builder: builders.student,
-      fetch: dataFetchers.student,
+      dataFetcher: dataFetchers.student,
    },
    country: {
       builder: builders.country,
-      fetch: dataFetchers.country,
+      dataFetcher: dataFetchers.country,
    },
    course: {
       builder: builders.course,
-      fetch: dataFetchers.course,
+      dataFetcher: dataFetchers.course,
    },
    courseApplication: {
       builder: builders.courseApplication,
-      fetch: dataFetchers.courseApplication,
+      dataFetcher: dataFetchers.courseApplication,
    },
 };

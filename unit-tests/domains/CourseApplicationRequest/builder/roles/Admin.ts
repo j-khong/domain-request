@@ -10,8 +10,7 @@ import {
    validateId,
    validateString,
 } from '../../../../../src/DomainRequest';
-import { Fields as MainFields } from '../../fields';
-import { ExpandableFields as MainExpandableFields } from '../../expandables';
+import { Fields as MainFields, ExpandableFields as MainExpandableFields } from '../../types';
 import { DomainRequestName } from '../../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;

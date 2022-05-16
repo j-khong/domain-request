@@ -8,7 +8,6 @@ import {
    Options,
    OptionsErrors,
    RequestableFields,
-   Tree,
    validateId,
    validateString,
 } from '../../../../../src/DomainRequest';

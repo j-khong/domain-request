@@ -13,7 +13,10 @@ export interface DomainFields {
 export interface DomainExpandables extends DomainFields {}
 
 export interface Options<Fields extends DomainFields> {
-   limit: number;
+   pagination: {
+      offset: number;
+      limit: number;
+   };
    orderby?: keyof Fields;
 }
 export type OptionsErrors = Array<{
@@ -39,13 +42,13 @@ export function initDomainRequest<
    domainRequestToInit: DomainRequestName,
    expandables: DomainRequestName[],
 ): void {
-   const requestBuilder = builders[domainRequestToInit];
-   for (const keyRole in requestBuilder) {
+   const requestBuilderToInit = builders[domainRequestToInit];
+   for (const keyRole in requestBuilderToInit) {
       const ret: any = {};
       for (const expName of expandables) {
          ret[expName] = builders[expName][keyRole];
       }
-      requestBuilder[keyRole].init(ret);
+      requestBuilderToInit[keyRole].init(ret);
    }
 }
 
@@ -227,10 +230,13 @@ export abstract class DomainRequestBuilder<
          reason: string;
       }>;
    } {
-      const options = { limit: 100 };
+      const options = { pagination: { offset: 0, limit: 100 } };
       if (inputOptions !== undefined) {
          if (inputOptions.limit !== undefined && isNumber(inputOptions.limit)) {
-            options.limit = Math.min(inputOptions.limit, DomainRequestBuilder.MAX_LIMIT);
+            options.pagination.limit = Math.min(inputOptions.limit, DomainRequestBuilder.MAX_LIMIT);
+         }
+         if (inputOptions.offset !== undefined && isNumber(inputOptions.offset)) {
+            options.pagination.offset = inputOptions.offset;
          }
          // TODO sanitize orderby
       }

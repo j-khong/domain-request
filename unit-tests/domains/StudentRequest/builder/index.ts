@@ -1,8 +1,6 @@
 import { Builder as DomainBuilder, DomainRequestBuilder, initDomainRequest } from '../../../../src/DomainRequest';
-import { DomainRequestName } from '../../types';
-import { Role } from '../../User';
-import { ExpandableFields } from '../expandables';
-import { Fields } from '../fields';
+import { DomainRequestName, Role } from '../../types';
+import { Fields, ExpandableFields } from '../types';
 import * as Admin from './roles/Admin';
 
 // type Request = DomainRequest<Fields, ExpandableFields>;
@@ -14,6 +12,8 @@ export function init(builders: {
 }): void {
    initDomainRequest(builders, 'student', ['country', 'courseApplication']);
 }
+
+export * as DataFetch from './persistence/database';
 
 export function getRoleRequestBuilder(role: Role): RequestBuilder {
    return builder[role];
