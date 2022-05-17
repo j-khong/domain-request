@@ -18,38 +18,34 @@ export type DomainFieldsToTableFieldsMap<DomainFields, TableFields extends strin
    [Property in keyof DomainFields]: {
       name: TableFields;
       convert: (o: any) => number | string | number[];
-      relationship?: {
-         module: {
-            domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, string>;
-            tableName: string;
-            tablePrimaryKey: string;
-         };
-      };
    };
 };
 
 export type Cardinality = 'oneToOne' | 'oneToMany';
 
-export type DomainExpandableFieldsToTableFieldsMap<
-   ExpandableFields extends DomainFields,
-   TableFields extends string,
-> = {
-   [Property in keyof ExpandableFields]: {
-      tableConfig: TableConfig<any, any, any>;
-      currentTableField?: TableFields; // when cardinality = oneToMany
-      cardinality: Cardinality;
-      foreignKey?: TableFields; // when cardinality = oneToOne
-   };
-};
+export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =
+   | {
+        [Property in keyof ExpandableFields]: {
+           tableConfig: TableConfig<any, any, any>;
+           cardinality: Cardinality;
+           foreignKey?: TableFields; // when cardinality = oneToOne
+        };
+     };
 
 export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
+
+let counter = 1;
 export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
+   private count: number;
    constructor(
       public readonly tableName: string,
       public readonly tablePrimaryKey: string,
       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-   ) {}
+   ) {
+      this.count = counter++;
+      console.log(`building ${tableName} ${this.count}`);
+   }
 
    public select: SelectMethod = async (sql: string) => {
       console.log(sql);
@@ -62,7 +58,7 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
 
    getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       if (this.domainExpandableFieldsToTable === undefined) {
-         throw new Error('domainExpandableFieldsToTable in undefined, call init');
+         throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
       }
       return this.domainExpandableFieldsToTable;
    }

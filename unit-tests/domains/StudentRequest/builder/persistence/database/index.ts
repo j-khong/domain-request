@@ -1,24 +1,14 @@
 import {
    DomainExpandableFieldsToTableFieldsMap,
-   DomainFieldsToTableFieldsMap,
-   fetch as fetchResults,
    TableConfig,
-   SelectMethod,
    toTableId,
    toString,
+   DatabaseTable,
 } from '../../../../../../src/persistence/database';
-import { ExpandableFields, Fields, Request, Result } from '../../../types';
-import * as Country from '../../../../CountryRequest';
-import * as CourseApplication from '../../../../CourseApplicationRequest';
+import { ExpandableFields, Fields } from '../../../types';
+import { DomainRequestName } from '../../../../types';
 
-export async function fetch(req: Request): Promise<Result> {
-   return fetchResults(tableConfig, req);
-}
-
-const tableName = 'student';
 type Key = 'id';
-const tablePrimaryKey: Key = 'id';
-
 type TableFields =
    | Key
    | 'firstname'
@@ -28,30 +18,36 @@ type TableFields =
    | 'country_id'
    | 'has_scholarship';
 
-const domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields> = {
-   id: { name: 'id', convert: toTableId },
-   firstname: { name: 'firstname', convert: toString },
-   lastname: { name: 'lastname', convert: toString },
-   yearOfBirth: { name: 'year_of_birth', convert: toString },
-   nationalCardId: { name: 'national_card_id', convert: toString },
-   countryId: { name: 'country_id', convert: toString },
-   hasScholarship: { name: 'has_scholarship', convert: toString },
-};
-
-export const tableConfig = new TableConfig<Fields, ExpandableFields, TableFields>(
-   tableName,
-   tablePrimaryKey,
-   domainFieldsToTableFieldsMap,
-);
-
-export function init(select: SelectMethod): void {
-   const domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> = {
-      country: {
-         cardinality: 'oneToOne',
-         foreignKey: 'country_id',
-         tableConfig: Country.DataFetch.tableConfig,
-      },
-      courseApplication: { cardinality: 'oneToMany', tableConfig: CourseApplication.DataFetch.tableConfig },
-   };
-   tableConfig.init(domainExpandableFieldsToTable, select);
+class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+   constructor() {
+      super(
+         new TableConfig<Fields, ExpandableFields, TableFields>(
+            'student', // tableName
+            'id', // tablePrimaryKey
+            {
+               id: { name: 'id', convert: toTableId },
+               firstname: { name: 'firstname', convert: toString },
+               lastname: { name: 'lastname', convert: toString },
+               yearOfBirth: { name: 'year_of_birth', convert: toString },
+               nationalCardId: { name: 'national_card_id', convert: toString },
+               countryId: { name: 'country_id', convert: toString },
+               hasScholarship: { name: 'has_scholarship', convert: toString },
+            }, // domainFieldsToTableFieldsMap
+         ),
+      );
+   }
+   buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
+      [Property in DomainRequestName]: DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields>;
+   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+      return {
+         country: {
+            cardinality: 'oneToOne',
+            foreignKey: 'country_id',
+            tableConfig: allDbTables.country.getTableConfig(),
+         },
+         courseApplication: { cardinality: 'oneToMany', tableConfig: allDbTables.courseApplication.getTableConfig() },
+      };
+   }
 }
+
+export const dbTable = new Database();

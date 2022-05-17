@@ -1,9 +1,8 @@
 import 'mocha';
 import { expect } from 'chai';
-import { getRoleRequestBuilder } from './domains/StudentRequest';
-import { DomainRequest, DomainRequestBuilder, Tree } from '../src/DomainRequest';
 
-import { init, getBuilders } from './domains/init';
+import { init, getDomainRequestFactory } from './domains/init';
+import { DomainRequest, DomainRequestBuilder, Tree } from '../src/DomainRequest';
 import { DomainRequestName, Role } from './domains/types';
 
 init();
@@ -589,9 +588,6 @@ describe('request with 1 to many expandables', () => {
 // WHERE service_mode.name='eee'
 // LIMIT 100`
 
-//
-//
-
 // test with options : limit, etc
 // test with no fields but 1 expandable
 
@@ -606,8 +602,8 @@ interface Expected {
 }
 
 function test(input: Tree, role: Role, expected: Expected) {
-   const builder = getRoleRequestBuilder(role);
-   const res = builder.build(input, []);
+   const factory = getDomainRequestFactory('student');
+   const res = factory.getRoleDomainRequestBuilder(role).build(input, []);
    // console.log('res:', JSON.stringify(res, null, 2));
 
    // const actualFieldsKeys = Object.keys(res.request.getFields()) as Array<keyof Fields>;
@@ -669,13 +665,12 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<stri
 
 function getDefaultExpected(role: Role, dontDoThese: string[] = []): Expected {
    const name = 'student';
-   const builder = getBuilders()[name];
-   const result = buildExpected(builder[role]);
+   const factory = getDomainRequestFactory(name);
+   const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
 
-   const countryBuilders = getBuilders()['country'];
-
+   const countryBuilders = getDomainRequestFactory('country');
    if (!dontDoThese.includes('country')) {
-      result.expandables.country = buildExpected(countryBuilders[role]);
+      result.expandables.country = buildExpected(countryBuilders.getRoleDomainRequestBuilder(role));
    }
    if (!dontDoThese.includes('courseApplication')) {
       result.expandables.courseApplication = getCourseApplicationDefaultExpected(role, ['student']);
@@ -685,8 +680,8 @@ function getDefaultExpected(role: Role, dontDoThese: string[] = []): Expected {
 
 function getCourseApplicationDefaultExpected(role: Role, dontDoThese: string[]): Expected {
    const name = 'courseApplication';
-   const builder = getBuilders()[name];
-   const result = buildExpected(builder[role]);
+   const factory = getDomainRequestFactory(name);
+   const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
 
    if (!dontDoThese.includes('course')) {
       result.expandables.course = getCourseDefaultExpected(role);
@@ -699,8 +694,8 @@ function getCourseApplicationDefaultExpected(role: Role, dontDoThese: string[]):
 
 function getCourseDefaultExpected(role: Role): Expected {
    const name = 'course';
-   const builder = getBuilders()[name];
-   const result = buildExpected(builder[role]);
+   const factory = getDomainRequestFactory(name);
+   const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
    return result;
 }
 

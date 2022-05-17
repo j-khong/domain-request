@@ -1,13 +1,45 @@
-import { Report, DomainResult } from 'persistence';
+import { Report, DomainResult } from '../index';
 import { DomainFields, DomainExpandables, DomainRequest, Operator, snakeToCamel } from '../../DomainRequest';
 import {
    DomainExpandableFieldsToTableFieldsMap,
    DomainFieldsToTableFieldsMap,
+   SelectMethod,
    SelectMethodResult,
    TableConfig,
 } from './types';
 
-export async function fetch<Fields, ExpandableFields, TableFields extends string, Name extends string>(
+let counter = 1;
+
+export abstract class DatabaseTable<DRN extends string, F, E, TF extends string> {
+   private count: number;
+   constructor(private readonly tableConfig: TableConfig<F, E, TF>) {
+      this.count = counter++;
+      console.log(`building DatabaseTable ${tableConfig.tableName} ${this.count}`);
+   }
+
+   abstract buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
+      [Property in DRN]: DatabaseTable<DRN, F, E, TF>;
+   }): DomainExpandableFieldsToTableFieldsMap<E, TF>;
+
+   init(
+      select: SelectMethod,
+      allDbTables: {
+         [Property in DRN]: DatabaseTable<DRN, F, E, TF>;
+      },
+   ): void {
+      this.tableConfig.init(this.buildDomainExpandableFieldsToTableFieldsMap(allDbTables), select);
+   }
+
+   fetch(req: DomainRequest<DRN, F, E>): Promise<DomainResult> {
+      return fetch(this.tableConfig, req);
+   }
+
+   getTableConfig(): TableConfig<F, E, TF> {
+      return this.tableConfig;
+   }
+}
+
+async function fetch<Fields, ExpandableFields, TableFields extends string, Name extends string>(
    tableConfig: TableConfig<Fields, ExpandableFields, TableFields>,
    req: DomainRequest<Name, Fields, ExpandableFields>,
    selectCount = true,

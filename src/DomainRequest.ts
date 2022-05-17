@@ -24,34 +24,6 @@ export type OptionsErrors = Array<{
    reason: string;
 }>;
 
-export function initDomainRequest<
-   DomainRequestName extends string,
-   Role extends string,
-   Fields extends DomainFields,
-   Expandables extends DomainExpandables,
->(
-   builders: {
-      [Property in DomainRequestName]: Builder<
-         Role,
-         DomainRequestName,
-         Fields,
-         Expandables,
-         DomainRequestBuilder<DomainRequestName, Fields, Expandables>
-      >;
-   },
-   domainRequestToInit: DomainRequestName,
-   expandables: DomainRequestName[],
-): void {
-   const requestBuilderToInit = builders[domainRequestToInit];
-   for (const keyRole in requestBuilderToInit) {
-      const ret: any = {};
-      for (const expName of expandables) {
-         ret[expName] = builders[expName][keyRole];
-      }
-      requestBuilderToInit[keyRole].init(ret);
-   }
-}
-
 type NaturalKey = string | number | symbol;
 export abstract class DomainRequest<
    Name extends string,
@@ -280,7 +252,7 @@ export abstract class DomainRequestBuilder<
         }
       | undefined;
 
-   init(expandablesRequestsBuilders: {
+   setExpandables(expandablesRequestsBuilders: {
       [Property in keyof Expandables]: DomainRequestBuilder<Name, DomainFields, DomainExpandables>;
    }): void {
       this.expReqBuilders = expandablesRequestsBuilders;
@@ -349,16 +321,6 @@ export abstract class DomainRequestBuilder<
       };
    }
 }
-
-export type Builder<
-   Role extends string,
-   Name extends string,
-   Fields extends DomainFields,
-   Expandables extends DomainExpandables,
-   RequestBuilder extends DomainRequestBuilder<Name, Fields, Expandables>,
-> = {
-   [Property in Role]: RequestBuilder;
-};
 
 export type Validator = (val: any) => { valid: boolean; reason: string };
 
