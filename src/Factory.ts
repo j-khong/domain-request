@@ -23,6 +23,10 @@ export function initFactories<DomainRequestName extends string, Role extends str
    }
 }
 
+export type ExpandableName<DomainRequestName extends string, Expandables extends DomainExpandables> =
+   | DomainRequestName
+   | { globalContext: DomainRequestName; currentContext: keyof Expandables };
+
 export function initAllRolesDomainRequestBuilders<
    DomainRequestName extends string,
    Role extends string,
@@ -39,7 +43,7 @@ export function initAllRolesDomainRequestBuilders<
       >;
    },
    domainRequestToInit: DomainRequestName,
-   expandables: Array<DomainRequestName | { globalContext: DomainRequestName; currentContext: keyof Expandables }>,
+   expandables: Array<ExpandableName<DomainRequestName, Expandables>>,
 ): void {
    const requestBuilderToInit = builders[domainRequestToInit];
    for (const keyRole in requestBuilderToInit) {

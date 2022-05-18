@@ -6,14 +6,14 @@ import {
    validateString,
    RequestValues,
 } from '../../../../../src/DomainRequest';
-import { ExpandableFields as MainExpandableFields, Fields as MainFields } from '../../types';
+import { domainRequestName, ExpandableFields as MainExpandableFields, Fields as MainFields } from '../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super('country', {
+      super(domainRequestName, {
          id: { validate: validateId, defaultValue: '' },
          name: { validate: validateString, defaultValue: '' },
          timezone: { validate: validateString, defaultValue: '' },

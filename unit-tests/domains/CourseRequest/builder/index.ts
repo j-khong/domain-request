@@ -9,7 +9,7 @@ import { DomainRequestName, Role } from '../../types';
 
 import * as Admin from './roles/Admin';
 import { dbTable } from './persistence/database';
-import { Fields, ExpandableFields } from '../types';
+import { Fields, ExpandableFields, expandableNames, domainRequestName } from '../types';
 
 export function getFactory(): Factory<Role, DomainRequestName> {
    return getFactoryGeneric(builder, dbTable, init);
@@ -21,7 +21,7 @@ type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, 
 function init(builders: {
    [Property in DomainRequestName]: Builder;
 }): void {
-   initAllRolesDomainRequestBuilders(builders, 'course', []);
+   initAllRolesDomainRequestBuilders(builders, domainRequestName, expandableNames);
 }
 
 const builder: Builder = {

@@ -1,4 +1,4 @@
-import { DomainRequest, DomainResult } from '../../../src';
+import { DomainRequest, DomainResult, ExpandableName } from '../../../src';
 import { DomainRequestName } from '../types';
 
 export interface Fields {
@@ -9,6 +9,8 @@ export interface Fields {
 
 export interface ExpandableFields {}
 
-export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
+export const domainRequestName: DomainRequestName = 'country';
+export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [];
 
+export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 export type Result = DomainResult;

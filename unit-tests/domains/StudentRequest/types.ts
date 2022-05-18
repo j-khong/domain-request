@@ -1,7 +1,7 @@
 import * as CAR from '../CourseApplicationRequest';
 import * as CR from '../CountryRequest';
 import * as Cat from '../StudentCategoryRequest';
-import { DomainRequest, DomainResult } from '../../../src';
+import { DomainRequest, DomainResult, ExpandableName } from '../../../src';
 import { DomainRequestName } from '../types';
 
 export interface Fields {
@@ -21,6 +21,12 @@ export interface ExpandableFields {
    category: Cat.Fields;
 }
 
-export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
+export const domainRequestName: DomainRequestName = 'student';
+export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [
+   'country',
+   'courseApplication',
+   { globalContext: 'studentCategory', currentContext: 'category' },
+];
 
+export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 export type Result = DomainResult;

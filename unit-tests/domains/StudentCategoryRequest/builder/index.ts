@@ -1,6 +1,6 @@
 import { DomainRequestName, Role } from '../../types';
 import * as Admin from './roles/Admin';
-import { Fields, ExpandableFields } from '../types';
+import { Fields, ExpandableFields, domainRequestName, expandableNames } from '../types';
 import {
    DomainRequestBuilder,
    Builder as DomainBuilder,
@@ -20,7 +20,7 @@ type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, 
 function init(builders: {
    [Property in DomainRequestName]: Builder;
 }): void {
-   initAllRolesDomainRequestBuilders(builders, 'studentCategory', []);
+   initAllRolesDomainRequestBuilders(builders, domainRequestName, expandableNames);
 }
 
 const builder: Builder = {
