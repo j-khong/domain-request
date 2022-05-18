@@ -39,13 +39,19 @@ export function initAllRolesDomainRequestBuilders<
       >;
    },
    domainRequestToInit: DomainRequestName,
-   expandables: DomainRequestName[],
+   expandables: Array<DomainRequestName | { globalContext: DomainRequestName; currentContext: keyof Expandables }>,
 ): void {
    const requestBuilderToInit = builders[domainRequestToInit];
    for (const keyRole in requestBuilderToInit) {
       const ret: any = {};
-      for (const expName of expandables) {
-         ret[expName] = builders[expName][keyRole];
+      for (const k of expandables) {
+         let global = k;
+         let current = k as string;
+         if (typeof k === 'object') {
+            global = k.globalContext;
+            current = k.currentContext as string;
+         }
+         ret[current] = builders[global as DomainRequestName][keyRole];
       }
       requestBuilderToInit[keyRole].setExpandables(ret);
    }

@@ -673,6 +673,10 @@ function getDefaultExpected(role: Role, dontDoThese: string[] = []): Expected {
    if (!dontDoThese.includes('country')) {
       result.expandables.country = buildExpected(countryBuilders.getRoleDomainRequestBuilder(role));
    }
+   const studentCategoryBuilders = getDomainRequestHandler('studentCategory');
+   if (!dontDoThese.includes('studentCategory')) {
+      result.expandables.category = buildExpected(studentCategoryBuilders.getRoleDomainRequestBuilder(role));
+   }
    if (!dontDoThese.includes('courseApplication')) {
       result.expandables.courseApplication = getCourseApplicationDefaultExpected(role, ['student']);
    }
@@ -728,5 +732,5 @@ equals x string
 equals x boolean
 ...
 
-
+test avec un expandable name != domain request
 */

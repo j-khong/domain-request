@@ -1,6 +1,7 @@
 import { Report, DomainResult } from '../index';
 import { DomainFields, DomainExpandables, DomainRequest, Operator, snakeToCamel } from '../../DomainRequest';
 import {
+   DomainExpandableFieldsToTableFields,
    DomainExpandableFieldsToTableFieldsMap,
    DomainFieldsToTableFieldsMap,
    SelectMethod,
@@ -79,7 +80,15 @@ async function fetch<Fields, ExpandableFields, TableFields extends string, Name 
          result[fieldName] = dbRecord[key];
       }
       for (const key of res.expandableFieldsToSelect.keys()) {
-         const expandableName = splitSqlAlias(key)[0];
+         let expandableName = splitSqlAlias(key)[0];
+
+         for (const k in tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
+            const exp = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[k];
+            if (exp.tableConfig.tableName === expandableName) {
+               expandableName = k;
+               continue;
+            }
+         }
 
          if (result.expandables === undefined) {
             result.expandables = {};
@@ -194,7 +203,7 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
 
    const expandables = req.getExpandables();
    for (const expKey in expandables) {
-      const conf = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[expKey];
+      const conf = getTableDetails(tableConfig.getDomainExpandableFieldsToTableFieldsMap(), expKey);
       if (conf.cardinality.name !== 'oneToMany') {
          continue;
       }
@@ -238,6 +247,24 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
    }
 }
 
+function getTableDetails<ExpandableFields extends DomainExpandables, TableFields extends string>(
+   domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
+   key: keyof ExpandableFields,
+): DomainExpandableFieldsToTableFields<TableFields> {
+   let tableDetails = domainExpandableFieldsToTable[key];
+   if (tableDetails === undefined) {
+      for (const k in domainExpandableFieldsToTable) {
+         if (
+            domainExpandableFieldsToTable[k].globalContextDomainName !== undefined &&
+            domainExpandableFieldsToTable[k].globalContextDomainName === key
+         ) {
+            tableDetails = domainExpandableFieldsToTable[k];
+         }
+      }
+   }
+   return tableDetails;
+}
+
 function processOneToOneExpandables<
    Fields,
    ExpandableFields extends DomainExpandables,
@@ -258,8 +285,7 @@ function processOneToOneExpandables<
       const key = expKey as keyof ExpandableFields;
 
       //   get from map the table data needed
-      const tableDetails = domainExpandableFieldsToTable[key];
-
+      const tableDetails = getTableDetails(domainExpandableFieldsToTable, key);
       if (tableDetails.cardinality.name !== 'oneToOne') {
          continue;
       }

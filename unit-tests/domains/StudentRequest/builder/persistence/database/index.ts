@@ -47,6 +47,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
             tableConfig: allDbTables.country.getTableConfig(),
          },
          category: {
+            globalContextDomainName: 'studentCategory',
             cardinality: { name: 'oneToOne', foreignKey: 'category_id' },
             tableConfig: allDbTables.studentCategory.getTableConfig(),
          },

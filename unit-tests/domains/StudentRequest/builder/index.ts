@@ -20,7 +20,11 @@ type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, 
 function init(builders: {
    [Property in DomainRequestName]: Builder;
 }): void {
-   initAllRolesDomainRequestBuilders(builders, 'student', ['country', 'courseApplication', 'studentCategory']);
+   initAllRolesDomainRequestBuilders(builders, 'student', [
+      'country',
+      'courseApplication',
+      { globalContext: 'studentCategory', currentContext: 'category' },
+   ]);
 }
 
 const builder: Builder = {

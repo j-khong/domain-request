@@ -32,13 +32,16 @@ interface OneToMany {
 
 type Cardinality<TableFields extends string> = OneToOne<TableFields> | OneToMany;
 
+export interface DomainExpandableFieldsToTableFields<TableFields extends string> {
+   tableConfig: TableConfig<any, any, any>;
+   cardinality: Cardinality<TableFields>;
+   globalContextDomainName?: string;
+   //   foreignKey?: TableFields; // when cardinality = oneToOne
+}
+
 export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =
    | {
-        [Property in keyof ExpandableFields]: {
-           tableConfig: TableConfig<any, any, any>;
-           cardinality: Cardinality<TableFields>;
-           //   foreignKey?: TableFields; // when cardinality = oneToOne
-        };
+        [Property in keyof ExpandableFields]: DomainExpandableFieldsToTableFields<TableFields>;
      };
 
 export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
