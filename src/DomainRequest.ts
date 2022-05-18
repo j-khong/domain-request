@@ -95,6 +95,24 @@ export abstract class DomainRequest<
    }
 }
 
+export interface RequestValues<
+   Name extends string,
+   Fields extends DomainFields,
+   Expandables extends DomainExpandables,
+> {
+   fields: RequestableFields<Fields>;
+   filters: {
+      filters: FilteringFields<Fields>;
+      errors: FilteringFieldsErrors;
+   };
+   expandables: {
+      [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], DomainFields>;
+   };
+   options: {
+      options: Options<Fields>;
+      errors: OptionsErrors;
+   };
+}
 export abstract class DomainRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
@@ -104,20 +122,13 @@ export abstract class DomainRequestBuilder<
 
    constructor(
       protected readonly name: Name,
-      private readonly validatorFilterMap: { [Property in keyof Fields]: Validator },
+      private readonly validatorFilterMap: {
+         [Property in keyof Fields]: { validate: Validator; defaultValue: Fields[Property] };
+      },
    ) {}
 
    protected abstract buildRequest(
-      fields: RequestableFields<Fields>,
-      filters: {
-         filters: FilteringFields<Fields>;
-         errors: FilteringFieldsErrors;
-      },
-      expandables: unknown,
-      options: {
-         options: Options<Fields>;
-         errors: OptionsErrors;
-      },
+      values: RequestValues<Name, Fields, Expandables>,
    ): DomainRequest<Name, Fields, Expandables>;
 
    build(
@@ -138,7 +149,12 @@ export abstract class DomainRequestBuilder<
       const expandablesRequests = this.buildExpandablesRequests(expandables, dontDoThese);
 
       return {
-         request: this.buildRequest(sanitizedFields, sanitizedFilters, expandablesRequests.requests, sanitizedOptions),
+         request: this.buildRequest({
+            fields: sanitizedFields,
+            filters: sanitizedFilters,
+            expandables: expandablesRequests.requests as any, // TODO fix that
+            options: sanitizedOptions,
+         }),
          errors: [...sanitizedFilters.errors, ...expandablesRequests.errors],
       };
    }
@@ -162,7 +178,21 @@ export abstract class DomainRequestBuilder<
       return fieldsToSelect;
    }
 
-   abstract buildDefaultRequestableFields(): RequestableFields<Fields>;
+   public buildDefaultRequestableFields(): RequestableFields<Fields> {
+      const ret: any = {};
+      for (const key in this.validatorFilterMap) {
+         ret[key] = false;
+      }
+      return ret;
+   }
+
+   private buildDefaultFields(): Fields {
+      const ret: any = {};
+      for (const key in this.validatorFilterMap) {
+         ret[key] = this.validatorFilterMap[key].defaultValue;
+      }
+      return ret;
+   }
 
    private sanitizeFilters(inputFilters: { [key: string]: unknown }): {
       filters: FilteringFields<Fields>;
@@ -195,8 +225,6 @@ export abstract class DomainRequestBuilder<
       return { filters, errors };
    }
 
-   protected abstract buildDefaultFields(): Fields;
-
    private validateFilterAndSetValue(
       filters: FilteringFields<Fields>,
       field: keyof Fields,
@@ -212,7 +240,7 @@ export abstract class DomainRequestBuilder<
          return `missing comparison value for key [${field as string}]`;
       }
       const validator = this.validatorFilterMap[field];
-      const validation = validator(comparison.value);
+      const validation = validator.validate(comparison.value);
       if (validation.valid) {
          filters[field] = comparison;
          return undefined;
@@ -395,7 +423,3 @@ export function validateBoolean(val: any): { valid: boolean; reason: string } {
    const valid = isBoolean(val);
    return { valid, reason: 'not a boolean' };
 }
-
-// export abstract class DomainUser {
-//    abstract getRole(): string;
-// }

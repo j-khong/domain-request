@@ -61,6 +61,11 @@ export type Builder<
    [Property in Role]: RequestBuilder;
 };
 
+export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
+   getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DomainRequestName, any, any>;
+   fetchData: (req: DomainRequest<DomainRequestName, any, any>) => Promise<DomainResult>;
+}
+
 export interface Factory<Role extends string, DomainRequestName extends string> {
    getAllRolesRequestBuilders: () => Builder<
       Role,
@@ -81,4 +86,20 @@ export interface Factory<Role extends string, DomainRequestName extends string> 
       >;
    }) => void;
    dbTable: DatabaseTable<DomainRequestName, any, any, any>;
+}
+
+export function getFactory<R extends string, DRM extends string, F, E, TF extends string>(
+   builder: Builder<R, DRM, F, E, DomainRequestBuilder<DRM, F, E>>,
+   dbTable: DatabaseTable<DRM, F, E, TF>,
+   init: (builders: {
+      [Property in DRM]: Builder<R, DRM, F, E, DomainRequestBuilder<DRM, F, E>>;
+   }) => void,
+): Factory<R, DRM> {
+   return {
+      getAllRolesRequestBuilders: () => builder,
+      getRoleDomainRequestBuilder: (role: R) => builder[role],
+      initRolesBuilders: init,
+      fetchData: async (req) => dbTable.fetch(req),
+      dbTable,
+   };
 }

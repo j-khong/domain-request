@@ -6,9 +6,13 @@ import {
    Builder as DomainBuilder,
    initAllRolesDomainRequestBuilders,
    Factory,
+   getFactory as getFactoryGeneric,
 } from '../../../../src';
+import { dbTable } from './persistence/database';
 
-import * as DataFetch from './persistence/database';
+export function getFactory(): Factory<Role, DomainRequestName> {
+   return getFactoryGeneric(builder, dbTable, init);
+}
 
 type RequestBuilder = DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields>;
 type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, RequestBuilder>;
@@ -19,21 +23,7 @@ function init(builders: {
    initAllRolesDomainRequestBuilders(builders, 'country', []);
 }
 
-export function getAllRolesRequestBuilders(): Builder {
-   return builder;
-}
-
 const builder: Builder = {
    admin: new Admin.RequestBuilder(),
    // restricted: (user: User) => new RestrictedRequestBuilder(user),
 };
-
-export function getFactory(): Factory<Role, DomainRequestName> {
-   return {
-      getAllRolesRequestBuilders: getAllRolesRequestBuilders,
-      getRoleDomainRequestBuilder: (role: Role) => getAllRolesRequestBuilders()[role],
-      fetchData: (req) => DataFetch.dbTable.fetch(req),
-      initRolesBuilders: init,
-      dbTable: DataFetch.dbTable,
-   };
-}

@@ -2,13 +2,9 @@ import { DomainRequestName } from '../../../types';
 import {
    DomainRequest,
    DomainRequestBuilder,
-   FilteringFields,
-   FilteringFieldsErrors,
-   Options,
-   OptionsErrors,
-   RequestableFields,
    validateId,
    validateString,
+   RequestValues,
 } from '../../../../../src/DomainRequest';
 import { ExpandableFields as MainExpandableFields, Fields as MainFields } from '../../types';
 
@@ -18,38 +14,20 @@ type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
       super('course', {
-         id: validateId,
-         name: validateString,
+         id: { validate: validateId, defaultValue: '' },
+         name: { validate: validateString, defaultValue: '' },
       });
    }
 
-   protected buildRequest(
-      fields: RequestableFields<MainFields>,
-      filters: {
-         filters: FilteringFields<MainFields>;
-         errors: FilteringFieldsErrors;
-      },
-      expandables: any,
-      options: {
-         options: Options<MainFields>;
-         errors: OptionsErrors;
-      },
-   ): Request {
-      return new Request(this.name, fields, filters.filters, expandables, options.options, 'id');
-   }
-
-   buildDefaultFields(): Fields {
-      return {
-         id: '',
-         name: '',
-      };
-   }
-
-   buildDefaultRequestableFields(): RequestableFields<Fields> {
-      return {
-         id: false,
-         name: false,
-      };
+   protected buildRequest(values: RequestValues<DomainRequestName, Fields, ExpandableFields>): Request {
+      return new Request(
+         this.name,
+         values.fields,
+         values.filters.filters,
+         values.expandables,
+         values.options.options,
+         'id',
+      );
    }
 }
 

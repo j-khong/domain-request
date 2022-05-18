@@ -1,15 +1,10 @@
 import { DomainRequestName } from '../../../types';
 import {
-   DomainFields,
    DomainRequest,
    DomainRequestBuilder,
-   FilteringFields,
-   FilteringFieldsErrors,
-   Options,
-   OptionsErrors,
-   RequestableFields,
    validateId,
    validateString,
+   RequestValues,
 } from '../../../../../src/DomainRequest';
 import { ExpandableFields as MainExpandableFields, Fields as MainFields } from '../../types';
 
@@ -19,47 +14,21 @@ type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
       super('country', {
-         id: validateId,
-         name: validateString,
-         timezone: validateString,
+         id: { validate: validateId, defaultValue: '' },
+         name: { validate: validateString, defaultValue: '' },
+         timezone: { validate: validateString, defaultValue: '' },
       });
    }
 
-   protected buildRequest(
-      fields: RequestableFields<MainFields>,
-      filters: {
-         filters: FilteringFields<MainFields>;
-         errors: FilteringFieldsErrors;
-      },
-      expandables: {
-         [Property in keyof MainExpandableFields]: DomainRequest<
-            DomainRequestName,
-            MainExpandableFields[Property],
-            DomainFields
-         >;
-      },
-      options: {
-         options: Options<MainFields>;
-         errors: OptionsErrors;
-      },
-   ): Request {
-      return new Request(this.name, fields, filters.filters, expandables, options.options, 'id');
-   }
-
-   buildDefaultFields(): Fields {
-      return {
-         id: '',
-         name: '',
-         timezone: '',
-      };
-   }
-
-   buildDefaultRequestableFields(): RequestableFields<Fields> {
-      return {
-         id: false,
-         name: false,
-         timezone: false,
-      };
+   protected buildRequest(values: RequestValues<DomainRequestName, Fields, ExpandableFields>): Request {
+      return new Request(
+         this.name,
+         values.fields,
+         values.filters.filters,
+         values.expandables,
+         values.options.options,
+         'id',
+      );
    }
 }
 

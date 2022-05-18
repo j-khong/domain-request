@@ -41,11 +41,13 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
          country: {
-            cardinality: 'oneToOne',
-            foreignKey: 'country_id',
+            cardinality: { name: 'oneToOne', foreignKey: 'country_id' },
             tableConfig: allDbTables.country.getTableConfig(),
          },
-         courseApplication: { cardinality: 'oneToMany', tableConfig: allDbTables.courseApplication.getTableConfig() },
+         courseApplication: {
+            cardinality: { name: 'oneToMany' },
+            tableConfig: allDbTables.courseApplication.getTableConfig(),
+         },
       };
    }
 }

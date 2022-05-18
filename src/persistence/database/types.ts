@@ -21,31 +21,34 @@ export type DomainFieldsToTableFieldsMap<DomainFields, TableFields extends strin
    };
 };
 
-export type Cardinality = 'oneToOne' | 'oneToMany';
+interface OneToOne<TableFields extends string> {
+   name: 'oneToOne';
+   foreignKey: TableFields;
+}
+
+interface OneToMany {
+   name: 'oneToMany';
+}
+
+type Cardinality<TableFields extends string> = OneToOne<TableFields> | OneToMany;
 
 export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =
    | {
         [Property in keyof ExpandableFields]: {
            tableConfig: TableConfig<any, any, any>;
-           cardinality: Cardinality;
-           foreignKey?: TableFields; // when cardinality = oneToOne
+           cardinality: Cardinality<TableFields>;
+           //   foreignKey?: TableFields; // when cardinality = oneToOne
         };
      };
 
 export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
-
-let counter = 1;
 export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
-   private count: number;
    constructor(
       public readonly tableName: string,
       public readonly tablePrimaryKey: string,
       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-   ) {
-      this.count = counter++;
-      console.log(`building ${tableName} ${this.count}`);
-   }
+   ) {}
 
    public select: SelectMethod = async (sql: string) => {
       console.log(sql);

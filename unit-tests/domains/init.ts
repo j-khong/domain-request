@@ -4,13 +4,13 @@ import * as CourseApplication from './CourseApplicationRequest';
 import * as Course from './CourseRequest';
 import { DomainRequestName, Role } from './types';
 import { select } from '../persistence/database/dbUtils';
-import { Factory, initFactories } from '../../src';
+import { DomainRequestHandler, Factory, initFactories } from '../../src';
 
 export function init(): void {
    initFactories(select, factories);
 }
 
-export function getDomainRequestFactory(name: DomainRequestName): Factory<Role, DomainRequestName> {
+export function getDomainRequestHandler(name: DomainRequestName): DomainRequestHandler<Role, DomainRequestName> {
    return factories[name];
 }
 

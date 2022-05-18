@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { init, getDomainRequestFactory } from './domains/init';
+import { init, getDomainRequestHandler } from './domains/init';
 import { DomainRequest, DomainRequestBuilder, Tree } from '../src/DomainRequest';
 import { DomainRequestName, Role } from './domains/types';
 
@@ -458,6 +458,7 @@ describe('request with 1to1 expandables', () => {
       });
    });
 });
+
 describe('request with 1 to many expandables', () => {
    describe('request fields with filter', () => {
       it('requests through expandables', () => {
@@ -602,7 +603,7 @@ interface Expected {
 }
 
 function test(input: Tree, role: Role, expected: Expected) {
-   const factory = getDomainRequestFactory('student');
+   const factory = getDomainRequestHandler('student');
    const res = factory.getRoleDomainRequestBuilder(role).build(input, []);
    // console.log('res:', JSON.stringify(res, null, 2));
 
@@ -665,10 +666,10 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<stri
 
 function getDefaultExpected(role: Role, dontDoThese: string[] = []): Expected {
    const name = 'student';
-   const factory = getDomainRequestFactory(name);
+   const factory = getDomainRequestHandler(name);
    const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
 
-   const countryBuilders = getDomainRequestFactory('country');
+   const countryBuilders = getDomainRequestHandler('country');
    if (!dontDoThese.includes('country')) {
       result.expandables.country = buildExpected(countryBuilders.getRoleDomainRequestBuilder(role));
    }
@@ -680,7 +681,7 @@ function getDefaultExpected(role: Role, dontDoThese: string[] = []): Expected {
 
 function getCourseApplicationDefaultExpected(role: Role, dontDoThese: string[]): Expected {
    const name = 'courseApplication';
-   const factory = getDomainRequestFactory(name);
+   const factory = getDomainRequestHandler(name);
    const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
 
    if (!dontDoThese.includes('course')) {
@@ -694,7 +695,7 @@ function getCourseApplicationDefaultExpected(role: Role, dontDoThese: string[]):
 
 function getCourseDefaultExpected(role: Role): Expected {
    const name = 'course';
-   const factory = getDomainRequestFactory(name);
+   const factory = getDomainRequestHandler(name);
    const result = buildExpected(factory.getRoleDomainRequestBuilder(role));
    return result;
 }
@@ -717,3 +718,15 @@ function replaceNewLineAndDoubleSpaces(v: string): string {
       .replace(new RegExp('   ', 'g'), ' ')
       .replace(new RegExp('  ', 'g'), ' ');
 }
+
+/*
+
+TODO
+test filtres
+=> toutes les combinaison operator vs type
+equals x string
+equals x boolean
+...
+
+
+*/

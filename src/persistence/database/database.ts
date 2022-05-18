@@ -8,14 +8,8 @@ import {
    TableConfig,
 } from './types';
 
-let counter = 1;
-
 export abstract class DatabaseTable<DRN extends string, F, E, TF extends string> {
-   private count: number;
-   constructor(private readonly tableConfig: TableConfig<F, E, TF>) {
-      this.count = counter++;
-      console.log(`building DatabaseTable ${tableConfig.tableName} ${this.count}`);
-   }
+   constructor(private readonly tableConfig: TableConfig<F, E, TF>) {}
 
    abstract buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DRN]: DatabaseTable<DRN, F, E, TF>;
@@ -30,7 +24,7 @@ export abstract class DatabaseTable<DRN extends string, F, E, TF extends string>
       this.tableConfig.init(this.buildDomainExpandableFieldsToTableFieldsMap(allDbTables), select);
    }
 
-   fetch(req: DomainRequest<DRN, F, E>): Promise<DomainResult> {
+   async fetch(req: DomainRequest<DRN, F, E>): Promise<DomainResult> {
       return fetch(this.tableConfig, req);
    }
 
@@ -201,13 +195,20 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
    const expandables = req.getExpandables();
    for (const expKey in expandables) {
       const conf = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[expKey];
-      if (conf.cardinality !== 'oneToMany') {
+      if (conf.cardinality.name !== 'oneToMany') {
          continue;
       }
       const expandable = expandables[expKey];
 
       // add the field to select mapping the id
-      const fieldToAdd = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap()[tableConfig.tableName].foreignKey;
+      const cardinality =
+         conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap()[tableConfig.tableName].cardinality;
+      if (cardinality.name !== 'oneToOne') {
+         throw new Error(
+            `configuration error : cardinality of ${tableConfig.tableName} -> ${tableConfig.tableName} should be oneToOne`,
+         );
+      }
+      const fieldToAdd = cardinality.foreignKey;
 
       // add the filter
       const requestField = snakeToCamel<any, any>(fieldToAdd);
@@ -259,11 +260,8 @@ function processOneToOneExpandables<
       //   get from map the table data needed
       const tableDetails = domainExpandableFieldsToTable[key];
 
-      if (tableDetails.cardinality !== 'oneToOne') {
+      if (tableDetails.cardinality.name !== 'oneToOne') {
          continue;
-      }
-      if (tableDetails.foreignKey === undefined) {
-         throw new Error('config problem foreignKey is not populated for oneToOne cardinality');
       }
 
       const expandable = expandables[key];
@@ -285,7 +283,7 @@ function processOneToOneExpandables<
       const map = joins.get(module.tableName);
       if (map === undefined) {
          joins.set(module.tableName, {
-            relationship: `${module.tableName}.${module.tablePrimaryKey}=${table.tableName}.${tableDetails.foreignKey}`,
+            relationship: `${module.tableName}.${module.tablePrimaryKey}=${table.tableName}.${tableDetails.cardinality.foreignKey}`,
             filters: [],
          });
       }

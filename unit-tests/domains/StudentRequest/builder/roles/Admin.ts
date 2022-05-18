@@ -1,15 +1,11 @@
 import {
    DomainRequest,
    DomainRequestBuilder,
-   FilteringFields,
-   FilteringFieldsErrors,
-   Options,
-   OptionsErrors,
-   RequestableFields,
    validateBoolean,
    validateId,
    validateNumber,
    validateString,
+   RequestValues,
 } from '../../../../../src/DomainRequest';
 import { DomainRequestName } from '../../../types';
 import { Fields as MainFields, ExpandableFields as MainExpandableFields } from '../../types';
@@ -20,53 +16,25 @@ export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFi
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
       super('student', {
-         id: validateId,
-         firstname: validateString,
-         lastname: validateString,
-         yearOfBirth: validateNumber,
-         nationalCardId: validateString,
-         countryId: validateString,
-         hasScholarship: validateBoolean,
+         id: { validate: validateId, defaultValue: '' },
+         firstname: { validate: validateString, defaultValue: '' },
+         lastname: { validate: validateString, defaultValue: '' },
+         yearOfBirth: { validate: validateNumber, defaultValue: 1970 },
+         nationalCardId: { validate: validateString, defaultValue: '' },
+         countryId: { validate: validateString, defaultValue: '' },
+         hasScholarship: { validate: validateBoolean, defaultValue: false },
       });
    }
 
-   protected buildRequest(
-      fields: RequestableFields<MainFields>,
-      filters: {
-         filters: FilteringFields<MainFields>;
-         errors: FilteringFieldsErrors;
-      },
-      expandables: any,
-      options: {
-         options: Options<MainFields>;
-         errors: OptionsErrors;
-      },
-   ): Request {
-      return new Request(this.name, fields, filters.filters, expandables, options.options, 'id');
-   }
-
-   buildDefaultFields(): Fields {
-      return {
-         id: '',
-         firstname: '',
-         lastname: '',
-         yearOfBirth: 0,
-         nationalCardId: '',
-         countryId: '',
-         hasScholarship: false,
-      };
-   }
-
-   buildDefaultRequestableFields(): RequestableFields<Fields> {
-      return {
-         id: false,
-         firstname: false,
-         lastname: false,
-         yearOfBirth: false,
-         nationalCardId: false,
-         countryId: false,
-         hasScholarship: false,
-      };
+   protected buildRequest(values: RequestValues<DomainRequestName, Fields, ExpandableFields>): Request {
+      return new Request(
+         this.name,
+         values.fields,
+         values.filters.filters,
+         values.expandables,
+         values.options.options,
+         'id',
+      );
    }
 }
 
