@@ -16,6 +16,7 @@ type TableFields =
    | 'year_of_birth'
    | 'national_card_id'
    | 'country_id'
+   | 'category_id'
    | 'has_scholarship';
 
 class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
@@ -32,6 +33,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
                nationalCardId: { name: 'national_card_id', convert: toString },
                countryId: { name: 'country_id', convert: toString },
                hasScholarship: { name: 'has_scholarship', convert: toString },
+               categoryId: { name: 'category_id', convert: toString },
             }, // domainFieldsToTableFieldsMap
          ),
       );
@@ -43,6 +45,10 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
          country: {
             cardinality: { name: 'oneToOne', foreignKey: 'country_id' },
             tableConfig: allDbTables.country.getTableConfig(),
+         },
+         category: {
+            cardinality: { name: 'oneToOne', foreignKey: 'category_id' },
+            tableConfig: allDbTables.studentCategory.getTableConfig(),
          },
          courseApplication: {
             cardinality: { name: 'oneToMany' },

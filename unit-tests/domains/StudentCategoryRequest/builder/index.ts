@@ -1,3 +1,6 @@
+import { DomainRequestName, Role } from '../../types';
+import * as Admin from './roles/Admin';
+import { Fields, ExpandableFields } from '../types';
 import {
    DomainRequestBuilder,
    Builder as DomainBuilder,
@@ -5,9 +8,6 @@ import {
    Factory,
    getFactory as getFactoryGeneric,
 } from '../../../../src';
-import { DomainRequestName, Role } from '../../types';
-import { Fields, ExpandableFields } from '../types';
-import * as Admin from './roles/Admin';
 import { dbTable } from './persistence/database';
 
 export function getFactory(): Factory<Role, DomainRequestName> {
@@ -20,7 +20,7 @@ type Builder = DomainBuilder<Role, DomainRequestName, Fields, ExpandableFields, 
 function init(builders: {
    [Property in DomainRequestName]: Builder;
 }): void {
-   initAllRolesDomainRequestBuilders(builders, 'student', ['country', 'courseApplication', 'studentCategory']);
+   initAllRolesDomainRequestBuilders(builders, 'studentCategory', []);
 }
 
 const builder: Builder = {

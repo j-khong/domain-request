@@ -1,5 +1,6 @@
 import * as CAR from '../CourseApplicationRequest';
 import * as CR from '../CountryRequest';
+import * as Cat from '../StudentCategoryRequest';
 import { DomainRequest, DomainResult } from '../../../src';
 import { DomainRequestName } from '../types';
 
@@ -10,12 +11,14 @@ export interface Fields {
    yearOfBirth: number;
    nationalCardId: string;
    countryId: string;
+   categoryId: string;
    hasScholarship: boolean;
 }
 
 export interface ExpandableFields {
    country: CR.Fields;
    courseApplication: CAR.Fields;
+   category: Cat.Fields;
 }
 
 export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;

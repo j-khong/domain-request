@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS `course_application`;
 DROP TABLE IF EXISTS `student`;
 DROP TABLE IF EXISTS `country`;
 DROP TABLE IF EXISTS `course`;
+DROP TABLE IF EXISTS `student_category`;
 
 
 CREATE TABLE `country` (
@@ -19,6 +20,13 @@ CREATE TABLE `course` (
   UNIQUE KEY `course__NK` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `student_category` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `student_category__NK` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `student` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firstname` varchar(255) NOT NULL,
@@ -27,10 +35,13 @@ CREATE TABLE `student` (
   `national_card_id` varchar(255) NOT NULL,
   `has_scholarship` boolean NOT NULL,
   `country_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `student__NK` (`national_card_id`, `country_id`),
   KEY `student__IDX_country_id` (`country_id`),
-  CONSTRAINT `student__FK_country_id` FOREIGN KEY (`country_id`) REFERENCES `country` (`id`)
+  CONSTRAINT `student__FK_country_id` FOREIGN KEY (`country_id`) REFERENCES `country` (`id`),
+  KEY `student__IDX_category_id` (`category_id`),
+  CONSTRAINT `student__FK_category_id` FOREIGN KEY (`category_id`) REFERENCES `student_category` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
 
 
@@ -52,3 +63,6 @@ INSERT INTO `country` (`name`, `timezone`) VALUES
 
 INSERT INTO `course` (`name`) VALUES
 ('Math 101');
+
+INSERT INTO `category` (`name`) VALUES
+('Arts'), ('Sports');

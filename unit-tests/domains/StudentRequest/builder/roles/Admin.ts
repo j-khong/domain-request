@@ -23,6 +23,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          nationalCardId: { validate: validateString, defaultValue: '' },
          countryId: { validate: validateString, defaultValue: '' },
          hasScholarship: { validate: validateBoolean, defaultValue: false },
+         categoryId: { validate: validateString, defaultValue: '' },
       });
    }
 

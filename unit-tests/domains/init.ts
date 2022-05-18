@@ -2,6 +2,7 @@ import * as Student from './StudentRequest';
 import * as Country from './CountryRequest';
 import * as CourseApplication from './CourseApplicationRequest';
 import * as Course from './CourseRequest';
+import * as StudentCategory from './StudentCategoryRequest';
 import { DomainRequestName, Role } from './types';
 import { select } from '../persistence/database/dbUtils';
 import { DomainRequestHandler, Factory, initFactories } from '../../src';
@@ -17,8 +18,9 @@ export function getDomainRequestHandler(name: DomainRequestName): DomainRequestH
 const factories: {
    [Property in DomainRequestName]: Factory<Role, DomainRequestName>;
 } = {
-   student: Student.getFactory(),
    country: Country.getFactory(),
+   student: Student.getFactory(),
    course: Course.getFactory(),
    courseApplication: CourseApplication.getFactory(),
+   studentCategory: StudentCategory.getFactory(),
 };
