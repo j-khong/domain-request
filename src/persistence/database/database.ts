@@ -4,6 +4,8 @@ import {
    DomainExpandableFieldsToTableFields,
    DomainExpandableFieldsToTableFieldsMap,
    DomainFieldsToTableFieldsMap,
+   isOtherTableMapping,
+   isSameTableMapping,
    SelectMethod,
    SelectMethodResult,
    TableConfig,
@@ -23,7 +25,10 @@ export abstract class DatabaseTable<DRN extends string, F, E, TF extends string>
       },
    ): void {
       this.tableConfig.init(this.buildDomainExpandableFieldsToTableFieldsMap(allDbTables), select);
+      this.otherTableConfigToInit(select);
    }
+
+   protected otherTableConfigToInit(select: SelectMethod): void {}
 
    async fetch(req: DomainRequest<DRN, F, E>): Promise<DomainResult> {
       return fetch(this.tableConfig, req);
@@ -34,17 +39,36 @@ export abstract class DatabaseTable<DRN extends string, F, E, TF extends string>
    }
 }
 
+async function executeRequest(
+   select: SelectMethod,
+   sql: string,
+): Promise<{
+   res: SelectMethodResult;
+   report: {
+      sql: string;
+      timeInMs: number;
+   };
+}> {
+   const start = new Date();
+   const res = await select(sql);
+   const end = new Date();
+   const report = {
+      sql: sql,
+      timeInMs: end.getTime() - start.getTime(),
+   };
+   return { res, report };
+}
+
 async function fetch<Fields, ExpandableFields, TableFields extends string, Name extends string>(
    tableConfig: TableConfig<Fields, ExpandableFields, TableFields>,
    req: DomainRequest<Name, Fields, ExpandableFields>,
    selectCount = true,
 ): Promise<DomainResult> {
    const results: any[] = [];
-   const report = new Report();
    const ret = {
       domainName: req.getName(),
       results,
-      report,
+      report: new Report(),
       total: 0,
    };
    // fetch results with
@@ -55,23 +79,14 @@ async function fetch<Fields, ExpandableFields, TableFields extends string, Name 
       return ret;
    }
 
-   const executeRequest = async (sql: string): Promise<SelectMethodResult> => {
-      const start = new Date();
-      const res = await tableConfig.select(sql);
-      const end = new Date();
-      report.requests.push({
-         sql: sql,
-         timeInMs: end.getTime() - start.getTime(),
-      });
-      return res;
-   };
-
    if (selectCount) {
-      const resCount = await executeRequest(res.resultsCountSql);
+      const { res: resCount, report } = await executeRequest(tableConfig.select, res.resultsCountSql);
       ret.total = Number.parseInt(resCount[0].total as any);
+      ret.report.requests.push(report);
    }
 
-   const dbResults = await executeRequest(res.resultsSql);
+   const { res: dbResults, report } = await executeRequest(tableConfig.select, res.resultsSql);
+   ret.report.requests.push(report);
    for (const dbRecord of dbResults) {
       const result: any = {};
       for (const key of res.fieldsToSelect.keys()) {
@@ -82,7 +97,7 @@ async function fetch<Fields, ExpandableFields, TableFields extends string, Name 
       for (const key of res.expandableFieldsToSelect.keys()) {
          let expandableName = splitSqlAlias(key)[0];
 
-         // manage when the expandable name is different fro mthe Domain name
+         // manage when the expandable name is different from the Domain name
          for (const k in tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
             const exp = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[k];
             if (exp.tableConfig.tableName === expandableName) {
@@ -200,6 +215,89 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
 ): Promise<void> {
    if (ids.length === 0) {
       return;
+   }
+
+   // searching oneToMany fields which are not expandables
+   for (const k in tableConfig.domainFieldsToTableFieldsMap) {
+      const conf = tableConfig.domainFieldsToTableFieldsMap[k];
+      if (isOtherTableMapping(conf)) {
+         if (conf.cardinality.name !== 'oneToMany') {
+            continue;
+         }
+
+         // loop on all fields of table
+         const fieldsToSelect = createNewFieldsToSelect<any>();
+         for (const k in conf.tableConfig.domainFieldsToTableFieldsMap) {
+            const map = conf.tableConfig.domainFieldsToTableFieldsMap[k];
+            if (isSameTableMapping(map)) {
+               addFieldToSelect(fieldsToSelect, conf.tableConfig.tableName, map.name, k);
+            }
+         }
+
+         // process join
+         const joins: Join = new Map();
+         const exp = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap();
+         const mod = exp[req.getName()];
+         const joinTableName = conf.tableConfig.tableName;
+         const map = joins.get(joinTableName);
+         if (map === undefined) {
+            if (mod.cardinality.name === 'oneToOne') {
+               joins.set(joinTableName, {
+                  relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${mod.cardinality.foreignKey}`,
+                  filters: [],
+               });
+            }
+         }
+
+         const fields = [...Array.from(fieldsToSelect.values()).map((v) => v.fullFieldToSelect)].join(', ');
+         const joinsStr: string[] = [];
+         for (const [key, value] of joins) {
+            joinsStr.push(
+               `LEFT JOIN ${key} ON ${value.relationship} ${
+                  value.filters.length > 0 ? ` AND ${value.filters.join(' AND ')}` : ''
+               }`,
+            );
+         }
+         const id = createRequestFullFieldName(tableConfig.tableName, tableConfig.tablePrimaryKey);
+         const pk = createSqlAlias(tableConfig.tableName, tableConfig.tablePrimaryKey);
+
+         const select = `SELECT ${id}, ${fields}`;
+         const from = `FROM ${tableConfig.tableName}`;
+         // const filters: string[] = []; //processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
+         const where = `WHERE ${tableConfig.tableName}.${tableConfig.tablePrimaryKey} IN (${ids.join(', ')})`;
+
+         const resultsSql = `${select}
+${from}
+${joinsStr.join('\n')}
+${where}
+LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}`;
+
+         const { res: dbRecords, report } = await executeRequest(tableConfig.select, resultsSql);
+         resultsToReconcile.report.requests.push(report);
+
+         for (const result of dbRecords) {
+            // find the resource id
+            const resourceId = result[pk] as number;
+            const toPopulate = resultsToReconcile.results.find((d) => d[tableConfig.tablePrimaryKey] === resourceId);
+            if (toPopulate === undefined) {
+               console.log(`big problem, cannot find resource ${tableConfig.tableName} of id [${resourceId}]`);
+               continue;
+            }
+            if (toPopulate[k] === undefined) {
+               toPopulate[k] = [];
+            }
+
+            let domain: any = {};
+            const domainPk = createSqlAlias(conf.tableConfig.tableName, conf.tableConfig.tablePrimaryKey);
+            for (const [key, value] of fieldsToSelect) {
+               if (domainPk === key) {
+                  continue;
+               }
+               domain[value.domainFieldname] = result[key];
+            }
+            toPopulate[k].push(domain);
+         }
+      }
    }
 
    const expandables = req.getExpandables();
@@ -337,6 +435,10 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
 
    for (const key in filters) {
       const fieldMapper = domainFieldsToTableFieldsMap[key];
+      if (!isSameTableMapping(fieldMapper)) {
+         // don't manage filtering yet
+         continue;
+      }
       const comparison = filters[key];
       if (comparison === undefined) {
          continue;
@@ -356,7 +458,9 @@ function getFieldsToSelect<Fields, ExpandableFields, TableFields extends string,
    const fieldsToSelect = createNewFieldsToSelect<Fields>();
    for (const v of req.getFieldsNames()) {
       const mapping = domainFieldsToTableFieldsMap[v];
-      addFieldToSelect(fieldsToSelect, tableName, mapping.name, v);
+      if (isSameTableMapping(mapping)) {
+         addFieldToSelect(fieldsToSelect, tableName, mapping.name, v);
+      }
    }
    return fieldsToSelect;
 }

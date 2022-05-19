@@ -14,11 +14,23 @@ export const toBoolean = (o: boolean): string => `${Number(o)}`;
 export const toString = (o: string): string => `'${o.toString()}'`;
 export const toDate = (o: Date): string => `'${fromDateToMysqlDate(o)}'`;
 
+interface SameTableMapping<TableFields extends string> {
+   name: TableFields;
+   convert: (o: any) => number | string | number[];
+}
+interface OtherTableMapping<TableFields extends string> {
+   tableConfig: TableConfig<any, any, any>;
+   cardinality: Cardinality<TableFields>;
+}
+
+export function isSameTableMapping<TableFields extends string>(o: any): o is SameTableMapping<TableFields> {
+   return o.name !== undefined && o.convert !== undefined;
+}
+export function isOtherTableMapping<TableFields extends string>(o: any): o is OtherTableMapping<TableFields> {
+   return o.tableConfig !== undefined && o.cardinality !== undefined;
+}
 export type DomainFieldsToTableFieldsMap<DomainFields, TableFields extends string> = {
-   [Property in keyof DomainFields]: {
-      name: TableFields;
-      convert: (o: any) => number | string | number[];
-   };
+   [Property in keyof DomainFields]: SameTableMapping<TableFields> | OtherTableMapping<TableFields>;
 };
 
 interface OneToOne<TableFields extends string> {
@@ -35,8 +47,7 @@ type Cardinality<TableFields extends string> = OneToOne<TableFields> | OneToMany
 export interface DomainExpandableFieldsToTableFields<TableFields extends string> {
    tableConfig: TableConfig<any, any, any>;
    cardinality: Cardinality<TableFields>;
-   globalContextDomainName?: string;
-   //   foreignKey?: TableFields; // when cardinality = oneToOne
+   globalContextDomainName?: string; // when your Domain expandable name is different from the Domain name (wihch is unique)
 }
 
 export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =
@@ -54,7 +65,7 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
    ) {}
 
    public select: SelectMethod = async (sql: string) => {
-      console.log(sql);
+      console.log(`SELECT METHOD is not SET for ${this.tableName}`, sql);
       return [];
    };
 

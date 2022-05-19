@@ -299,7 +299,7 @@ export abstract class DomainRequestBuilder<
       }>;
    } {
       if (this.expReqBuilders === undefined) {
-         throw new Error('Request builder not initialized with Expandables Requests builders');
+         throw new Error(`Request builder ${this.name} not initialized with Expandables Requests builders`);
       }
       const ret: any = { requests: {}, errors: [] };
       for (const key in this.expReqBuilders) {
