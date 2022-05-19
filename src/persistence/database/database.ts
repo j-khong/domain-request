@@ -82,13 +82,14 @@ async function fetch<Fields, ExpandableFields, TableFields extends string, Name 
       for (const key of res.expandableFieldsToSelect.keys()) {
          let expandableName = splitSqlAlias(key)[0];
 
+         // manage when the expandable name is different fro mthe Domain name
          for (const k in tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
             const exp = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[k];
             if (exp.tableConfig.tableName === expandableName) {
                expandableName = k;
                continue;
             }
-         }
+         } // <--
 
          if (result.expandables === undefined) {
             result.expandables = {};
@@ -236,12 +237,13 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
          }
          if (toPopulate.expandables === undefined) {
             toPopulate.expandables = {};
+            toPopulate.expandables[expandable.getName()] = [];
          }
 
          // add the expandables
          /* eslint-disable @typescript-eslint/no-dynamic-delete */
          delete result[requestField];
-         toPopulate.expandables[expandable.getName()] = result;
+         toPopulate.expandables[expandable.getName()].push(result);
       }
       resultsToReconcile.report.requests.push(...res.report.requests);
    }
