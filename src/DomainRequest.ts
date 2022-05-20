@@ -122,13 +122,13 @@ interface OptionError {
    optionName: string;
    reason: string;
 }
-export type OptionsErrors = Array<OptionError>;
+export type OptionsErrors = OptionError[];
 
 interface InputFieldError {
    fieldName: string;
    reason: string;
 }
-type InputFieldsErrors = Array<InputFieldError>;
+type InputFieldsErrors = InputFieldError[];
 export abstract class DomainRequestBuilder<
    Name extends string,
    Fields extends DomainFields,

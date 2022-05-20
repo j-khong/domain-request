@@ -184,9 +184,11 @@ function fetchFieldsAndOneToOne<
    const filters = processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
    const where =
       filters.length === 0 ? '' : `WHERE ${filters.map((v) => `${tableConfig.tableName}.${v}`).join(' AND ')}`;
-   const orderby = req.getOptions().orderby
-      ? `ORDER BY ${req.getOptions().orderby?.fieldname} ${req.getOptions().orderby?.sort}`
-      : '';
+   let orderby = '';
+   const orderBy = req.getOptions().orderby;
+   if (orderBy !== undefined) {
+      orderby = `ORDER BY ${orderBy.fieldname as string} ${orderBy.sort}`;
+   }
 
    const resultsCountSql = `SELECT count(${tableConfig.tableName}.${tableConfig.tablePrimaryKey}) as total
 ${from}
@@ -344,6 +346,8 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
          }
          if (toPopulate.expandables === undefined) {
             toPopulate.expandables = {};
+         }
+         if (toPopulate.expandables[expandable.getName()] === undefined) {
             toPopulate.expandables[expandable.getName()] = [];
          }
 

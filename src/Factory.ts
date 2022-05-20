@@ -23,11 +23,61 @@ export function initFactories<DomainRequestName extends string, Role extends str
    }
 }
 
+export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
+   getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DomainRequestName, any, any>;
+   fetchData: (req: DomainRequest<DomainRequestName, any, any>) => Promise<DomainResult>;
+}
+
+export interface Factory<Role extends string, DomainRequestName extends string> {
+   getAllRolesRequestBuilders: () => Builder<
+      Role,
+      DomainRequestName,
+      any,
+      any,
+      DomainRequestBuilder<DomainRequestName, any, any>
+   >;
+   getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DomainRequestName, any, any>;
+   fetchData: (req: DomainRequest<DomainRequestName, any, any>) => Promise<DomainResult>;
+   initRolesBuilders: (allbuilders: {
+      [Property in DomainRequestName]: Builder<
+         Role,
+         DomainRequestName,
+         any,
+         any,
+         DomainRequestBuilder<DomainRequestName, any, any>
+      >;
+   }) => void;
+   dbTable: DatabaseTable<DomainRequestName, any, any, any>;
+}
+
+export function getFactory<
+   R extends string,
+   DRN extends string,
+   F extends DomainFields,
+   E extends DomainExpandables,
+   TF extends string,
+>(
+   builder: Builder<R, DRN, F, E, DomainRequestBuilder<DRN, F, E>>,
+   dbTable: DatabaseTable<DRN, F, E, TF>,
+   domainRequestToInit: DRN,
+   expandables: Array<ExpandableName<DRN, E>>,
+): Factory<R, DRN> {
+   return {
+      getAllRolesRequestBuilders: () => builder,
+      getRoleDomainRequestBuilder: (role: R) => builder[role],
+      initRolesBuilders: (allBuilders: {
+         [Property in DRN]: Builder<R, DRN, F, E, DomainRequestBuilder<DRN, F, E>>;
+      }) => initAllRolesDomainRequestBuilders(allBuilders, domainRequestToInit, expandables),
+      fetchData: async (req) => dbTable.fetch(req),
+      dbTable,
+   };
+}
+
 export type ExpandableName<DomainRequestName extends string, Expandables extends DomainExpandables> =
    | DomainRequestName
    | { globalContext: DomainRequestName; currentContext: keyof Expandables };
 
-export function initAllRolesDomainRequestBuilders<
+function initAllRolesDomainRequestBuilders<
    DomainRequestName extends string,
    Role extends string,
    Fields extends DomainFields,
@@ -60,8 +110,7 @@ export function initAllRolesDomainRequestBuilders<
       requestBuilderToInit[keyRole].setExpandables(ret);
    }
 }
-
-export type Builder<
+type Builder<
    Role extends string,
    Name extends string,
    Fields extends DomainFields,
@@ -70,46 +119,3 @@ export type Builder<
 > = {
    [Property in Role]: RequestBuilder;
 };
-
-export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
-   getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DomainRequestName, any, any>;
-   fetchData: (req: DomainRequest<DomainRequestName, any, any>) => Promise<DomainResult>;
-}
-
-export interface Factory<Role extends string, DomainRequestName extends string> {
-   getAllRolesRequestBuilders: () => Builder<
-      Role,
-      DomainRequestName,
-      any,
-      any,
-      DomainRequestBuilder<DomainRequestName, any, any>
-   >;
-   getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DomainRequestName, any, any>;
-   fetchData: (req: DomainRequest<DomainRequestName, any, any>) => Promise<DomainResult>;
-   initRolesBuilders: (allbuilders: {
-      [Property in DomainRequestName]: Builder<
-         Role,
-         DomainRequestName,
-         any,
-         any,
-         DomainRequestBuilder<DomainRequestName, any, any>
-      >;
-   }) => void;
-   dbTable: DatabaseTable<DomainRequestName, any, any, any>;
-}
-
-export function getFactory<R extends string, DRM extends string, F, E, TF extends string>(
-   builder: Builder<R, DRM, F, E, DomainRequestBuilder<DRM, F, E>>,
-   dbTable: DatabaseTable<DRM, F, E, TF>,
-   init: (builders: {
-      [Property in DRM]: Builder<R, DRM, F, E, DomainRequestBuilder<DRM, F, E>>;
-   }) => void,
-): Factory<R, DRM> {
-   return {
-      getAllRolesRequestBuilders: () => builder,
-      getRoleDomainRequestBuilder: (role: R) => builder[role],
-      initRolesBuilders: init,
-      fetchData: async (req) => dbTable.fetch(req),
-      dbTable,
-   };
-}
