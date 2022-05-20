@@ -184,6 +184,9 @@ function fetchFieldsAndOneToOne<
    const filters = processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
    const where =
       filters.length === 0 ? '' : `WHERE ${filters.map((v) => `${tableConfig.tableName}.${v}`).join(' AND ')}`;
+   const orderby = req.getOptions().orderby
+      ? `ORDER BY ${req.getOptions().orderby?.fieldname} ${req.getOptions().orderby?.sort}`
+      : '';
 
    const resultsCountSql = `SELECT count(${tableConfig.tableName}.${tableConfig.tablePrimaryKey}) as total
 ${from}
@@ -194,6 +197,7 @@ ${where}`;
 ${from}
 ${joins.join('\n')}
 ${where}
+${orderby}
 LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}`;
 
    return {

@@ -8,7 +8,7 @@ import {
    toTableId,
 } from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
-import { ExpandableFields, Fields, OpeningHours } from '../../../types';
+import { ExpandableFields, Fields } from '../../../types';
 
 const openingHoursTable = new TableConfig<{}, { building: {} }, 'id' | 'day' | 'start' | 'end' | 'building_id'>(
    'building_opening_hours', // tableName

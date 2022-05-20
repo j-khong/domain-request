@@ -17,12 +17,16 @@ export interface Options<Fields extends DomainFields> {
       offset: number;
       limit: number;
    };
-   orderby?: keyof Fields;
+   orderby?: {
+      fieldname: keyof Fields;
+      sort: OrderbySort;
+   };
 }
-export type OptionsErrors = Array<{
-   optionName: string;
-   reason: string;
-}>;
+const orderbySort = ['asc', 'desc'] as const;
+export type OrderbySort = typeof orderbySort[number];
+function isOrderbySort(o: any): o is OrderbySort {
+   return o !== undefined && orderbySort.includes(o as OrderbySort);
+}
 
 type NaturalKey = string | number | symbol;
 export abstract class DomainRequest<
@@ -113,6 +117,18 @@ export interface RequestValues<
       errors: OptionsErrors;
    };
 }
+
+interface OptionError {
+   optionName: string;
+   reason: string;
+}
+export type OptionsErrors = Array<OptionError>;
+
+interface InputFieldError {
+   fieldName: string;
+   reason: string;
+}
+type InputFieldsErrors = Array<InputFieldError>;
 export abstract class DomainRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
@@ -136,10 +152,7 @@ export abstract class DomainRequestBuilder<
       dontDoThese: Name[],
    ): {
       request: DomainRequest<Name, Fields, Expandables>;
-      errors: Array<{
-         fieldName: string;
-         reason: string;
-      }>;
+      errors: Array<InputFieldError | OptionError>;
    } {
       const { fields, filters, options, expandables } = this.splitValues(input);
 
@@ -155,12 +168,16 @@ export abstract class DomainRequestBuilder<
             expandables: expandablesRequests.requests as any, // TODO fix that
             options: sanitizedOptions,
          }),
-         errors: [...sanitizedFilters.errors, ...expandablesRequests.errors],
+         errors: [...sanitizedFilters.errors, ...sanitizedOptions.errors, ...expandablesRequests.errors],
       };
    }
 
    protected camelToInputStyle<IN extends string, OUT extends string>(str: IN): OUT {
       return camelToSnake(str);
+   }
+
+   protected inputStyleToCamel<IN extends string, OUT extends string>(str: IN): OUT {
+      return snakeToCamel(str);
    }
 
    private sanitizeFieldsToSelect(inputFieldsToSelect: Tree): RequestableFields<Fields> {
@@ -196,19 +213,12 @@ export abstract class DomainRequestBuilder<
 
    private sanitizeFilters(inputFilters: { [key: string]: unknown }): {
       filters: FilteringFields<Fields>;
-      errors: Array<{
-         fieldName: string;
-         reason: string;
-      }>;
+      errors: InputFieldsErrors;
    } {
+      const errors: InputFieldsErrors = [];
       const fields = this.buildDefaultFields();
-
-      const errors: Array<{
-         fieldName: string;
-         reason: string;
-      }> = [];
-
       const filters: FilteringFields<Fields> = {};
+
       for (const field in fields) {
          const inputFieldName = this.camelToInputStyle(field);
          const comparison = inputFilters[inputFieldName];
@@ -253,25 +263,66 @@ export abstract class DomainRequestBuilder<
 
    private sanitizeOptions(inputOptions: { [key: string]: unknown }): {
       options: Options<Fields>;
-      errors: Array<{
-         optionName: string;
-         reason: string;
-      }>;
+      errors: OptionsErrors;
    } {
-      const options = { pagination: { offset: 0, limit: 100 } };
+      const errors: OptionsErrors = [];
+      const options: Options<Fields> = { pagination: { offset: 0, limit: 100 } };
+
       if (inputOptions !== undefined) {
-         if (inputOptions.limit !== undefined && isNumber(inputOptions.limit)) {
-            options.pagination.limit = Math.min(inputOptions.limit, DomainRequestBuilder.MAX_LIMIT);
+         if (inputOptions.limit !== undefined) {
+            if (isNumber(inputOptions.limit)) {
+               options.pagination.limit = Math.min(inputOptions.limit, DomainRequestBuilder.MAX_LIMIT);
+            } else {
+               errors.push({ optionName: 'limit', reason: 'not a number' });
+            }
          }
-         if (inputOptions.offset !== undefined && isNumber(inputOptions.offset)) {
-            options.pagination.offset = inputOptions.offset;
+         if (inputOptions.offset !== undefined) {
+            if (isNumber(inputOptions.offset)) {
+               options.pagination.offset = inputOptions.offset;
+            } else {
+               errors.push({ optionName: 'offset', reason: 'not a number' });
+            }
          }
-         // TODO sanitize orderby
+         this.sanitizeOrderBy(inputOptions, options, errors);
       }
       return {
          options,
-         errors: [],
+         errors,
       };
+   }
+
+   private sanitizeOrderBy(
+      inputOptions: { [key: string]: unknown },
+      options: Options<Fields>,
+      errors: OptionsErrors,
+   ): void {
+      if (inputOptions.orderby === undefined) {
+         return;
+      }
+      if (!isString(inputOptions.orderby)) {
+         errors.push({ optionName: 'orderby', reason: 'not a string' });
+         return;
+      }
+      const [fieldname, sort] = inputOptions.orderby.split(' ');
+      if (fieldname === undefined) {
+         errors.push({
+            optionName: 'orderby',
+            reason: `bad format: it should be "field_name ${orderbySort.join('|')}"`,
+         });
+         return;
+      }
+      if (this.validatorFilterMap[fieldname] === undefined) {
+         errors.push({ optionName: 'orderby', reason: `unknown field name ${fieldname}` });
+         return;
+      }
+      if (!isOrderbySort(sort)) {
+         errors.push({
+            optionName: 'orderby',
+            reason: `incorrect sort ${sort}, available values: ${orderbySort.join('|')}`,
+         });
+         return;
+      }
+      options.orderby = { fieldname, sort };
    }
 
    private expReqBuilders:
