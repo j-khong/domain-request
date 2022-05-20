@@ -224,6 +224,9 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
          if (conf.cardinality.name !== 'oneToMany') {
             continue;
          }
+         if (req.getFields()[k] === false) {
+            continue;
+         }
 
          // loop on all fields of table
          const fieldsToSelect = createNewFieldsToSelect<any>();
@@ -243,7 +246,9 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
          if (map === undefined) {
             if (mod.cardinality.name === 'oneToOne') {
                joins.set(joinTableName, {
-                  relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${mod.cardinality.foreignKey}`,
+                  relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${
+                     mod.cardinality.foreignKey as string
+                  }`,
                   filters: [],
                });
             }
@@ -287,7 +292,7 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
                toPopulate[k] = [];
             }
 
-            let domain: any = {};
+            const domain: any = {};
             const domainPk = createSqlAlias(conf.tableConfig.tableName, conf.tableConfig.tablePrimaryKey);
             for (const [key, value] of fieldsToSelect) {
                if (domainPk === key) {
