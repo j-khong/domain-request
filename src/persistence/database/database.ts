@@ -474,22 +474,20 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
          const comparisonMapper = comparisonOperatorMap[c.operator];
          result.push(comparisonMapper.format(`${tableName}.${fieldMapper.name}`, fieldMapper.convert(c.value)));
       };
-      const populateFromArray = (arr: Array<Comparison<Fields>>, result: string[]): void => {
+      const populateFromArray = (arr: Array<Comparison<Fields>>, result: string[], link: 'AND' | 'OR'): void => {
          if (arr !== undefined && arr.length > 0) {
             const res: string[] = [];
             for (const comp of arr) {
                populateValue(comp, res);
             }
-            result.push(`(${res.join(` AND `)})`);
+            result.push(`(${res.join(` ${link} `)})`);
          }
       };
-      const populate = (c: AndArrayComparison<Fields> | OrArrayComparison<Fields> | Comparison<Fields>): void => {
-         if (isComparison(c)) {
-            populateValue(c, result);
-         } else if (isAndArrayComparison(c)) {
-            populateFromArray(c.and as Comparison<Fields>[], result);
+      const populate = (c: AndArrayComparison<Fields> | OrArrayComparison<Fields>): void => {
+         if (isAndArrayComparison(c)) {
+            populateFromArray(c.and as Comparison<Fields>[], result, 'AND');
          } else if (isOrArrayComparison(c)) {
-            populateFromArray(c.or as Comparison<Fields>[], result);
+            populateFromArray(c.or as Comparison<Fields>[], result, 'OR');
          }
       };
 

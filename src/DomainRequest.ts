@@ -159,7 +159,7 @@ export abstract class DomainRequestBuilder<
 
    build(
       input: any,
-      dontDoThese: Name[],
+      dontExpandThese: Name[],
    ): {
       request: DomainRequest<Name, Fields, Expandables>;
       errors: Array<InputFieldError | OptionError>;
@@ -169,7 +169,7 @@ export abstract class DomainRequestBuilder<
       const sanitizedFields = this.sanitizeFieldsToSelect(fields);
       const sanitizedFilters = this.sanitizeFilters(filters);
       const sanitizedOptions = this.sanitizeOptions(options);
-      const expandablesRequests = this.buildExpandablesRequests(expandables, dontDoThese);
+      const expandablesRequests = this.buildExpandablesRequests(expandables, dontExpandThese);
 
       return {
          request: this.buildRequest({
@@ -230,10 +230,12 @@ export abstract class DomainRequestBuilder<
       const fields = this.buildDefaultFields();
       const fieldsNames = Object.keys(fields) as Array<Extract<keyof Fields, string>>;
 
+      // process the fields directly in filters and add them to "and" array
       for (const field of fieldsNames) {
          this.processFilter(field, inputFilters, filters, errors, 'and');
       }
 
+      // process fields in "and" and "or"
       for (const arrayType in inputFilters) {
          if (arrayType === 'or' || arrayType === 'and') {
             const arr = inputFilters[arrayType];
@@ -248,6 +250,48 @@ export abstract class DomainRequestBuilder<
             }
          }
       }
+
+      // for each field with restrictions in "and and "or", check if it has values
+      /// if not, add default in "or"
+      for (const field of fieldsNames) {
+         const validator = this.validatorFilterMap[field];
+         if (validator.authorizedValues === undefined) {
+            // no restrictions
+            continue;
+         }
+         // this field has restrictions => check if it is present in filters
+         if (filters[field] !== undefined) {
+            // this field has validated values, so next
+            continue;
+         }
+
+         // default values to add
+         const arr = validator.authorizedValues.map(
+            (
+               value,
+            ): {
+               operator: Operator;
+               value: any;
+            } => {
+               return {
+                  operator: 'equals',
+                  value,
+               };
+            },
+         );
+         filters[field] = { or: arr };
+      }
+
+      for (const inputKey in inputFilters) {
+         if (filtersArrays.includes(inputKey as FiltersArrays)) {
+            continue;
+         }
+         const fieldName = this.inputStyleToCamel(inputKey);
+         if (!fieldsNames.includes(fieldName as Extract<keyof Fields, string>)) {
+            errors.push({ fieldName: inputKey, reason: `[${inputKey}] is not a field` });
+         }
+      }
+
       return { filters, errors };
    }
 
@@ -256,46 +300,47 @@ export abstract class DomainRequestBuilder<
       inputFilters: { [key: string]: unknown },
       filters: FilteringFields<Fields>,
       errors: InputFieldsErrors,
-      filterGroupToUse: 'and' | 'or',
+      filterGroupToUse: FiltersArrays,
    ): void {
-      //AndArrayComparison<Fields> | OrArrayComparison<Fields> | Comparison<Fields>|undefined {
       const inputFieldName = this.camelToInputStyle(field);
       const comparison = inputFilters[inputFieldName];
 
-      if (comparison === undefined) {
-         // no value to filter => apply authorized values if present
-         const validator = this.validatorFilterMap[field];
-         if (validator.authorizedValues !== undefined) {
-            const arr = validator.authorizedValues.map((value) => {
-               const ret: {
-                  operator: Operator;
-                  value: any;
-               } = {
-                  operator: 'equals',
-                  value,
-               };
-               return ret;
-            });
-            filters[field] = { or: arr };
-            // return { or: arr }
+      const addConditionsToArray = (
+         filters: FilteringFields<Fields>,
+         field: Extract<keyof Fields, string>,
+         arrayType: FiltersArrays,
+         arr: Comparison<Fields>[],
+      ): void => {
+         if (filters[field] === undefined) {
+            (filters[field] as any) = {};
          }
+
+         if ((filters[field] as any)[arrayType] === undefined) {
+            (filters[field] as any)[arrayType] = [];
+         }
+
+         const arrToPopulate = (filters[field] as any)[arrayType];
+         for (const toAdd of arr) {
+            if (
+               undefined ===
+               arrToPopulate.find((c: Comparison<Fields>) => c.operator === toAdd.operator && c.value === toAdd.value)
+            ) {
+               arrToPopulate.push(...arr);
+            }
+         }
+      };
+
+      if (comparison === undefined) {
          return;
       }
+
       const res = this.validateFilterAndSetValue(field, comparison);
       if (!isComparison<Fields>(res)) {
          errors.push({ fieldName: inputFieldName, reason: res });
          return;
       }
 
-      if (filters[field] === undefined) {
-         (filters[field] as any) = {};
-      }
-
-      if ((filters[field] as any)[filterGroupToUse] === undefined) {
-         (filters[field] as any)[filterGroupToUse] = [];
-      }
-
-      (filters[field] as any)[filterGroupToUse].push(res);
+      addConditionsToArray(filters, field, filterGroupToUse, [res]);
    }
 
    private validateFilterAndSetValue(field: keyof Fields, comparison: any): string | Comparison<Fields> {
@@ -310,6 +355,7 @@ export abstract class DomainRequestBuilder<
       if (comparison.value === undefined) {
          return `missing comparison value for key [${field as string}]`;
       }
+
       const validator = this.validatorFilterMap[field];
       if (validator.authorizedValues !== undefined && !validator.authorizedValues.includes(comparison.value)) {
          return `value [${comparison.value}] is not authorized`;
@@ -489,6 +535,9 @@ export function getOperators(): Operator[] {
    return operators.map((o) => o);
 }
 
+const filtersArrays = ['or', 'and'] as const;
+export type FiltersArrays = typeof filtersArrays[number];
+
 export function isComparison<T>(o: any): o is Comparison<T> {
    return o.operator !== undefined && o.value !== undefined;
 }
@@ -510,7 +559,7 @@ export type OrArrayComparison<Type extends DomainFields> = {
 };
 
 export type FilteringFields<Type extends DomainFields> = {
-   [Property in keyof Type]?: AndArrayComparison<Type> | OrArrayComparison<Type> | Comparison<Type>;
+   [Property in keyof Type]?: AndArrayComparison<Type> | OrArrayComparison<Type>; // | Comparison<Type>;
 };
 export type FilteringFieldsErrors = Array<{
    fieldName: string;
