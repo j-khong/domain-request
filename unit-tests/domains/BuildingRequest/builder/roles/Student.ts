@@ -26,7 +26,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          id: { validate: validateId, defaultValue: '' },
          name: { validate: validateString, defaultValue: '' },
          openingHours: { validate: invalidate, defaultValue: [{ day: 0, slots: [] }] },
-         status: { validate: validateStatus, defaultValue: 'opened', authorizedValues: ['opened'] },
+         status: { validate: validateStatus, defaultValue: 'opened', authorizedValues: ['opened', 'work in progress'] },
       });
    }
 

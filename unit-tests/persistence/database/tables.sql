@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS `building_opening_hours`;
 CREATE TABLE `building` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `status` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `building__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

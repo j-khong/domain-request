@@ -2,7 +2,17 @@ import 'mocha';
 import { expect } from 'chai';
 
 import { init, getDomainRequestHandler } from './domains/init';
-import { DomainRequest, DomainRequestBuilder, Tree, isOptionError, isInputFieldError } from '../src/DomainRequest';
+import {
+   DomainRequest,
+   DomainRequestBuilder,
+   Tree,
+   isOptionError,
+   Comparison,
+   isInputFieldError,
+   isComparison,
+   isAndArrayComparison,
+   isOrArrayComparison,
+} from '../src/DomainRequest';
 import { DomainRequestName, Role } from './domains/types';
 
 init();
@@ -117,7 +127,7 @@ describe('request simple fields (no expandables)', () => {
          };
 
          const expected = getDefaultExpected(role);
-         expected.filters['firstname'] = [input.filters.firstname];
+         expected.filters['firstname'] = { and: [input.filters.firstname] };
          test(input, role, expected);
       });
 
@@ -163,7 +173,7 @@ describe('request simple fields (no expandables)', () => {
          };
 
          const expected = getDefaultExpected(role);
-         expected.filters['firstname'] = [input.filters.firstname];
+         expected.filters['firstname'] = { and: [input.filters.firstname] };
          test(input, role, expected);
       });
 
@@ -254,7 +264,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.filters['firstname'] = [input.filters.firstname];
+         expected.filters['firstname'] = { and: [input.filters.firstname] };
          test(input, role, expected);
       });
 
@@ -273,7 +283,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.filters['firstname'] = [input.filters.firstname];
+         expected.filters['firstname'] = { and: [input.filters.firstname] };
          test(input, role, expected);
       });
    });
@@ -417,7 +427,7 @@ describe('request with 1to1 expandables', () => {
          expected.expandables.courseApplication.fields.courseId = true;
          expected.expandables.country.fields.name = true;
          expected.expandables.country.fields.timezone = true;
-         expected.expandables.country.filters['timezone'] = [input.expandables.country.filters.timezone];
+         expected.expandables.country.filters['timezone'] = { and: [input.expandables.country.filters.timezone] };
          test(input, role, expected);
       });
 
@@ -644,15 +654,32 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<stri
    const actualFiltersKeys = Object.keys(request.getFilters()) as Array<keyof F>;
    expect(actualFiltersKeys.length, `${name} filters length`).to.equals(Object.keys(expected.filters).length);
    for (const key of actualFiltersKeys) {
-      const arr = request.getFilters()[key];
-      const arr2 = expected.filters[key];
-      expect(arr).not.to.be.undefined;
-      expect(arr2).not.to.be.undefined;
-      if (arr !== undefined && arr2 !== undefined) {
-         expect(arr.length).to.equals(arr2.length);
-         for (let i = 0; i < arr.length; i++) {
-            expect(arr[i].operator).to.equals(arr2[i].operator);
-            expect(arr[i].value).to.equals(arr2[i].value);
+      const comp = request.getFilters()[key];
+      const comp2 = expected.filters[key];
+      expect(comp).not.to.be.undefined;
+      expect(comp2).not.to.be.undefined;
+
+      const compareComparison = (c: Comparison<F>, c2: Comparison<F>): void => {
+         expect(c.operator).to.equals(c2.operator);
+         expect(c.value).to.equals(c2.value);
+      };
+      if (comp !== undefined && comp2 !== undefined) {
+         if (isComparison<F>(comp) && isComparison<F>(comp2)) {
+            compareComparison(comp, comp2);
+         } else if (isAndArrayComparison<F>(comp) && isAndArrayComparison<F>(comp2)) {
+            expect(comp.and.length).to.equals(comp2.and.length);
+            for (let i = 0; i < comp.and.length; i++) {
+               compareComparison(comp.and[i], comp2.and[i]);
+            }
+         } else if (isOrArrayComparison<F>(comp) && isOrArrayComparison<F>(comp2)) {
+            expect(comp.or.length).to.equals(comp2.or.length);
+            for (let i = 0; i < comp.or.length; i++) {
+               compareComparison(comp.or[i], comp2.or[i]);
+            }
+         } else {
+            console.log(JSON.stringify(comp, null, 2));
+            console.log(JSON.stringify(comp2, null, 2));
+            expect(true, 'no comp to do').to.equals(false);
          }
       }
       // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);

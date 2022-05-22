@@ -1,5 +1,17 @@
 import { Report, DomainResult } from '../index';
-import { DomainFields, DomainExpandables, DomainRequest, Operator, snakeToCamel } from '../../DomainRequest';
+import {
+   DomainFields,
+   DomainExpandables,
+   DomainRequest,
+   Operator,
+   snakeToCamel,
+   isComparison,
+   AndArrayComparison,
+   OrArrayComparison,
+   Comparison,
+   isAndArrayComparison,
+   isOrArrayComparison,
+} from '../../DomainRequest';
 import {
    DomainExpandableFieldsToTableFields,
    DomainExpandableFieldsToTableFieldsMap,
@@ -159,7 +171,7 @@ function fetchFieldsAndOneToOne<
    for (const [key, value] of data.joins) {
       joins.push(
          `LEFT JOIN ${key} ON ${value.relationship} ${
-            value.filters.length > 0 ? ` AND ${value.filters.join(' AND ')}` : ''
+            value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
          }`,
       );
    }
@@ -181,9 +193,8 @@ function fetchFieldsAndOneToOne<
 
    const select = `SELECT ${fields}`;
    const from = `FROM ${tableConfig.tableName}`;
-   const filters = processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
-   const where =
-      filters.length === 0 ? '' : `WHERE ${filters.map((v) => `${tableConfig.tableName}.${v}`).join(' AND ')}`;
+   const filters = processFilters(req, tableConfig.domainFieldsToTableFieldsMap, tableConfig.tableName);
+   const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
    let orderby = '';
    const orderBy = req.getOptions().orderby;
    if (orderBy !== undefined) {
@@ -265,7 +276,7 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
          for (const [key, value] of joins) {
             joinsStr.push(
                `LEFT JOIN ${key} ON ${value.relationship} ${
-                  value.filters.length > 0 ? ` AND ${value.filters.join(' AND ')}` : ''
+                  value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
                }`,
             );
          }
@@ -427,11 +438,12 @@ function processOneToOneExpandables<
          });
       }
 
-      const filters = processFilters(expandable as any, module.domainFieldsToTableFieldsMap);
+      const filters = processFilters(expandable as any, module.domainFieldsToTableFieldsMap, module.tableName);
+
       if (filters.length > 0) {
          const joinDetails = joins.get(module.tableName);
          if (undefined !== joinDetails) {
-            joinDetails.filters.push(...filters.map((v) => `${module.tableName}.${v}`));
+            joinDetails.filters.push(...filters);
          }
       }
    }
@@ -442,6 +454,7 @@ function processOneToOneExpandables<
 function processFilters<Fields, ExpandableFields, TableFields extends string, Name extends string>(
    req: DomainRequest<Name, Fields, ExpandableFields>,
    domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
+   tableName: string,
 ): string[] {
    const filters = req.getFilters();
    const result: string[] = [];
@@ -456,10 +469,31 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
       if (comparison === undefined) {
          continue;
       }
-      comparison.forEach((comp) => {
-         const comparisonMapper = comparisonOperatorMap[comp.operator];
-         result.push(comparisonMapper.format(fieldMapper.name, fieldMapper.convert(comp.value)));
-      });
+
+      const populateValue = (c: Comparison<Fields>, result: string[]): void => {
+         const comparisonMapper = comparisonOperatorMap[c.operator];
+         result.push(comparisonMapper.format(`${tableName}.${fieldMapper.name}`, fieldMapper.convert(c.value)));
+      };
+      const populateFromArray = (arr: Array<Comparison<Fields>>, result: string[]): void => {
+         if (arr !== undefined && arr.length > 0) {
+            const res: string[] = [];
+            for (const comp of arr) {
+               populateValue(comp, res);
+            }
+            result.push(`(${res.join(` AND `)})`);
+         }
+      };
+      const populate = (c: AndArrayComparison<Fields> | OrArrayComparison<Fields> | Comparison<Fields>): void => {
+         if (isComparison(c)) {
+            populateValue(c, result);
+         } else if (isAndArrayComparison(c)) {
+            populateFromArray(c.and as Comparison<Fields>[], result);
+         } else if (isOrArrayComparison(c)) {
+            populateFromArray(c.or as Comparison<Fields>[], result);
+         }
+      };
+
+      populate(comparison);
    }
 
    return result;
