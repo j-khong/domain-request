@@ -1,32 +1,29 @@
-import { DomainRequestName } from '../../../types';
 import {
    DomainRequest,
    DomainRequestBuilder,
+   validateBoolean,
    validateId,
+   validateNumber,
    validateString,
    RequestValues,
 } from '../../../../../src/DomainRequest';
-import {
-   domainRequestName,
-   ExpandableFields as MainExpandableFields,
-   Fields as MainFields,
-   validateStatus,
-} from '../../types';
+import { DomainRequestName } from '../../../types';
+import { Fields as MainFields, ExpandableFields as MainExpandableFields, domainRequestName } from '../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
-type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
-
-function invalidate(val: any): { valid: boolean; reason: string } {
-   return { valid: false, reason: 'openingHours not managed for filters' };
-}
+export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
       super(domainRequestName, {
          id: { validate: validateId, defaultValue: '' },
-         name: { validate: validateString, defaultValue: '' },
-         openingHours: { validate: invalidate, defaultValue: [{ day: 0, slots: [] }] },
-         status: { validate: validateStatus, defaultValue: 'opened' },
+         firstname: { validate: validateString, defaultValue: '' },
+         lastname: { validate: validateString, defaultValue: '' },
+         yearOfBirth: { validate: validateNumber, defaultValue: 1970 },
+         nationalCardId: { validate: validateString, defaultValue: '' },
+         countryId: { validate: validateString, defaultValue: '' },
+         hasScholarship: { validate: validateBoolean, defaultValue: false },
+         categoryId: { validate: validateString, defaultValue: '' },
       });
    }
 

@@ -2,7 +2,7 @@ import 'mocha';
 import { expect } from 'chai';
 
 import { init, getDomainRequestHandler } from './domains/init';
-import { DomainRequest, DomainRequestBuilder, Tree } from '../src/DomainRequest';
+import { DomainRequest, DomainRequestBuilder, Tree, isOptionError, isInputFieldError } from '../src/DomainRequest';
 import { DomainRequestName, Role } from './domains/types';
 
 init();
@@ -117,7 +117,7 @@ describe('request simple fields (no expandables)', () => {
          };
 
          const expected = getDefaultExpected(role);
-         expected.filters = input.filters;
+         expected.filters['firstname'] = [input.filters.firstname];
          test(input, role, expected);
       });
 
@@ -163,7 +163,7 @@ describe('request simple fields (no expandables)', () => {
          };
 
          const expected = getDefaultExpected(role);
-         expected.filters.firstname = input.filters.firstname;
+         expected.filters['firstname'] = [input.filters.firstname];
          test(input, role, expected);
       });
 
@@ -254,7 +254,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.filters.firstname = input.filters.firstname;
+         expected.filters['firstname'] = [input.filters.firstname];
          test(input, role, expected);
       });
 
@@ -273,7 +273,7 @@ describe('request simple fields (no expandables)', () => {
          };
          const expected = getDefaultExpected(role);
          expected.fields.firstname = true;
-         expected.filters.firstname = input.filters.firstname;
+         expected.filters['firstname'] = [input.filters.firstname];
          test(input, role, expected);
       });
    });
@@ -417,7 +417,7 @@ describe('request with 1to1 expandables', () => {
          expected.expandables.courseApplication.fields.courseId = true;
          expected.expandables.country.fields.name = true;
          expected.expandables.country.fields.timezone = true;
-         expected.expandables.country.filters = input.expandables.country.filters;
+         expected.expandables.country.filters['timezone'] = [input.expandables.country.filters.timezone];
          test(input, role, expected);
       });
 
@@ -594,7 +594,7 @@ describe('request with 1 to many expandables', () => {
 
 interface Expected {
    fields: Tree;
-   filters: Tree;
+   filters: any;
    options: {
       pagination: { offset: number; limit: number };
    };
@@ -607,19 +607,6 @@ function test(input: Tree, role: Role, expected: Expected) {
    const res = factory.getRoleDomainRequestBuilder(role).build(input, []);
    // console.log('res:', JSON.stringify(res, null, 2));
 
-   // const actualFieldsKeys = Object.keys(res.request.getFields()) as Array<keyof Fields>;
-   // expect(actualFieldsKeys.length, 'fields length').to.equals(Object.keys(expected.fields).length);
-   // for (const key of actualFieldsKeys) {
-   //    expect(res.request.getFields()[key], `fields: ${key}`).to.equals(expected.fields[key]);
-   // }
-
-   // const actualFiltersKeys = Object.keys(res.request.getFilters()) as Array<keyof Fields>;
-   // expect(actualFiltersKeys.length, 'filters length').to.equals(Object.keys(expected.filters).length);
-   // for (const key of actualFiltersKeys) {
-   //    expect(res.request.getFilters()[key], `filters: ${key}`).to.equals(expected.filters[key]);
-   // }
-
-   // expect(res.request.getOptions().limit).to.equals(expected.options.limit);
    compareRequestBuilder('student', res.request, expected);
    compareRequestBuilder('country', res.request.getExpandables().country, expected.expandables.country);
    compareRequestBuilder(
@@ -634,7 +621,14 @@ function test(input: Tree, role: Role, expected: Expected) {
    }
    expect(res.errors.length, 'error').to.equals(expected.errors.length);
    for (const err of res.errors) {
-      const expectedErr = expected.errors.find((e) => e.fieldName === err.fieldName);
+      const expectedErr = expected.errors.find((e) => {
+         if (isOptionError(err)) {
+            return e.fieldName === err.optionName;
+         } else if (isInputFieldError(err)) {
+            return e.fieldName === err.fieldName;
+         }
+         return false;
+      });
       expect(expectedErr).to.not.be.undefined;
       expect(err.reason, err.reason).to.equals(expectedErr?.reason);
    }
@@ -650,7 +644,18 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<stri
    const actualFiltersKeys = Object.keys(request.getFilters()) as Array<keyof F>;
    expect(actualFiltersKeys.length, `${name} filters length`).to.equals(Object.keys(expected.filters).length);
    for (const key of actualFiltersKeys) {
-      expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
+      const arr = request.getFilters()[key];
+      const arr2 = expected.filters[key];
+      expect(arr).not.to.be.undefined;
+      expect(arr2).not.to.be.undefined;
+      if (arr !== undefined && arr2 !== undefined) {
+         expect(arr.length).to.equals(arr2.length);
+         for (let i = 0; i < arr.length; i++) {
+            expect(arr[i].operator).to.equals(arr2[i].operator);
+            expect(arr[i].value).to.equals(arr2[i].value);
+         }
+      }
+      // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
    }
 
    expect(request.getOptions().pagination.limit).to.equals(expected.options.pagination.limit);

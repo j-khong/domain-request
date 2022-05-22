@@ -1,10 +1,17 @@
 import { DomainRequest, DomainResult, ExpandableName } from '../../../src';
+import { isString } from '../../../src/type-checkers';
 import { DomainRequestName } from '../types';
 
+const status = ['opened', 'closed', 'work in progress'] as const;
+type Status = typeof status[number];
+export function validateStatus(o: any): { valid: boolean; reason: string } {
+   return { valid: isString(o) && status.includes(o as Status), reason: 'not a status' };
+}
 export interface Fields {
    id: string;
    name: string;
    openingHours: OpeningHours[];
+   status: Status;
 }
 interface OpeningHours {
    day: number;

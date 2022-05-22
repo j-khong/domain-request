@@ -22,7 +22,7 @@ const openingHoursTable = new TableConfig<{}, { building: {} }, 'id' | 'day' | '
 );
 
 type Key = 'id';
-type TableFields = Key | 'name';
+type TableFields = Key | 'name' | 'status';
 class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
@@ -36,6 +36,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
                   cardinality: { name: 'oneToMany' },
                   tableConfig: openingHoursTable,
                },
+               status: { name: 'status', convert: toString },
             }, // domainFieldsToTableFieldsMap
          ),
       );

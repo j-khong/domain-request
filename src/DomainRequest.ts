@@ -85,7 +85,7 @@ export abstract class DomainRequest<
       operator: Operator;
       value: FilteringFields<Fields>[keyof FilteringFields<Fields>];
    }): void {
-      (this.filters as any)[filter.key] = { operator: filter.operator, value: filter.value };
+      (this.filters as any)[filter.key] = [{ operator: filter.operator, value: filter.value }];
    }
 
    getExpandables(): {
@@ -124,6 +124,12 @@ interface OptionError {
 }
 export type OptionsErrors = OptionError[];
 
+export function isOptionError(e: any): e is OptionError {
+   return e.optionName !== undefined;
+}
+export function isInputFieldError(e: any): e is InputFieldError {
+   return e.fieldName !== undefined;
+}
 interface InputFieldError {
    fieldName: string;
    reason: string;
@@ -139,7 +145,11 @@ export abstract class DomainRequestBuilder<
    constructor(
       protected readonly name: Name,
       private readonly validatorFilterMap: {
-         [Property in keyof Fields]: { validate: Validator; defaultValue: Fields[Property] };
+         [Property in keyof Fields]: {
+            validate: Validator;
+            defaultValue: Fields[Property];
+            authorizedValues?: string[];
+         };
       },
    ) {}
 
@@ -224,6 +234,20 @@ export abstract class DomainRequestBuilder<
          const comparison = inputFilters[inputFieldName];
 
          if (comparison === undefined) {
+            // no value to filter => apply authorized values if present
+            const validator = this.validatorFilterMap[field];
+            if (validator.authorizedValues !== undefined) {
+               filters[field] = validator.authorizedValues.map((value) => {
+                  const ret: {
+                     operator: Operator;
+                     value: any;
+                  } = {
+                     operator: 'equals',
+                     value,
+                  };
+                  return ret;
+               });
+            }
             continue;
          }
          const error = this.validateFilterAndSetValue(filters, field, comparison);
@@ -250,9 +274,13 @@ export abstract class DomainRequestBuilder<
          return `missing comparison value for key [${field as string}]`;
       }
       const validator = this.validatorFilterMap[field];
+      if (validator.authorizedValues !== undefined && !validator.authorizedValues.includes(comparison.value)) {
+         return `value [${comparison.value}] is not authorized`;
+      }
+
       const validation = validator.validate(comparison.value);
       if (validation.valid) {
-         filters[field] = comparison;
+         filters[field] = [comparison];
          return undefined;
       }
 
@@ -423,10 +451,10 @@ export function getOperators(): Operator[] {
 }
 
 export type FilteringFields<Type extends DomainFields> = {
-   [Property in keyof Type]?: {
+   [Property in keyof Type]?: Array<{
       operator: Operator;
       value: Type[Property];
-   };
+   }>;
 };
 export type FilteringFieldsErrors = Array<{
    fieldName: string;

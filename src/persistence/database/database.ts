@@ -448,7 +448,7 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
 
    for (const key in filters) {
       const fieldMapper = domainFieldsToTableFieldsMap[key];
-      if (!isSameTableMapping(fieldMapper)) {
+      if (isOtherTableMapping(fieldMapper)) {
          // don't manage filtering yet
          continue;
       }
@@ -456,8 +456,10 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
       if (comparison === undefined) {
          continue;
       }
-      const comparisonMapper = comparisonOperatorMap[comparison.operator];
-      result.push(comparisonMapper.format(fieldMapper.name, fieldMapper.convert(comparison.value)));
+      comparison.forEach((comp) => {
+         const comparisonMapper = comparisonOperatorMap[comp.operator];
+         result.push(comparisonMapper.format(fieldMapper.name, fieldMapper.convert(comp.value)));
+      });
    }
 
    return result;
