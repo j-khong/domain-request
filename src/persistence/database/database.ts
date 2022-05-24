@@ -182,13 +182,10 @@ function fetchFieldsAndOneToOne<
          return undefined;
       }
    }
-   // add natural key, if not there (currently works with 1 field, TODO manage composition)
-   addFieldToSelect(
-      fieldsToSelect,
-      tableConfig.tableName,
-      tableConfig.tablePrimaryKey,
-      req.getNaturalKey() as keyof Fields,
-   );
+   // add natural key, if not there
+   for (const key of req.getNaturalKey()) {
+      addFieldToSelect(fieldsToSelect, tableConfig.tableName, tableConfig.tablePrimaryKey, key);
+   }
    const fields = [
       ...Array.from(fieldsToSelect.values()).map((v) => v.fullFieldToSelect),
       ...Array.from(data.fieldsToSelect.values()).map((v) => v.fullFieldToSelect),
@@ -355,7 +352,7 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
                      }
                      return domain;
                   });
-               toPopulate[k] = conf.tableConfig.mapper ? conf.tableConfig.mapper(records) : records;
+               toPopulate[k] = conf.tableConfig.mapper !== undefined ? conf.tableConfig.mapper(records) : records;
             }
          }
       }
@@ -521,9 +518,9 @@ function processFilters<Fields, ExpandableFields, TableFields extends string, Na
       };
       const populate = (c: AndArrayComparison<Fields> | OrArrayComparison<Fields>): void => {
          if (isAndArrayComparison(c)) {
-            populateFromArray(c.and as Comparison<Fields>[], result, 'AND');
+            populateFromArray(c.and as Array<Comparison<Fields>>, result, 'AND');
          } else if (isOrArrayComparison(c)) {
-            populateFromArray(c.or as Comparison<Fields>[], result, 'OR');
+            populateFromArray(c.or as Array<Comparison<Fields>>, result, 'OR');
          }
       };
 
@@ -553,13 +550,13 @@ function getDomainFieldsToTableFieldsMapping<Fields, ExpandableFields, TableFiel
 ): SameTableMapping<TableFields> | OtherTableMapping<TableFields> {
    let mapping = tableConfig.domainFieldsToTableFieldsMap[key];
    if (mapping === undefined) {
-      //it should be an extended field
+      // it should be an extended field
       if (tableConfig.extendedFieldsToTableFieldsMap === undefined) {
-         throw new Error(`configuration problem: no domain to db field mapping for extended field [${key}]`);
+         throw new Error(`configuration problem: no domain to db field mapping for extended field [${key as string}]`);
       }
       mapping = tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended]; // TODO fix this cast
       if (mapping === undefined) {
-         throw new Error(`configuration problem: no field [${key}] in domain to db field mapping`);
+         throw new Error(`configuration problem: no field [${key as string}] in domain to db field mapping`);
       }
    }
 

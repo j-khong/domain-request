@@ -91,10 +91,11 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string, E
       }
    }
 
-   public mapper?: (data: { [key: string]: any }[]) => any;
-   setMapper(cb: (data: { [key: string]: any }[]) => any): void {
+   public mapper?: (data: Array<{ [key: string]: any }>) => any;
+   setMapper(cb: (data: Array<{ [key: string]: any }>) => any): void {
       this.mapper = cb;
    }
+
    public decider?: (config: any, key: any) => boolean;
    setDecider(cb: (config: any, key: any) => boolean): void {
       // TODO make it mandatory, create a new class and put it in the constructor

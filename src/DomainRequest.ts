@@ -28,23 +28,18 @@ function isOrderbySort(o: any): o is OrderbySort {
    return o !== undefined && orderbySort.includes(o as OrderbySort);
 }
 
-type NaturalKey = string | number | symbol;
+type NaturalKey<Type extends string> = Type[];
 export class DomainRequest<Name extends string, Fields extends DomainFields, Expandables extends DomainExpandables> {
-   private readonly options: Options<Fields>;
-   private readonly naturalKey: NaturalKey;
    constructor(
       private readonly name: Name,
+      private readonly naturalKey: NaturalKey<Extract<keyof Fields, string>>,
       private readonly fields: RequestableFields<Fields>,
       private readonly filters: FilteringFields<Fields>,
       private readonly expandables: {
          [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
       },
-      options: Options<Fields>,
-      naturalKey: keyof Fields,
-   ) {
-      this.options = options;
-      this.naturalKey = naturalKey;
-   }
+      private readonly options: Options<Fields>,
+   ) {}
 
    getName(): Name {
       return this.name;
@@ -57,7 +52,7 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
    getFieldsNames(): Array<keyof RequestableFields<Fields>> {
       const ret: Array<keyof RequestableFields<Fields>> = [];
       for (const field in this.fields) {
-         if (this.fields[field]) {
+         if (this.fields[field] === true) {
             ret.push(field);
          }
       }
@@ -90,7 +85,7 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
       return this.expandables;
    }
 
-   getNaturalKey(): NaturalKey {
+   getNaturalKey(): NaturalKey<Extract<keyof Fields, string>> {
       return this.naturalKey;
    }
 }
@@ -140,6 +135,7 @@ export abstract class DomainRequestBuilder<
 
    constructor(
       protected readonly name: Name,
+      private readonly naturalKey: NaturalKey<Extract<keyof Fields, string>>,
       private readonly validatorFilterMap: {
          [Property in keyof Fields]: {
             validate: Validator;
@@ -151,10 +147,6 @@ export abstract class DomainRequestBuilder<
          [key: string]: DomainRequestBuilder<string, any, any>;
       },
    ) {}
-
-   protected abstract buildRequest(
-      values: RequestValues<Name, Fields, Expandables>,
-   ): DomainRequest<Name, Fields, Expandables>;
 
    build(
       input: any,
@@ -316,7 +308,7 @@ export abstract class DomainRequestBuilder<
          filters: FilteringFields<Fields>,
          field: Extract<keyof Fields, string>,
          arrayType: FiltersArrays,
-         arr: Comparison<Fields>[],
+         arr: Array<Comparison<Fields>>,
       ): void => {
          if (filters[field] === undefined) {
             (filters[field] as any) = {};
@@ -354,7 +346,7 @@ export abstract class DomainRequestBuilder<
       if (comparison.operator === undefined) {
          return `missing comparison operator for key [${field as string}]`;
       }
-      const operator = this.inputStyleToCamel(comparison.operator) as Operator;
+      const operator: Operator = this.inputStyleToCamel(comparison.operator);
       if (!getOperators().includes(operator)) {
          return `invalid comparison operator [${comparison.operator as string}] for key [${field as string}]`;
       }
@@ -365,7 +357,7 @@ export abstract class DomainRequestBuilder<
 
       const validator = this.validatorFilterMap[field];
       if (validator.authorizedValues !== undefined && !validator.authorizedValues.includes(comparison.value)) {
-         return `value [${comparison.value}] is not authorized`;
+         return `value [${comparison.value as string}] is not authorized`;
       }
 
       const validation = validator.validate(comparison.value);
@@ -519,6 +511,17 @@ export abstract class DomainRequestBuilder<
          expandables,
       };
    }
+
+   protected buildRequest(values: RequestValues<Name, Fields, Expandables>): DomainRequest<Name, Fields, Expandables> {
+      return new DomainRequest<Name, Fields, Expandables>(
+         this.name,
+         this.naturalKey,
+         values.fields,
+         values.filters.filters,
+         values.expandables,
+         values.options.options,
+      );
+   }
 }
 
 export type Validator = (val: any) => { valid: boolean; reason: string };
@@ -548,22 +551,22 @@ export type FiltersArrays = typeof filtersArrays[number];
 export function isComparison<T>(o: any): o is Comparison<T> {
    return o.operator !== undefined && o.value !== undefined;
 }
-export type Comparison<Type extends DomainFields> = {
+export interface Comparison<Type extends DomainFields> {
    operator: Operator;
    value: Type[Extract<keyof Type, string>];
-};
+}
 export function isAndArrayComparison<T>(o: any): o is AndArrayComparison<T> {
    return o.and !== undefined;
 }
 export function isOrArrayComparison<T>(o: any): o is OrArrayComparison<T> {
    return o.or !== undefined;
 }
-export type AndArrayComparison<Type extends DomainFields> = {
+export interface AndArrayComparison<Type extends DomainFields> {
    and: Array<Comparison<Type>>;
-};
-export type OrArrayComparison<Type extends DomainFields> = {
+}
+export interface OrArrayComparison<Type extends DomainFields> {
    or: Array<Comparison<Type>>;
-};
+}
 
 export type FilteringFields<Type extends DomainFields> = {
    [Property in keyof Type]?: AndArrayComparison<Type> | OrArrayComparison<Type>; // | Comparison<Type>;
