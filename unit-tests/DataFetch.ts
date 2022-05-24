@@ -9,7 +9,11 @@ describe('Data fetch tests ', () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'student';
       let input = {
-         fields: { name: true, status: true, opening_hours: true },
+         fields: {
+            name: true,
+            status: true,
+            opening_hours: { fields: { day: true, slots: { fields: { start: true, end: true } } } },
+         },
          filters: {
             or: [
                {
@@ -42,37 +46,175 @@ describe('Data fetch tests ', () => {
                openingHours: [
                   {
                      day: 1,
-                     start: '10:00',
-                     end: '14:00',
-                  },
-                  {
-                     day: 1,
-                     start: '15:00',
-                     end: '23:00',
+                     slots: [
+                        {
+                           start: '10:00',
+                           end: '14:00',
+                        },
+                        {
+                           start: '15:00',
+                           end: '23:00',
+                        },
+                     ],
                   },
                   {
                      day: 3,
-                     start: '8:00',
-                     end: '20:00',
+                     slots: [
+                        {
+                           start: '8:00',
+                           end: '20:00',
+                        },
+                     ],
                   },
                ],
             },
          ],
       };
-      test(input, role, domainRequestName, expected).then(() => {
-         // should have same result with a trivial filter
-         (input.filters as any).id = {
-            operator: 'greater_than',
-            value: '0',
-         };
-         test(input, role, domainRequestName, expected).then(done).catch(done);
-      });
+      test(input, role, domainRequestName, expected)
+         .then(() => {
+            // should have same result with a trivial filter
+            (input.filters as any).id = {
+               operator: 'greater_than',
+               value: '0',
+            };
+            test(input, role, domainRequestName, expected).then(done).catch(done);
+         })
+         .catch(done);
    });
    it('requests 1 existing field', function (done) {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'student';
       let input = {
-         fields: { name: true, status: true, opening_hours: true },
+         fields: {
+            name: true,
+            status: true,
+            opening_hours: { fields: { day: true, slots: { fields: { start: true } } } },
+         },
+         filters: {
+            or: [
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'A',
+                  },
+               },
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'B',
+                  },
+               },
+            ],
+         },
+         options: {
+            orderby: 'id desc',
+         },
+      };
+
+      const expected = {
+         domainName: 'building',
+         total: 1,
+         results: [
+            {
+               name: 'A',
+               status: 'opened',
+               id: 2,
+               openingHours: [
+                  {
+                     day: 1,
+                     slots: [
+                        {
+                           start: '10:00',
+                        },
+                        {
+                           start: '15:00',
+                        },
+                     ],
+                  },
+                  {
+                     day: 3,
+                     slots: [
+                        {
+                           start: '8:00',
+                        },
+                     ],
+                  },
+               ],
+            },
+         ],
+      };
+      test(input, role, domainRequestName, expected)
+         .then(() => {
+            // should have same result with a trivial filter
+            (input.filters as any).id = {
+               operator: 'greater_than',
+               value: '0',
+            };
+            test(input, role, domainRequestName, expected).then(done).catch(done);
+         })
+         .catch(done);
+   });
+   it('requests 1 existing field', function (done) {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'student';
+      let input = {
+         fields: { name: true, status: true, opening_hours: { fields: { day: true } } },
+         filters: {
+            or: [
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'A',
+                  },
+               },
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'B',
+                  },
+               },
+            ],
+         },
+         options: {
+            orderby: 'id desc',
+         },
+      };
+
+      const expected = {
+         domainName: 'building',
+         total: 1,
+         results: [
+            {
+               name: 'A',
+               status: 'opened',
+               id: 2,
+               openingHours: [
+                  {
+                     day: 1,
+                  },
+                  {
+                     day: 3,
+                  },
+               ],
+            },
+         ],
+      };
+      test(input, role, domainRequestName, expected)
+         .then(() => {
+            // should have same result with a trivial filter
+            (input.filters as any).id = {
+               operator: 'greater_than',
+               value: '0',
+            };
+            test(input, role, domainRequestName, expected).then(done).catch(done);
+         })
+         .catch(done);
+   });
+   it('requests 1 existing field', function (done) {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'student';
+      let input = {
+         fields: { name: true, status: true },
          filters: {
             and: [
                {
@@ -401,3 +543,12 @@ async function test(input: any, role: Role, domainRequestName: DomainRequestName
    expect(result.total).to.equals(expected.total);
    expect(result.results).to.deep.equals(expected.results);
 }
+
+// TODO
+//
+// tester fetch field extendable only
+
+// typologie
+// field primitifs
+// field extendable (one to one ou one to many)
+// field expandable (one to one ou one to many)

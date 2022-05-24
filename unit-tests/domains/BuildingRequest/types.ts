@@ -10,16 +10,19 @@ export function validateStatus(o: any): { valid: boolean; reason: string } {
 export interface Fields {
    id: string;
    name: string;
-   openingHours: OpeningHours[];
    status: Status;
 }
-interface OpeningHours {
+export interface OpeningHours {
    day: number;
    slots: TimeSlot[];
 }
-interface TimeSlot {
+export interface TimeSlot {
    start: string;
    end: string;
+}
+
+export interface ExtendedFields {
+   openingHours: OpeningHours[];
 }
 
 export interface ExpandableFields {}

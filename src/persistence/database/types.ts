@@ -14,11 +14,11 @@ export const toBoolean = (o: boolean): string => `${Number(o)}`;
 export const toString = (o: string): string => `'${o.toString()}'`;
 export const toDate = (o: Date): string => `'${fromDateToMysqlDate(o)}'`;
 
-interface SameTableMapping<TableFields extends string> {
+export interface SameTableMapping<TableFields extends string> {
    name: TableFields;
    convert: (o: any) => number | string | number[];
 }
-interface OtherTableMapping<TableFields extends string> {
+export interface OtherTableMapping<TableFields extends string> {
    tableConfig: TableConfig<any, any, any>;
    cardinality: Cardinality<TableFields>;
 }
@@ -57,11 +57,12 @@ export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends Doma
 
 export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
-export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
+export class TableConfig<Fields, ExpandableFields, TableFields extends string, Extended = {}> {
    constructor(
       public readonly tableName: string,
       public readonly tablePrimaryKey: string,
       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
+      public readonly extendedFieldsToTableFieldsMap?: DomainFieldsToTableFieldsMap<Extended, TableFields>,
    ) {}
 
    public select: SelectMethod = async (sql: string) => {
@@ -88,6 +89,16 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
       if (select !== undefined) {
          this.select = select;
       }
+   }
+
+   public mapper?: (data: { [key: string]: any }[]) => any;
+   setMapper(cb: (data: { [key: string]: any }[]) => any): void {
+      this.mapper = cb;
+   }
+   public decider?: (config: any, key: any) => boolean;
+   setDecider(cb: (config: any, key: any) => boolean): void {
+      // TODO make it mandatory, create a new class and put it in the constructor
+      this.decider = cb;
    }
 }
 

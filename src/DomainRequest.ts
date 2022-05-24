@@ -29,11 +29,7 @@ function isOrderbySort(o: any): o is OrderbySort {
 }
 
 type NaturalKey = string | number | symbol;
-export abstract class DomainRequest<
-   Name extends string,
-   Fields extends DomainFields,
-   Expandables extends DomainExpandables,
-> {
+export class DomainRequest<Name extends string, Fields extends DomainFields, Expandables extends DomainExpandables> {
    private readonly options: Options<Fields>;
    private readonly naturalKey: NaturalKey;
    constructor(
@@ -151,6 +147,9 @@ export abstract class DomainRequestBuilder<
             authorizedValues?: string[];
          };
       },
+      private readonly extended?: {
+         [key: string]: DomainRequestBuilder<string, any, any>;
+      },
    ) {}
 
    protected abstract buildRequest(
@@ -202,6 +201,14 @@ export abstract class DomainRequestBuilder<
          }
       }
 
+      if (this.extended !== undefined) {
+         for (const field in this.extended) {
+            const snakedFieldName = this.camelToInputStyle(field);
+            const val = inputFieldsToSelect[snakedFieldName];
+            const dr = this.extended[field].build(val, []);
+            fieldsToSelect[field as keyof Fields] = dr.request.getFields(); // TODO fix this cast
+         }
+      }
       return fieldsToSelect;
    }
 
@@ -518,7 +525,7 @@ export type Validator = (val: any) => { valid: boolean; reason: string };
 
 // https://www.typescriptlang.org/docs/handbook/2/mapped-types.html
 export type RequestableFields<Type> = {
-   [Property in keyof Type]: boolean;
+   [Property in keyof Type]: boolean | RequestableFields<any>;
 };
 
 const operators = [
