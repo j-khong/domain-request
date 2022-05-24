@@ -1,11 +1,9 @@
 import {
-   DomainRequest,
    DomainRequestBuilder,
    validateBoolean,
    validateId,
    validateNumber,
    validateString,
-   RequestValues,
 } from '../../../../../src/DomainRequest';
 import { DomainRequestName } from '../../../types';
 import { Fields as MainFields, ExpandableFields as MainExpandableFields, domainRequestName } from '../../types';
@@ -15,7 +13,7 @@ export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFi
 
 export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super(domainRequestName, {
+      super(domainRequestName, ['id'], {
          id: { validate: validateId, defaultValue: '' },
          firstname: { validate: validateString, defaultValue: '' },
          lastname: { validate: validateString, defaultValue: '' },
@@ -26,17 +24,4 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          categoryId: { validate: validateString, defaultValue: '' },
       });
    }
-
-   protected buildRequest(values: RequestValues<DomainRequestName, Fields, ExpandableFields>): Request {
-      return new Request(
-         this.name,
-         values.fields,
-         values.filters.filters,
-         values.expandables,
-         values.options.options,
-         'id',
-      );
-   }
 }
-
-class Request extends DomainRequest<DomainRequestName, Fields, ExpandableFields> {}

@@ -1,11 +1,5 @@
 import { DomainRequestName } from '../../../types';
-import {
-   DomainRequest,
-   DomainRequestBuilder,
-   validateId,
-   validateString,
-   RequestValues,
-} from '../../../../../src/DomainRequest';
+import { DomainRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest';
 import {
    domainRequestName,
    ExpandableFields as MainExpandableFields,
@@ -21,6 +15,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
    constructor() {
       super(
          domainRequestName,
+         ['id'],
          {
             id: { validate: validateId, defaultValue: '' },
             name: { validate: validateString, defaultValue: '' },
@@ -29,19 +24,6 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          {
             openingHours: new OpeningHoursRequestBuilder(),
          },
-      );
-   }
-
-   protected buildRequest(
-      values: RequestValues<DomainRequestName, Fields, ExpandableFields>,
-   ): DomainRequest<DomainRequestName, Fields, ExpandableFields> {
-      return new DomainRequest<DomainRequestName, Fields, ExpandableFields>(
-         this.name,
-         values.fields,
-         values.filters.filters,
-         values.expandables,
-         values.options.options,
-         'id',
       );
    }
 }
