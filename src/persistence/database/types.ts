@@ -1,4 +1,4 @@
-import { DomainFields } from '../..';
+import { DomainFields, NestedFilteringFields, NestedRequestableFields } from '../..';
 
 // can be an id (string | number) but also an ids list (1,45,3) to be used with IN ()
 export const toTableId = (o: any): number[] => o.split(',').map((n: string) => toNumber(n));
@@ -19,7 +19,7 @@ export interface SameTableMapping<TableFields extends string> {
    convert: (o: any) => number | string | number[];
 }
 export interface OtherTableMapping<TableFields extends string> {
-   tableConfig: TableConfig<any, any, any>;
+   tableConfig: ExtendedTableConfig<any, any, any>;
    cardinality: Cardinality<TableFields>;
 }
 
@@ -30,7 +30,11 @@ export function isOtherTableMapping<TableFields extends string>(o: any): o is Ot
    return o.tableConfig !== undefined && o.cardinality !== undefined;
 }
 export type DomainFieldsToTableFieldsMap<DomainFields, TableFields extends string> = {
-   [Property in keyof DomainFields]: SameTableMapping<TableFields> | OtherTableMapping<TableFields>;
+   [Property in keyof DomainFields]: SameTableMapping<TableFields>;
+};
+
+export type ExtendedDomainFieldsToTableFieldsMap<DomainFields, TableFields extends string> = {
+   [Property in keyof DomainFields]: OtherTableMapping<TableFields>;
 };
 
 interface OneToOne<TableFields extends string> {
@@ -62,7 +66,7 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string, E
       public readonly tableName: string,
       public readonly tablePrimaryKey: string,
       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-      public readonly extendedFieldsToTableFieldsMap?: DomainFieldsToTableFieldsMap<Extended, TableFields>,
+      public readonly extendedFieldsToTableFieldsMap?: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
    ) {}
 
    public select: SelectMethod = async (sql: string) => {
@@ -90,16 +94,37 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string, E
          this.select = select;
       }
    }
-
-   public mapper?: (data: Array<{ [key: string]: any }>) => any;
-   setMapper(cb: (data: Array<{ [key: string]: any }>) => any): void {
-      this.mapper = cb;
+}
+export class ExtendableTableConfig<Fields, ExpandableFields, TableFields extends string, Extended> extends TableConfig<
+   Fields,
+   ExpandableFields,
+   TableFields,
+   Extended
+> {
+   constructor(
+      tableName: string,
+      tablePrimaryKey: string,
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
+      extendedFieldsToTableFieldsMap: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
+   ) {
+      super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap, extendedFieldsToTableFieldsMap);
    }
-
-   public decider?: (config: any, key: any) => boolean;
-   setDecider(cb: (config: any, key: any) => boolean): void {
-      // TODO make it mandatory, create a new class and put it in the constructor
-      this.decider = cb;
+}
+export class ExtendedTableConfig<Domain, Expandables, TableFields extends string> extends TableConfig<
+   any,
+   Expandables,
+   TableFields
+> {
+   constructor(
+      tableName: string,
+      tablePrimaryKey: string,
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>,
+      public readonly fromDbRecordsToDomains: (
+         dbRecords: Array<{ [key: string]: undefined | any }>,
+      ) => Array<NestedFilteringFields<Domain>>,
+      public readonly isToSelect: (config: NestedRequestableFields<Domain>, key: TableFields) => boolean,
+   ) {
+      super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
    }
 }
 

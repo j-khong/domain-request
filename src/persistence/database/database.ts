@@ -27,9 +27,11 @@ import {
 export abstract class DatabaseTable<DRN extends string, F, E, TF extends string> {
    constructor(private readonly tableConfig: TableConfig<F, E, TF>) {}
 
-   abstract buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
+   protected buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DRN]: DatabaseTable<DRN, F, E, TF>;
-   }): DomainExpandableFieldsToTableFieldsMap<E, TF>;
+   }): DomainExpandableFieldsToTableFieldsMap<E, TF> {
+      return {} as any;
+   }
 
    init(
       select: SelectMethod,
@@ -275,10 +277,7 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
             for (const subkey in conf.tableConfig.domainFieldsToTableFieldsMap) {
                const map = getDomainFieldsToTableFieldsMapping(conf.tableConfig, subkey);
                if (isSameTableMapping(map)) {
-                  if (conf.tableConfig.decider === undefined) {
-                     throw new Error('please define a decider');
-                  }
-                  if (conf.tableConfig.decider(extendedFieldsToSelect, subkey)) {
+                  if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
                      addFieldToSelect(fieldsToSelect, conf.tableConfig.tableName, map.name, subkey);
                   }
                }
@@ -352,7 +351,10 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
                      }
                      return domain;
                   });
-               toPopulate[k] = conf.tableConfig.mapper !== undefined ? conf.tableConfig.mapper(records) : records;
+               toPopulate[k] =
+                  conf.tableConfig.fromDbRecordsToDomains !== undefined
+                     ? conf.tableConfig.fromDbRecordsToDomains(records)
+                     : records;
             }
          }
       }
@@ -548,7 +550,8 @@ function getDomainFieldsToTableFieldsMapping<Fields, ExpandableFields, TableFiel
    tableConfig: TableConfig<Fields, ExpandableFields, TableFields, Extended>,
    key: keyof Fields,
 ): SameTableMapping<TableFields> | OtherTableMapping<TableFields> {
-   let mapping = tableConfig.domainFieldsToTableFieldsMap[key];
+   let mapping: SameTableMapping<TableFields> | OtherTableMapping<TableFields> =
+      tableConfig.domainFieldsToTableFieldsMap[key];
    if (mapping === undefined) {
       // it should be an extended field
       if (tableConfig.extendedFieldsToTableFieldsMap === undefined) {

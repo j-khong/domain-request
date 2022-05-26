@@ -530,6 +530,18 @@ export type Validator = (val: any) => { valid: boolean; reason: string };
 export type RequestableFields<Type> = {
    [Property in keyof Type]: boolean | RequestableFields<any>;
 };
+type Unarray<T> = T extends Array<infer U> ? NestedRequestableFields<U> : NestedRequestableFields<T>;
+
+export type NestedRequestableFields<Type> = {
+   [Property in keyof Type]: Type[Property] extends string | number | boolean ? boolean : Unarray<Type[Property]>;
+};
+
+type Toarray<T> = T extends Array<infer U> ? Array<NestedFilteringFields<U>> : NestedFilteringFields<T>;
+export type NestedFilteringFields<Type> = {
+   [Property in keyof Type]?: Type[Property] extends string | number | boolean
+      ? Type[Property]
+      : Toarray<Type[Property]>;
+};
 
 const operators = [
    'equals',

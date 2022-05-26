@@ -1,10 +1,4 @@
-import {
-   DatabaseTable,
-   DomainExpandableFieldsToTableFieldsMap,
-   TableConfig,
-   toString,
-   toTableId,
-} from '../../../../../../src/persistence/database';
+import { DatabaseTable, TableConfig, toString, toTableId } from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
 import { ExpandableFields, Fields } from '../../../types';
 
@@ -23,11 +17,6 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
             }, // domainFieldsToTableFieldsMap
          ),
       );
-   }
-   buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
-      [Property in DomainRequestName]: DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields>;
-   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
-      return {};
    }
 }
 
