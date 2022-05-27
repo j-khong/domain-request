@@ -15,6 +15,8 @@ import {
 import {
    DomainExpandableFieldsToTableFields,
    DomainExpandableFieldsToTableFieldsMap,
+   ExtendableTableConfig,
+   isExtendableTableConfig,
    isOtherTableMapping,
    isSameTableMapping,
    OtherTableMapping,
@@ -231,16 +233,21 @@ function hasSelectedExtended<
    Extended,
 >(
    req: DomainRequest<Name, Fields, ExpandableFields>,
-   tableConfig: TableConfig<Fields, ExpandableFields, TableFields, Extended>,
+   tableConfig:
+      | TableConfig<Fields, ExpandableFields, TableFields>
+      | ExtendableTableConfig<Fields, ExpandableFields, TableFields, Extended>,
 ): boolean {
    let found = false;
-   for (const key of req.getFieldsNames()) {
-      if (tableConfig.extendedFieldsToTableFieldsMap === undefined) {
-         return false;
-      }
-      if (tableConfig.extendedFieldsToTableFieldsMap[key as keyof Extended] !== undefined) {
-         found = true;
-         break;
+   if (!isExtendableTableConfig(tableConfig)) {
+      return false;
+   }
+
+   for (const key in req.getFields()) {
+      if (tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended] !== undefined) {
+         if (req.isToSelectOrHasToSelect(key)) {
+            found = true;
+            break;
+         }
       }
    }
    return found;
@@ -252,7 +259,9 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
       results: any[];
       report: Report;
    },
-   tableConfig: TableConfig<Fields, ExpandableFields, TableFields, Extended>,
+   tableConfig:
+      | TableConfig<Fields, ExpandableFields, TableFields>
+      | ExtendableTableConfig<Fields, ExpandableFields, TableFields, Extended>,
    req: DomainRequest<Name, Fields, ExpandableFields>,
 ): Promise<void> {
    if (ids.length === 0) {
@@ -260,7 +269,7 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
    }
 
    // searching oneToMany fields which are not expandables
-   if (tableConfig.extendedFieldsToTableFieldsMap !== undefined) {
+   if (isExtendableTableConfig(tableConfig)) {
       for (const k in tableConfig.extendedFieldsToTableFieldsMap) {
          const conf = tableConfig.extendedFieldsToTableFieldsMap[k];
          if (isOtherTableMapping(conf)) {
@@ -547,16 +556,19 @@ function getFieldsToSelect<Fields, ExpandableFields, TableFields extends string,
 }
 
 function getDomainFieldsToTableFieldsMapping<Fields, ExpandableFields, TableFields extends string, Extended>(
-   tableConfig: TableConfig<Fields, ExpandableFields, TableFields, Extended>,
+   tableConfig:
+      | TableConfig<Fields, ExpandableFields, TableFields>
+      | ExtendableTableConfig<Fields, ExpandableFields, TableFields, Extended>,
    key: keyof Fields,
 ): SameTableMapping<TableFields> | OtherTableMapping<TableFields> {
    let mapping: SameTableMapping<TableFields> | OtherTableMapping<TableFields> =
       tableConfig.domainFieldsToTableFieldsMap[key];
    if (mapping === undefined) {
       // it should be an extended field
-      if (tableConfig.extendedFieldsToTableFieldsMap === undefined) {
+      if (!isExtendableTableConfig(tableConfig)) {
          throw new Error(`configuration problem: no domain to db field mapping for extended field [${key as string}]`);
       }
+
       mapping = tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended]; // TODO fix this cast
       if (mapping === undefined) {
          throw new Error(`configuration problem: no field [${key as string}] in domain to db field mapping`);

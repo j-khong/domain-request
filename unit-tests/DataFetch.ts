@@ -210,6 +210,60 @@ describe('Data fetch tests ', () => {
          })
          .catch(done);
    });
+   it('requests 1 extended field only', function (done) {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'student';
+      let input = {
+         fields: { opening_hours: { fields: { day: true } } },
+         filters: {
+            or: [
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'A',
+                  },
+               },
+               {
+                  name: {
+                     operator: 'equals',
+                     value: 'B',
+                  },
+               },
+            ],
+         },
+         options: {
+            orderby: 'id desc',
+         },
+      };
+
+      const expected = {
+         domainName: 'building',
+         total: 1,
+         results: [
+            {
+               id: 2,
+               openingHours: [
+                  {
+                     day: 1,
+                  },
+                  {
+                     day: 3,
+                  },
+               ],
+            },
+         ],
+      };
+      test(input, role, domainRequestName, expected)
+         .then(() => {
+            // should have same result with a trivial filter
+            (input.filters as any).id = {
+               operator: 'greater_than',
+               value: '0',
+            };
+            test(input, role, domainRequestName, expected).then(done).catch(done);
+         })
+         .catch(done);
+   });
    it('requests 1 existing field', function (done) {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'student';

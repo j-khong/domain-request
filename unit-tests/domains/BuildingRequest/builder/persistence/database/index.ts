@@ -47,8 +47,6 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    }
 }
 
-export const dbTable = new Database();
-
 type TableFieldNames = 'id' | 'day' | 'start' | 'end' | 'building_id';
 
 const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }, TableFieldNames>(
@@ -104,3 +102,5 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
       return config.slots[thekey as 'start' | 'end'];
    },
 );
+
+export const dbTable = new Database();

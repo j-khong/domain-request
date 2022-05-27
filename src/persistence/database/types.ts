@@ -61,12 +61,11 @@ export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends Doma
 
 export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
-export class TableConfig<Fields, ExpandableFields, TableFields extends string, Extended = {}> {
+export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
    constructor(
       public readonly tableName: string,
       public readonly tablePrimaryKey: string,
       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-      public readonly extendedFieldsToTableFieldsMap?: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
    ) {}
 
    public select: SelectMethod = async (sql: string) => {
@@ -98,17 +97,22 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string, E
 export class ExtendableTableConfig<Fields, ExpandableFields, TableFields extends string, Extended> extends TableConfig<
    Fields,
    ExpandableFields,
-   TableFields,
-   Extended
+   TableFields
 > {
    constructor(
       tableName: string,
       tablePrimaryKey: string,
       domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-      extendedFieldsToTableFieldsMap: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
+      public readonly extendedFieldsToTableFieldsMap: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
    ) {
-      super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap, extendedFieldsToTableFieldsMap);
+      super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
    }
+}
+
+export function isExtendableTableConfig<Fields, ExpandableFields, TableFields extends string>(
+   tc: TableConfig<Fields, ExpandableFields, TableFields>,
+): tc is ExtendableTableConfig<Fields, ExpandableFields, TableFields, any> {
+   return (tc as any).extendedFieldsToTableFieldsMap !== undefined;
 }
 export class ExtendedTableConfig<Domain, Expandables, TableFields extends string> extends TableConfig<
    any,

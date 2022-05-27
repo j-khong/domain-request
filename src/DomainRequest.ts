@@ -63,6 +63,31 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
       return this.fields;
    }
 
+   // check the field:
+   //  - is selectable (if simple field)
+   //  - has a selectable (if extended field)
+   isToSelectOrHasToSelect(key: keyof RequestableFields<Fields>): boolean {
+      const fieldValue = this.fields[key];
+      return this.checkIsToSelect(fieldValue);
+   }
+
+   private checkIsToSelect(o: boolean | RequestableFields<any>): boolean {
+      if (o === undefined) {
+         return false;
+      }
+      if (isBoolean(o)) {
+         return o;
+      }
+
+      for (const key in o) {
+         const res = this.checkIsToSelect(o[key]);
+         if (res) {
+            return true;
+         }
+      }
+      return false;
+   }
+
    setField(key: keyof RequestableFields<Fields>, value: boolean): void {
       this.fields[key] = value;
    }
