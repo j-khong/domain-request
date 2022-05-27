@@ -12,14 +12,6 @@ export interface Fields {
    name: string;
    status: Status;
 }
-export interface OpeningHours {
-   day: number;
-   slots: TimeSlot[];
-}
-export interface TimeSlot {
-   start: string;
-   end: string;
-}
 
 export interface ExtendedFields {
    openingHours: OpeningHours[];
@@ -32,3 +24,12 @@ export const expandableNames: Array<ExpandableName<DomainRequestName, Expandable
 
 export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
 export type Result = DomainResult;
+
+export interface OpeningHours {
+   day: number;
+   slots: TimeSlot[];
+}
+export interface TimeSlot {
+   start: string;
+   end: string;
+}

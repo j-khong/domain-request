@@ -6,12 +6,11 @@ import {
    DomainRequest,
    DomainRequestBuilder,
    Tree,
-   isOptionError,
    Comparison,
-   isInputFieldError,
    isComparison,
    isAndArrayComparison,
    isOrArrayComparison,
+   InputErrors,
 } from '../src/DomainRequest';
 import { DomainRequestName, Role } from './domains/types';
 
@@ -79,6 +78,13 @@ describe('Request Builder tests ', () => {
 
             const expected = getDefaultExpected(role);
             expected.fields.firstname = true;
+            expected.errors = [
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
+               },
+            ];
             test(input, role, expected);
 
             input = {
@@ -99,6 +105,13 @@ describe('Request Builder tests ', () => {
             };
 
             const expected = getDefaultExpected(role);
+            expected.errors = [
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
+               },
+            ];
             test(input, role, expected);
          });
 
@@ -143,6 +156,7 @@ describe('Request Builder tests ', () => {
             const expected = getDefaultExpected(role);
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'firstname',
                   reason: 'missing comparison operator for key [firstname]',
                },
@@ -176,6 +190,17 @@ describe('Request Builder tests ', () => {
             expected.filters['firstname'] = { and: [input.filters.firstname] };
             expected.errors = [
                {
+                  context: 'selected field',
+                  fieldName: 'name',
+                  reason: 'unknown field [name]',
+               },
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
+               },
+               {
+                  context: 'filtering field',
                   fieldName: 'unknown_field',
                   reason: '[unknown_field] is not a field',
                },
@@ -200,12 +225,19 @@ describe('Request Builder tests ', () => {
             expected.fields.firstname = true;
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'firstname',
                   reason: 'missing comparison operator for key [firstname]',
                },
                {
+                  context: 'filtering field',
                   fieldName: 'unknown_field',
                   reason: '[unknown_field] is not a field',
+               },
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
                },
             ];
             test(input, role, expected);
@@ -228,12 +260,19 @@ describe('Request Builder tests ', () => {
             expected.fields.firstname = true;
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'firstname',
                   reason: 'missing comparison value for key [firstname]',
                },
                {
+                  context: 'filtering field',
                   fieldName: 'unknown_field',
                   reason: '[unknown_field] is not a field',
+               },
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
                },
             ];
             test(input, role, expected);
@@ -256,12 +295,15 @@ describe('Request Builder tests ', () => {
             expected.fields.firstname = true;
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'firstname',
                   reason: 'invalid comparison operator [equal] for key [firstname]',
                },
+               { context: 'filtering field', fieldName: 'unknown_field', reason: '[unknown_field] is not a field' },
                {
+                  context: 'selected field',
                   fieldName: 'unknown_field',
-                  reason: '[unknown_field] is not a field',
+                  reason: 'unknown field [unknown_field]',
                },
             ];
             test(input, role, expected);
@@ -284,9 +326,11 @@ describe('Request Builder tests ', () => {
             expected.fields.firstname = true;
             expected.filters['firstname'] = { and: [input.filters.firstname] };
             expected.errors = [
+               { context: 'filtering field', fieldName: 'unknown_field', reason: '[unknown_field] is not a field' },
                {
+                  context: 'selected field',
                   fieldName: 'unknown_field',
-                  reason: '[unknown_field] is not a field',
+                  reason: 'unknown field [unknown_field]',
                },
             ];
             test(input, role, expected);
@@ -309,9 +353,11 @@ describe('Request Builder tests ', () => {
             expected.fields.firstname = true;
             expected.filters['firstname'] = { and: [input.filters.firstname] };
             expected.errors = [
+               { context: 'filtering field', fieldName: 'unknown_field', reason: '[unknown_field] is not a field' },
                {
+                  context: 'selected field',
                   fieldName: 'unknown_field',
-                  reason: '[unknown_field] is not a field',
+                  reason: 'unknown field [unknown_field]',
                },
             ];
 
@@ -335,6 +381,13 @@ describe('Request Builder tests ', () => {
             const expected = getDefaultExpected(role);
             expected.fields.firstname = true;
             expected.options.pagination.limit = 10;
+            expected.errors = [
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
+               },
+            ];
             test(input, role, expected);
          });
 
@@ -353,6 +406,13 @@ describe('Request Builder tests ', () => {
             const expected = getDefaultExpected(role);
             expected.fields.firstname = true;
             expected.options.pagination.limit = 5000;
+            expected.errors = [
+               {
+                  context: 'selected field',
+                  fieldName: 'unknown_field',
+                  reason: 'unknown field [unknown_field]',
+               },
+            ];
             test(input, role, expected);
          });
       });
@@ -422,6 +482,18 @@ describe('Request Builder tests ', () => {
 
             const expected = getDefaultExpected(role);
             expected.fields.firstname = true;
+            expected.errors = [
+               {
+                  context: 'selected field',
+                  fieldName: 'timezon',
+                  reason: 'unknown field [timezon]',
+               },
+               {
+                  context: 'selected field',
+                  fieldName: 'nam',
+                  reason: 'unknown field [nam]',
+               },
+            ];
             test(input, role, expected);
          });
       });
@@ -490,6 +562,7 @@ describe('Request Builder tests ', () => {
             expected.expandables.country.fields.timezone = true;
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'timezone',
                   reason: 'missing comparison operator for key [timezone]',
                },
@@ -593,6 +666,7 @@ describe('Request Builder tests ', () => {
             expected.expandables.country.fields.timezone = true;
             expected.errors = [
                {
+                  context: 'filtering field',
                   fieldName: 'timezone',
                   reason: 'missing comparison operator for key [timezone]',
                },
@@ -641,7 +715,7 @@ interface Expected {
       pagination: { offset: number; limit: number };
    };
    expandables: any;
-   errors: Array<{ fieldName: string; reason: string }>;
+   errors: InputErrors;
 }
 
 function test(input: Tree, role: Role, expected: Expected) {
@@ -663,14 +737,7 @@ function test(input: Tree, role: Role, expected: Expected) {
    }
    expect(res.errors.length, 'error').to.equals(expected.errors.length);
    for (const err of res.errors) {
-      const expectedErr = expected.errors.find((e) => {
-         if (isOptionError(err)) {
-            return e.fieldName === err.optionName;
-         } else if (isInputFieldError(err)) {
-            return e.fieldName === err.fieldName;
-         }
-         return false;
-      });
+      const expectedErr = expected.errors.find((e) => err.context === e.context && e.fieldName === err.fieldName);
       expect(expectedErr).to.not.be.undefined;
       expect(err.reason, err.reason).to.equals(expectedErr?.reason);
    }

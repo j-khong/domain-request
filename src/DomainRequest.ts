@@ -123,34 +123,24 @@ export interface RequestValues<
    fields: RequestableFields<Fields>;
    filters: {
       filters: FilteringFields<Fields>;
-      errors: FilteringFieldsErrors;
+      errors: InputErrors;
    };
    expandables: {
       [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], DomainFields>;
    };
    options: {
       options: Options<Fields>;
-      errors: OptionsErrors;
+      errors: InputErrors;
    };
 }
 
-interface OptionError {
-   optionName: string;
-   reason: string;
-}
-export type OptionsErrors = OptionError[];
-
-export function isOptionError(e: any): e is OptionError {
-   return e.optionName !== undefined;
-}
-export function isInputFieldError(e: any): e is InputFieldError {
-   return e.fieldName !== undefined;
-}
-interface InputFieldError {
+interface InputError {
+   context: 'selected field' | 'filtering field' | 'option';
    fieldName: string;
    reason: string;
 }
-type InputFieldsErrors = InputFieldError[];
+
+export type InputErrors = InputError[];
 export abstract class DomainRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
@@ -178,7 +168,7 @@ export abstract class DomainRequestBuilder<
       dontExpandThese: Name[],
    ): {
       request: DomainRequest<Name, Fields, Expandables>;
-      errors: Array<InputFieldError | OptionError>;
+      errors: InputErrors;
    } {
       const { fields, filters, options, expandables } = this.splitValues(input);
 
@@ -189,12 +179,17 @@ export abstract class DomainRequestBuilder<
 
       return {
          request: this.buildRequest({
-            fields: sanitizedFields,
+            fields: sanitizedFields.fields,
             filters: sanitizedFilters,
             expandables: expandablesRequests.requests as any, // TODO fix that
             options: sanitizedOptions,
          }),
-         errors: [...sanitizedFilters.errors, ...sanitizedOptions.errors, ...expandablesRequests.errors],
+         errors: [
+            ...sanitizedFields.errors,
+            ...sanitizedFilters.errors,
+            ...sanitizedOptions.errors,
+            ...expandablesRequests.errors,
+         ],
       };
    }
 
@@ -206,7 +201,10 @@ export abstract class DomainRequestBuilder<
       return snakeToCamel(str);
    }
 
-   private sanitizeFieldsToSelect(inputFieldsToSelect: Tree): RequestableFields<Fields> {
+   private sanitizeFieldsToSelect(inputFieldsToSelect: Tree): {
+      fields: RequestableFields<Fields>;
+      errors: InputErrors;
+   } {
       // const ignoredFields
 
       const fieldsToSelect = this.buildDefaultRequestableFields();
@@ -218,15 +216,29 @@ export abstract class DomainRequestBuilder<
          }
       }
 
+      const errors: InputErrors = [];
+
       if (this.extended !== undefined) {
          for (const field in this.extended) {
             const snakedFieldName = this.camelToInputStyle(field);
             const val = inputFieldsToSelect[snakedFieldName];
             const dr = this.extended[field].build(val, []);
             fieldsToSelect[field as keyof Fields] = dr.request.getFields(); // TODO fix this cast
+            errors.push(...dr.errors);
          }
       }
-      return fieldsToSelect;
+
+      for (const snakedFieldname in inputFieldsToSelect) {
+         const cameledFieldName = this.inputStyleToCamel<string, Extract<keyof Fields, string>>(snakedFieldname);
+         if (fieldsToSelect[cameledFieldName] === undefined) {
+            errors.push({
+               context: 'selected field',
+               fieldName: snakedFieldname,
+               reason: `unknown field [${snakedFieldname}]`,
+            });
+         }
+      }
+      return { fields: fieldsToSelect, errors };
    }
 
    public buildDefaultRequestableFields(): RequestableFields<Fields> {
@@ -247,10 +259,10 @@ export abstract class DomainRequestBuilder<
 
    private sanitizeFilters(inputFilters: { [key: string]: unknown }): {
       filters: FilteringFields<Fields>;
-      errors: InputFieldsErrors;
+      errors: InputErrors;
    } {
       const filters: FilteringFields<Fields> = {};
-      const errors: InputFieldsErrors = [];
+      const errors: InputErrors = [];
       const fields = this.buildDefaultFields();
       const fieldsNames = Object.keys(fields) as Array<Extract<keyof Fields, string>>;
 
@@ -264,7 +276,11 @@ export abstract class DomainRequestBuilder<
          if (arrayType === 'or' || arrayType === 'and') {
             const arr = inputFilters[arrayType];
             if (!Array.isArray(arr)) {
-               errors.push({ fieldName: arrayType, reason: `${arrayType} must be an array` });
+               errors.push({
+                  context: 'filtering field',
+                  fieldName: arrayType,
+                  reason: `${arrayType} must be an array`,
+               });
                continue;
             }
             for (const obj of arr) {
@@ -312,7 +328,7 @@ export abstract class DomainRequestBuilder<
          }
          const fieldName = this.inputStyleToCamel(inputKey);
          if (!fieldsNames.includes(fieldName as Extract<keyof Fields, string>)) {
-            errors.push({ fieldName: inputKey, reason: `[${inputKey}] is not a field` });
+            errors.push({ context: 'filtering field', fieldName: inputKey, reason: `[${inputKey}] is not a field` });
          }
       }
 
@@ -323,7 +339,7 @@ export abstract class DomainRequestBuilder<
       field: Extract<keyof Fields, string>,
       inputFilters: { [key: string]: unknown },
       filters: FilteringFields<Fields>,
-      errors: InputFieldsErrors,
+      errors: InputErrors,
       filterGroupToUse: FiltersArrays,
    ): void {
       const inputFieldName = this.camelToInputStyle(field);
@@ -360,7 +376,7 @@ export abstract class DomainRequestBuilder<
 
       const res = this.validateFilterAndSetValue(field, comparison);
       if (!isComparison<Fields>(res)) {
-         errors.push({ fieldName: inputFieldName, reason: res });
+         errors.push({ context: 'filtering field', fieldName: inputFieldName, reason: res });
          return;
       }
 
@@ -400,9 +416,9 @@ export abstract class DomainRequestBuilder<
 
    private sanitizeOptions(inputOptions: { [key: string]: unknown }): {
       options: Options<Fields>;
-      errors: OptionsErrors;
+      errors: InputErrors;
    } {
-      const errors: OptionsErrors = [];
+      const errors: InputErrors = [];
       const options: Options<Fields> = { pagination: { offset: 0, limit: 100 } };
 
       if (inputOptions !== undefined) {
@@ -410,14 +426,14 @@ export abstract class DomainRequestBuilder<
             if (isNumber(inputOptions.limit)) {
                options.pagination.limit = Math.min(inputOptions.limit, DomainRequestBuilder.MAX_LIMIT);
             } else {
-               errors.push({ optionName: 'limit', reason: 'not a number' });
+               errors.push({ context: 'option', fieldName: 'limit', reason: 'not a number' });
             }
          }
          if (inputOptions.offset !== undefined) {
             if (isNumber(inputOptions.offset)) {
                options.pagination.offset = inputOptions.offset;
             } else {
-               errors.push({ optionName: 'offset', reason: 'not a number' });
+               errors.push({ context: 'option', fieldName: 'offset', reason: 'not a number' });
             }
          }
          this.sanitizeOrderBy(inputOptions, options, errors);
@@ -431,30 +447,32 @@ export abstract class DomainRequestBuilder<
    private sanitizeOrderBy(
       inputOptions: { [key: string]: unknown },
       options: Options<Fields>,
-      errors: OptionsErrors,
+      errors: InputErrors,
    ): void {
       if (inputOptions.orderby === undefined) {
          return;
       }
       if (!isString(inputOptions.orderby)) {
-         errors.push({ optionName: 'orderby', reason: 'not a string' });
+         errors.push({ context: 'option', fieldName: 'orderby', reason: 'not a string' });
          return;
       }
       const [fieldname, sort] = inputOptions.orderby.split(' ');
       if (fieldname === undefined) {
          errors.push({
-            optionName: 'orderby',
+            context: 'option',
+            fieldName: 'orderby',
             reason: `bad format: it should be "field_name ${orderbySort.join('|')}"`,
          });
          return;
       }
       if (this.validatorFilterMap[fieldname] === undefined) {
-         errors.push({ optionName: 'orderby', reason: `unknown field name ${fieldname}` });
+         errors.push({ context: 'option', fieldName: 'orderby', reason: `unknown field name ${fieldname}` });
          return;
       }
       if (!isOrderbySort(sort)) {
          errors.push({
-            optionName: 'orderby',
+            context: 'option',
+            fieldName: 'orderby',
             reason: `incorrect sort ${sort}, available values: ${orderbySort.join('|')}`,
          });
          return;
@@ -481,10 +499,7 @@ export abstract class DomainRequestBuilder<
       requests: {
          [Property in keyof Expandables]: DomainRequest<Name, Fields, Expandables>;
       };
-      errors: Array<{
-         fieldName: string;
-         reason: string;
-      }>;
+      errors: InputErrors;
    } {
       if (this.expReqBuilders === undefined) {
          throw new Error(`Request builder ${this.name} not initialized with Expandables Requests builders`);
@@ -608,10 +623,6 @@ export interface OrArrayComparison<Type extends DomainFields> {
 export type FilteringFields<Type extends DomainFields> = {
    [Property in keyof Type]?: AndArrayComparison<Type> | OrArrayComparison<Type>; // | Comparison<Type>;
 };
-export type FilteringFieldsErrors = Array<{
-   fieldName: string;
-   reason: string;
-}>;
 
 // https://stackoverflow.com/questions/60269936/typescript-convert-generic-object-from-snake-to-camel-case
 // type SnakeToCamelCase<S extends string> = S extends `${infer T}_${infer U}`
