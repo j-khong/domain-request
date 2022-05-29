@@ -101,7 +101,7 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
       operator: Operator;
       value: FilteringFields<Fields>[keyof FilteringFields<Fields>];
    }): void {
-      (this.filters as any)[filter.key] = [{ operator: filter.operator, value: filter.value }];
+      (this.filters as any)[filter.key] = { and: [{ operator: filter.operator, value: filter.value }] };
    }
 
    getExpandables(): {

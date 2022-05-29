@@ -4,7 +4,6 @@ import {
    DomainExpandables,
    DomainRequest,
    Operator,
-   snakeToCamel,
    RequestableFields,
    AndArrayComparison,
    OrArrayComparison,
@@ -109,7 +108,7 @@ async function fetch<Fields, ExpandableFields, TableFields extends string, Name 
       for (const key of res.fieldsToSelect.keys()) {
          const fieldToSelect = res.fieldsToSelect.get(key);
          const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
-         result[fieldName] = dbRecord[key];
+         result[fieldName] = dbRecord[key]; // TODO do a mapping, just as done with extended (to manageg boolean for example)
       }
       for (const key of res.expandableFieldsToSelect.keys()) {
          let expandableName = splitSqlAlias(key)[0];
@@ -375,11 +374,27 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
       if (conf.cardinality.name !== 'oneToMany') {
          continue;
       }
+
       const expandable = expandables[expKey];
+      if (expandable.getFieldsNames().length === 0) {
+         continue;
+      }
 
       // add the field to select mapping the id
-      const cardinality =
-         conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap()[tableConfig.tableName].cardinality;
+      let mainDomainMappingFoundInExpandable: undefined | DomainExpandableFieldsToTableFields<any>;
+      for (const mappingKey in conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
+         const mapping = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap()[mappingKey];
+         if (mapping.tableConfig.tableName === tableConfig.tableName) {
+            mainDomainMappingFoundInExpandable = mapping;
+            break;
+         }
+      }
+      if (mainDomainMappingFoundInExpandable === undefined) {
+         throw new Error(
+            `configuration error : no DomainExpandableFieldsToTableFieldsMap for table ${tableConfig.tableName}`,
+         );
+      }
+      const cardinality = mainDomainMappingFoundInExpandable.cardinality;
       if (cardinality.name !== 'oneToOne') {
          throw new Error(
             `configuration error : cardinality of ${tableConfig.tableName} -> ${tableConfig.tableName} should be oneToOne`,
@@ -387,8 +402,23 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
       }
       const fieldToAdd = cardinality.foreignKey;
 
+      // go find the domain Field name mapping this foreign key
+      let requestField: undefined | any;
+      for (const k in conf.tableConfig.domainFieldsToTableFieldsMap) {
+         if (conf.tableConfig.domainFieldsToTableFieldsMap[k].name === fieldToAdd) {
+            requestField = k;
+            break;
+         }
+      }
+      if (requestField === undefined) {
+         throw new Error(
+            `configuration error : cannot find "domain to table mapping" for table field [${
+               fieldToAdd as string
+            }] in expandable [${expKey}] of domain [${req.getName()}]`,
+         );
+      }
+
       // add the filter
-      const requestField = snakeToCamel<any, any>(fieldToAdd);
       expandable.setField(requestField, true);
       expandable.setFilter({ key: requestField, operator: 'includes', value: ids.join(',') as any });
 
@@ -566,7 +596,11 @@ function getDomainFieldsToTableFieldsMapping<Fields, ExpandableFields, TableFiel
    if (mapping === undefined) {
       // it should be an extended field
       if (!isExtendableTableConfig(tableConfig)) {
-         throw new Error(`configuration problem: no domain to db field mapping for extended field [${key as string}]`);
+         throw new Error(
+            `configuration problem: no "domain to db field mapping" for extended field [${
+               key as string
+            }] in table config of [${tableConfig.tableName}]`,
+         );
       }
 
       mapping = tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended]; // TODO fix this cast
