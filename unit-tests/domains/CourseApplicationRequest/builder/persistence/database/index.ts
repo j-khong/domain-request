@@ -8,18 +8,18 @@ import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
 
 type Key = 'id';
-type TableFields = Key | 'student_id' | 'course_id';
+type TableFields = Key | 'id_student' | 'id_course';
 
 class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
          new TableConfig<Fields, ExpandableFields, TableFields>(
-            'course_application', // tableName
+            'course_applications', // tableName
             'id', // tablePrimaryKey
             {
                id: { name: 'id', convert: toTableId },
-               studentId: { name: 'student_id', convert: toTableId },
-               courseId: { name: 'course_id', convert: toTableId },
+               studentId: { name: 'id_student', convert: toTableId },
+               courseId: { name: 'id_course', convert: toTableId },
             }, // domainFieldsToTableFieldsMap
          ),
       );
@@ -30,11 +30,11 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
          student: {
-            cardinality: { name: 'oneToOne', foreignKey: 'student_id' },
+            cardinality: { name: 'oneToOne', foreignKey: 'id_student' },
             tableConfig: allDbTables.student.getTableConfig(),
          },
          course: {
-            cardinality: { name: 'oneToOne', foreignKey: 'course_id' },
+            cardinality: { name: 'oneToOne', foreignKey: 'id_course' },
             tableConfig: allDbTables.course.getTableConfig(),
          },
       };

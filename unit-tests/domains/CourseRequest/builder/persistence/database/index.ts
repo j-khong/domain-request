@@ -9,7 +9,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    constructor() {
       super(
          new TableConfig<Fields, ExpandableFields, TableFields>(
-            'course', // tableName
+            'courses', // tableName
             'id', // tablePrimaryKey
             {
                id: { name: 'id', convert: toTableId },

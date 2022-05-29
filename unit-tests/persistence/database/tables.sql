@@ -1,89 +1,118 @@
-DROP TABLE IF EXISTS `course_application`;
-DROP TABLE IF EXISTS `student`;
-DROP TABLE IF EXISTS `country`;
-DROP TABLE IF EXISTS `building`;
-DROP TABLE IF EXISTS `course`;
-DROP TABLE IF EXISTS `student_category`;
+DROP TABLE IF EXISTS `course_applications`;
 DROP TABLE IF EXISTS `building_opening_hours`;
+DROP TABLE IF EXISTS `student_categories`;
+DROP TABLE IF EXISTS `students`;
+DROP TABLE IF EXISTS `countries`;
+DROP TABLE IF EXISTS `buildings`;
+DROP TABLE IF EXISTS `courses`;
 
 
-CREATE TABLE `building` (
+CREATE TABLE `buildings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `status` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `building__NK` (`name`)
+  UNIQUE KEY `buildings__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `country` (
+CREATE TABLE `countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `timezone` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `country__NK` (`name`)
+  UNIQUE KEY `countries__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `course` (
+CREATE TABLE `courses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `course__NK` (`name`)
+  UNIQUE KEY `courses__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `student_category` (
+CREATE TABLE `student_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `student_category__NK` (`name`)
+  UNIQUE KEY `student_categories__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `student` (
+CREATE TABLE `students` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firstname` varchar(255) NOT NULL,
   `lastname` varchar(255) NOT NULL,
-  `year_of_birth` unsigned smallint NOT NULL,
+  `year_of_birth` smallint unsigned  NOT NULL,
   `national_card_id` varchar(255) NOT NULL,
   `has_scholarship` boolean NOT NULL,
-  `country_id` int(11) NOT NULL,
-  `category_id` int(11) NOT NULL,
+  `id_country` int(11) NOT NULL,
+  `id_category` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `student__NK` (`national_card_id`, `country_id`),
-  KEY `student__IDX_country_id` (`country_id`),
-  CONSTRAINT `student__FK_country_id` FOREIGN KEY (`country_id`) REFERENCES `country` (`id`),
-  KEY `student__IDX_category_id` (`category_id`),
-  CONSTRAINT `student__FK_category_id` FOREIGN KEY (`category_id`) REFERENCES `student_category` (`id`)
+  UNIQUE KEY `students__NK` (`national_card_id`, `id_country`),
+  KEY `students__IDX_country_id` (`id_country`),
+  CONSTRAINT `students__FK_country_id` FOREIGN KEY (`id_country`) REFERENCES `countries` (`id`),
+  KEY `students__IDX_category_id` (`id_category`),
+  CONSTRAINT `students__FK_category_id` FOREIGN KEY (`id_category`) REFERENCES `student_categories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-CREATE TABLE `course_application` (
+CREATE TABLE `course_applications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `student_id` int(11) NOT NULL,
-  `course_id` int(11) NOT NULL,
+  `id_student` int(11) NOT NULL,
+  `id_course` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `course_application__NK` (`student_id`, `course_id`),
-  KEY `course_application__IDX_student_id` (`student_id`),
-  CONSTRAINT `course_application__FK_student_id` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`),
-  KEY `course_application__IDX_course_id` (`course_id`),
-  CONSTRAINT `course_application__FK_course_id` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+  UNIQUE KEY `course_applications__NK` (`id_student`, `id_course`),
+  KEY `id_course_applications__IDX_student` (`id_student`),
+  CONSTRAINT `id_course_applications__FK_student` FOREIGN KEY (`id_student`) REFERENCES `students` (`id`),
+  KEY `course_applications__IDX_course_id` (`id_course`),
+  CONSTRAINT `course_applications__FK_course_id` FOREIGN KEY (`id_course`) REFERENCES `courses` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `building_opening_hours` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `building_id` int(11) NOT NULL,
+  `id_building` int(11) NOT NULL,
   `day` tinyint NOT NULL,
   `start` varchar(5) NOT NULL,
   `end` varchar(5) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `building_opening_hours__IDX_building_id` (`building_id`),
-  CONSTRAINT `building_opening_hours__FK_building_id` FOREIGN KEY (`building_id`) REFERENCES `building` (`id`)
+  KEY `building_opening_hours__IDX_building_id` (`id_building`),
+  CONSTRAINT `building_opening_hours__FK_building_id` FOREIGN KEY (`id_building`) REFERENCES `buildings` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-INSERT INTO `country` (`name`, `timezone`) VALUES
-('france', 'Europe/Paris');
 
-INSERT INTO `course` (`name`) VALUES
-('Math 101');
 
-INSERT INTO `category` (`name`) VALUES
-('Arts'), ('Sports');
+INSERT INTO `buildings` (`name`, `status`) VALUES
+('A', 'opened'),
+('B', 'closed'),
+('C', 'opened'),
+('D', 'work in progress');
+
+INSERT INTO `countries` (`name`, `timezone`) VALUES
+('france', 'Europe/Paris'),
+('espagne', 'Europe/Madrid');
+
+
+INSERT INTO `student_categories` (`name`) VALUES
+('Arts'),
+('Sports');
+
+INSERT INTO `courses` (`name`) VALUES
+('Math 101'),
+('Arts'),
+('History');
+
+INSERT INTO `students` (`firstname`, `lastname`, `year_of_birth`, `national_card_id`, `has_scholarship`, `id_country`, `id_category`) VALUES
+('pierre', 'dupont', 1970, '12340', 1, (SELECT id FROM countries WHERE name = 'france'), (SELECT id FROM student_categories WHERE name = 'Sports')),
+('jeanne', 'durant', 1971, '12345', 0, (SELECT id FROM countries WHERE name = 'france'), (SELECT id FROM student_categories WHERE name = 'Arts'));
+
+INSERT INTO `building_opening_hours` (`id_building`, `day`, `start`, `end`) VALUES
+((SELECT id FROM buildings WHERE name = "A"), 1, '10:00', '14:00'),
+((SELECT id FROM buildings WHERE name = "A"), 1, '15:00', '23:00'),
+((SELECT id FROM buildings WHERE name = "A"), 3, '8:00', '20:00'),
+((SELECT id FROM buildings WHERE name = "C"), 1, '10:00', '14:00');
+
+INSERT INTO `course_applications` (`id_student`, `id_course`) VALUES
+((SELECT id FROM students WHERE national_card_id='12340' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='Math 101')),
+((SELECT id FROM students WHERE national_card_id='12345' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='Math 101')),
+((SELECT id FROM students WHERE national_card_id='12340' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='Arts')),
+((SELECT id FROM students WHERE national_card_id='12340' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='History'));

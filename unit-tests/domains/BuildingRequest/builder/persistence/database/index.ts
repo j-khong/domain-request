@@ -17,7 +17,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    constructor() {
       super(
          new ExtendableTableConfig<Fields, ExpandableFields, TableFields, ExtendedFields>(
-            'building', // tableName
+            'buildings', // tableName
             'id', // tablePrimaryKey
             {
                id: { name: 'id', convert: toTableId },
@@ -38,7 +38,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
       openingHoursTable.init(
          {
             building: {
-               cardinality: { name: 'oneToOne', foreignKey: 'building_id' },
+               cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
                tableConfig: this.getTableConfig(),
             },
          },
@@ -47,7 +47,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
    }
 }
 
-type TableFieldNames = 'id' | 'day' | 'start' | 'end' | 'building_id';
+type TableFieldNames = 'id' | 'day' | 'start' | 'end' | 'id_building';
 
 const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }, TableFieldNames>(
    'building_opening_hours', // tableName

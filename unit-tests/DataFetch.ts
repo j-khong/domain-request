@@ -42,7 +42,7 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
                openingHours: [
                   {
                      day: 1,
@@ -118,7 +118,7 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
                openingHours: [
                   {
                      day: 1,
@@ -187,7 +187,7 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
                openingHours: [
                   {
                      day: 1,
@@ -241,7 +241,7 @@ describe('Data fetch tests ', () => {
          total: 1,
          results: [
             {
-               id: 2,
+               id: 1,
                openingHours: [
                   {
                      day: 1,
@@ -311,17 +311,17 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
             {
                name: 'D',
                status: 'work in progress',
-               id: 5,
+               id: 4,
             },
          ],
       };
@@ -347,12 +347,12 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
          ],
       };
@@ -388,17 +388,17 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
             {
                name: 'D',
                status: 'work in progress',
-               id: 5,
+               id: 4,
             },
          ],
       };
@@ -425,17 +425,17 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
             {
                name: 'D',
                status: 'work in progress',
-               id: 5,
+               id: 4,
             },
          ],
       };
@@ -472,12 +472,12 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
          ],
       };
@@ -514,17 +514,17 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
             {
                name: 'D',
                status: 'work in progress',
-               id: 5,
+               id: 4,
             },
          ],
       };
@@ -565,17 +565,17 @@ describe('Data fetch tests ', () => {
             {
                name: 'A',
                status: 'opened',
-               id: 2,
+               id: 1,
             },
             {
                name: 'C',
                status: 'opened',
-               id: 4,
+               id: 3,
             },
             {
                name: 'D',
                status: 'work in progress',
-               id: 5,
+               id: 4,
             },
          ],
       };

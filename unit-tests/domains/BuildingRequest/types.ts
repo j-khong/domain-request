@@ -18,6 +18,7 @@ export interface ExtendedFields {
 }
 
 export interface ExpandableFields {}
+// TODO add sponsors as expandable
 
 export const domainRequestName: DomainRequestName = 'building';
 export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [];
