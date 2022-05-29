@@ -24,6 +24,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
          ),
       );
    }
+
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DomainRequestName]: DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {

@@ -1,4 +1,4 @@
-import { DomainRequest, DomainResult, ExpandableName } from '../../../src';
+import { ExpandableName } from '../../../src';
 import { isString } from '../../../src/type-checkers';
 import { DomainRequestName } from '../types';
 
@@ -21,9 +21,6 @@ export interface ExpandableFields {}
 
 export const domainRequestName: DomainRequestName = 'building';
 export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [];
-
-export type Request = DomainRequest<DomainRequestName, Fields, ExpandableFields>;
-export type Result = DomainResult;
 
 export interface OpeningHours {
    day: number;

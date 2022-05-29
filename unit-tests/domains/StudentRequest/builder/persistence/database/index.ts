@@ -4,6 +4,7 @@ import {
    toTableId,
    toString,
    DatabaseTable,
+   toBoolean,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -32,7 +33,7 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
                yearOfBirth: { name: 'year_of_birth', convert: toString },
                nationalCardId: { name: 'national_card_id', convert: toString },
                countryId: { name: 'country_id', convert: toString },
-               hasScholarship: { name: 'has_scholarship', convert: toString },
+               hasScholarship: { name: 'has_scholarship', convert: toBoolean },
                categoryId: { name: 'category_id', convert: toString },
             }, // domainFieldsToTableFieldsMap
          ),
