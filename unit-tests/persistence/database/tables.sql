@@ -1,10 +1,12 @@
 DROP TABLE IF EXISTS `course_applications`;
 DROP TABLE IF EXISTS `building_opening_hours`;
+DROP TABLE IF EXISTS `building_pictures`;
 DROP TABLE IF EXISTS `student_categories`;
 DROP TABLE IF EXISTS `students`;
 DROP TABLE IF EXISTS `countries`;
 DROP TABLE IF EXISTS `buildings`;
 DROP TABLE IF EXISTS `courses`;
+DROP TABLE IF EXISTS `pictures`;
 
 
 CREATE TABLE `buildings` (
@@ -79,6 +81,25 @@ CREATE TABLE `building_opening_hours` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
+CREATE TABLE `pictures` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,
+  `description` varchar(200) NOT NULL,
+  `url` varchar(200) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `building_pictures` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_building` int(11) NOT NULL,
+  `id_picture` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `building_pictures__IDX_building_id` (`id_building`),
+  CONSTRAINT `building_pictures__FK_building_id` FOREIGN KEY (`id_building`) REFERENCES `buildings` (`id`),
+  KEY `building_pictures__IDX_picture_id` (`id_picture`),
+  CONSTRAINT `building_pictures__FK_picture_id` FOREIGN KEY (`id_picture`) REFERENCES `pictures` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 INSERT INTO `buildings` (`name`, `status`) VALUES
@@ -116,3 +137,16 @@ INSERT INTO `course_applications` (`id_student`, `id_course`) VALUES
 ((SELECT id FROM students WHERE national_card_id='12345' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='Math 101')),
 ((SELECT id FROM students WHERE national_card_id='12340' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='Arts')),
 ((SELECT id FROM students WHERE national_card_id='12340' AND id_country=(SELECT id FROM countries WHERE name = 'france')), (SELECT id FROM courses WHERE name='History'));
+
+
+INSERT INTO `pictures` (`name`, `description`, `url`) VALUES
+('A', 'bla', 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview'),
+('B', 'bla', 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart'),
+('C', 'bla', 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg'),
+('D', 'bla', 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg');
+
+INSERT INTO building_pictures (id_building, id_picture) VALUES
+((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "A") ),
+((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "B") ),
+((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "C") ),
+((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D") )

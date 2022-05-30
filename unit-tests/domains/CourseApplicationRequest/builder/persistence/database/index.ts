@@ -1,5 +1,6 @@
 import {
    DatabaseTable,
+   DatabaseTableWithExpandables,
    DomainExpandableFieldsToTableFieldsMap,
    TableConfig,
    toTableId,
@@ -10,7 +11,7 @@ import { DomainRequestName } from '../../../../types';
 type Key = 'id';
 type TableFields = Key | 'id_student' | 'id_course';
 
-class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
          new TableConfig<Fields, ExpandableFields, TableFields>(
@@ -32,10 +33,12 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
          student: {
             cardinality: { name: 'oneToOne', foreignKey: 'id_student' },
             tableConfig: allDbTables.student.getTableConfig(),
+            dbt: allDbTables.student,
          },
          course: {
             cardinality: { name: 'oneToOne', foreignKey: 'id_course' },
             tableConfig: allDbTables.course.getTableConfig(),
+            dbt: allDbTables.course,
          },
       };
    }

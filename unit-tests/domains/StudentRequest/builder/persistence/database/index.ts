@@ -5,6 +5,7 @@ import {
    toString,
    DatabaseTable,
    toBoolean,
+   DatabaseTableWithExpandables,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -20,7 +21,7 @@ type TableFields =
    | 'id_category'
    | 'has_scholarship';
 
-class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
          new TableConfig<Fields, ExpandableFields, TableFields>(
@@ -46,15 +47,18 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
          country: {
             cardinality: { name: 'oneToOne', foreignKey: 'id_country' },
             tableConfig: allDbTables.country.getTableConfig(),
+            dbt: allDbTables.country,
          },
          category: {
             globalContextDomainName: 'studentCategory',
             cardinality: { name: 'oneToOne', foreignKey: 'id_category' },
             tableConfig: allDbTables.studentCategory.getTableConfig(),
+            dbt: allDbTables.studentCategory,
          },
          courseApplication: {
             cardinality: { name: 'oneToMany' },
             tableConfig: allDbTables.courseApplication.getTableConfig(),
+            dbt: allDbTables.courseApplication,
          },
       };
    }

@@ -1,4 +1,5 @@
 import { DomainFields, NestedFilteringFields, NestedRequestableFields } from '../..';
+import { DatabaseTable } from './database';
 
 // can be an id (string | number) but also an ids list (1,45,3) to be used with IN ()
 export const toTableId = (o: any): number[] => o.split(',').map((n: string) => toNumber(n));
@@ -50,6 +51,7 @@ type Cardinality<TableFields extends string> = OneToOne<TableFields> | OneToMany
 
 export interface DomainExpandableFieldsToTableFields<TableFields extends string> {
    tableConfig: TableConfig<any, any, any>;
+   dbt: DatabaseTable<any, any, any, TableFields>;
    cardinality: Cardinality<TableFields>;
    globalContextDomainName?: string; // when your Domain expandable name is different from the Domain name (wihch is unique)
 }
@@ -59,7 +61,8 @@ export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends Doma
         [Property in keyof ExpandableFields]: DomainExpandableFieldsToTableFields<TableFields>;
      };
 
-export type SelectMethodResult = Array<{ [key: string]: string | number | Date | boolean }>;
+export type DbRecord = { [key: string]: string | number | Date | boolean };
+export type SelectMethodResult = Array<DbRecord>;
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
 export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
    constructor(
@@ -94,9 +97,9 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
       }
    }
 }
-export class ExtendableTableConfig<Fields, ExpandableFields, TableFields extends string, Extended> extends TableConfig<
+export class ExtendableTableConfig<Fields, TableFields extends string, Extended> extends TableConfig<
    Fields,
-   ExpandableFields,
+   {},
    TableFields
 > {
    constructor(
@@ -109,9 +112,9 @@ export class ExtendableTableConfig<Fields, ExpandableFields, TableFields extends
    }
 }
 
-export function isExtendableTableConfig<Fields, ExpandableFields, TableFields extends string>(
-   tc: TableConfig<Fields, ExpandableFields, TableFields>,
-): tc is ExtendableTableConfig<Fields, ExpandableFields, TableFields, any> {
+export function isExtendableTableConfig<Fields, TableFields extends string>(
+   tc: TableConfig<Fields, {}, TableFields>,
+): tc is ExtendableTableConfig<Fields, TableFields, any> {
    return (tc as any).extendedFieldsToTableFieldsMap !== undefined;
 }
 export class ExtendedTableConfig<Domain, Expandables, TableFields extends string> extends TableConfig<

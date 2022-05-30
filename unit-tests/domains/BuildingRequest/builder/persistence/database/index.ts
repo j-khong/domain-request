@@ -1,6 +1,6 @@
 import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
-   DatabaseTable,
+   DatabaseTableWithExtended,
    ExtendableTableConfig,
    ExtendedTableConfig,
    SelectMethod,
@@ -9,14 +9,14 @@ import {
    toTableId,
 } from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
-import { ExpandableFields, ExtendedFields, Fields, OpeningHours } from '../../../types';
+import { ExtendedFields, Fields, OpeningHours, Picture } from '../../../types';
 
 type Key = 'id';
 type TableFields = Key | 'name' | 'status';
-class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends DatabaseTableWithExtended<DomainRequestName, Fields, TableFields> {
    constructor() {
       super(
-         new ExtendableTableConfig<Fields, ExpandableFields, TableFields, ExtendedFields>(
+         new ExtendableTableConfig<Fields, TableFields, ExtendedFields>(
             'buildings', // tableName
             'id', // tablePrimaryKey
             {
@@ -29,17 +29,33 @@ class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields
                   cardinality: { name: 'oneToMany' },
                   tableConfig: openingHoursTable,
                },
+               pictures: {
+                  cardinality: { name: 'oneToMany' },
+                  tableConfig: picturesTable,
+               },
             },
          ),
       );
    }
 
-   protected otherTableConfigToInit(select: SelectMethod): void {
+   protected extendedTableConfigToInit(select: SelectMethod): void {
       openingHoursTable.init(
          {
             building: {
                cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
                tableConfig: this.getTableConfig(),
+               dbt: this as any,
+            },
+         },
+         select,
+      );
+
+      picturesTable.init(
+         {
+            building: {
+               cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
+               tableConfig: this.getTableConfig(),
+               dbt: this as any,
             },
          },
          select,
@@ -100,6 +116,26 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
       }
 
       return config.slots[thekey as 'start' | 'end'];
+   },
+);
+
+type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'id_building';
+const picturesTable = new ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames>(
+   'building_pictures',
+   'id',
+   {},
+   (
+      data: Array<{
+         day?: number;
+         start?: string;
+         end?: string;
+      }>,
+   ): Array<NestedFilteringFields<Picture>> => {
+      const ohs: any[] = [];
+      return ohs;
+   },
+   (config: NestedRequestableFields<Picture>, thekey: PictureTableFieldNames): boolean => {
+      return false;
    },
 );
 

@@ -1,11 +1,11 @@
-import { TableConfig, toTableId, toString, DatabaseTable } from '../../../../../../src/persistence/database';
+import { TableConfig, toTableId, toString, SimpleDatabaseTable } from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
 import { ExpandableFields, Fields } from '../../../types';
 
 type Key = 'id';
 type TableFields = Key | 'name';
 
-class Database extends DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends SimpleDatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
          new TableConfig<Fields, ExpandableFields, TableFields>(

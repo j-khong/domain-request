@@ -1,17 +1,12 @@
 import { DomainRequestName } from '../../../types';
-import { DomainRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest';
-import {
-   domainRequestName,
-   ExpandableFields as MainExpandableFields,
-   Fields as MainFields,
-   validateStatus,
-} from '../../types';
+import { DomainRequestWithExtended, validateId, validateString } from '../../../../../src/DomainRequest';
+import { domainRequestName, ExtendedFields, Fields as MainFields, validateStatus } from '../../types';
+import { PictureRequestBuilder } from './PictureRequestBuilder';
 import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder';
 
 type Fields = Pick<MainFields, keyof MainFields>;
-type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
-export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
+export class RequestBuilder extends DomainRequestWithExtended<DomainRequestName, Fields, ExtendedFields> {
    constructor() {
       super(
          domainRequestName,
@@ -23,6 +18,7 @@ export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fiel
          },
          {
             openingHours: new OpeningHoursRequestBuilder(),
+            pictures: new PictureRequestBuilder(),
          },
       );
    }

@@ -1,4 +1,3 @@
-import { ExpandableName } from '../../../src';
 import { isString } from '../../../src/type-checkers';
 import { DomainRequestName } from '../types';
 
@@ -15,14 +14,18 @@ export interface Fields {
 
 export interface ExtendedFields {
    openingHours: OpeningHours[];
+   pictures: Picture[];
 }
 
-export interface ExpandableFields {}
 // TODO add sponsors as expandable
 
 export const domainRequestName: DomainRequestName = 'building';
-export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [];
 
+export interface Picture {
+   url: string;
+   name: string;
+   description: string;
+}
 export interface OpeningHours {
    day: number;
    slots: TimeSlot[];

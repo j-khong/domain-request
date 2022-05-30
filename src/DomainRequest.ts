@@ -113,6 +113,14 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
    getNaturalKey(): NaturalKey<Extract<keyof Fields, string>> {
       return this.naturalKey;
    }
+
+   private selectCount = true;
+   dontSelectCount(): void {
+      this.selectCount = false;
+   }
+   isSelectCount(): boolean {
+      return this.selectCount;
+   }
 }
 
 export interface RequestValues<
@@ -145,6 +153,7 @@ export abstract class DomainRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
    Expandables extends DomainExpandables,
+   Extended = {},
 > {
    private static readonly MAX_LIMIT = 5000;
 
@@ -159,7 +168,7 @@ export abstract class DomainRequestBuilder<
          };
       },
       private readonly extended?: {
-         [key: string]: DomainRequestBuilder<string, any, any>;
+         [Property in keyof Extended]: DomainRequestBuilder<string, any, any>;
       },
    ) {}
 
@@ -563,6 +572,12 @@ export abstract class DomainRequestBuilder<
       );
    }
 }
+
+export class DomainRequestWithExtended<
+   Name extends string,
+   Fields extends DomainFields,
+   Extended,
+> extends DomainRequestBuilder<Name, Fields, {}, Extended> {}
 
 export type Validator = (val: any) => { valid: boolean; reason: string };
 
