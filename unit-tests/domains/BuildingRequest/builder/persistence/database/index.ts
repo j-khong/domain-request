@@ -120,23 +120,51 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
 );
 
 type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'id_building';
-const picturesTable = new ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames>(
+class PictureExtendedTableConfig extends ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames> {
+   getTableName(): string {
+      return 'pictures';
+   }
+   getAdditionalJoin(): string {
+      return 'LEFT JOIN pictures ON pictures.id = building_pictures.id_picture';
+   }
+}
+const picturesTable = new PictureExtendedTableConfig(
    'building_pictures',
    'id',
-   {},
+   {
+      url: { name: 'url', convert: toString },
+      name: { name: 'name', convert: toString },
+      description: { name: 'description', convert: toString },
+   },
    (
       data: Array<{
-         day?: number;
-         start?: string;
-         end?: string;
+         name?: string;
+         url?: string;
+         description?: string;
       }>,
    ): Array<NestedFilteringFields<Picture>> => {
-      const ohs: any[] = [];
-      return ohs;
+      const ret: any[] = [];
+      for (const d of data) {
+         const res: any = {};
+         if (d.name !== undefined) {
+            res.name = d.name;
+         }
+         if (d.url !== undefined) {
+            res.url = d.url;
+         }
+         if (d.description !== undefined) {
+            res.description = d.description;
+         }
+         ret.push(res);
+      }
+      return ret;
    },
    (config: NestedRequestableFields<Picture>, thekey: PictureTableFieldNames): boolean => {
-      return false;
+      if (config[thekey as 'url' | 'name' | 'description'] === undefined) {
+         return false;
+      }
+
+      return config[thekey as 'url' | 'name' | 'description'];
    },
 );
-
 export const dbTable = new Database();

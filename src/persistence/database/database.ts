@@ -335,105 +335,138 @@ async function fetchOneToMany<Fields, ExpandableFields, TableFields extends stri
 
    // searching oneToMany fields which are not expandables
    if (isExtendableTableConfig(tableConfig)) {
-      for (const k in tableConfig.extendedFieldsToTableFieldsMap) {
-         const conf = tableConfig.extendedFieldsToTableFieldsMap[k];
-         if (isOtherTableMapping(conf)) {
-            if (conf.cardinality.name !== 'oneToMany') {
-               continue;
-            }
-            const extendedFieldsToSelect = req.getFields()[k as unknown as keyof Fields] as RequestableFields<any>; // TODO fix this cast
-            if (extendedFieldsToSelect === undefined) {
-               continue;
-            }
+      await fetchExtendedOneToMany(resultsToReconcile, req, tableConfig, ids);
+   }
 
-            // loop on all fields of table
-            const fieldsToSelect = createNewFieldsToSelect<any>();
-            for (const subkey in conf.tableConfig.domainFieldsToTableFieldsMap) {
-               const map = getDomainFieldsToTableFieldsMapping(conf.tableConfig, subkey);
-               if (isSameTableMapping(map)) {
-                  if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
-                     addFieldToSelect(fieldsToSelect, conf.tableConfig.tableName, map.name, subkey);
-                  }
-               }
-            }
+   await fetchExpandablesOneToMany(resultsToReconcile, req, tableConfig, ids);
+}
 
-            if (fieldsToSelect.size === 0) {
-               continue;
-            }
-            // process join
-            const joins: Join = new Map();
-            const exp = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap();
-            const mod = exp[req.getName()];
-            const joinTableName = conf.tableConfig.tableName;
-            const map = joins.get(joinTableName);
-            if (map === undefined) {
-               if (mod.cardinality.name === 'oneToOne') {
-                  joins.set(joinTableName, {
-                     relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${
-                        mod.cardinality.foreignKey as string
-                     }`,
-                     filters: [],
-                  });
-               }
-            }
+async function fetchExtendedOneToMany<
+   Fields,
+   ExpandableFields,
+   TableFields extends string,
+   Name extends string,
+   Extended,
+>(
+   resultsToReconcile: DomainResult,
+   req: DomainRequest<Name, Fields, ExpandableFields>,
+   tableConfig: ExtendableTableConfig<Fields, TableFields, Extended>,
+   ids: string[],
+): Promise<void> {
+   for (const k in tableConfig.extendedFieldsToTableFieldsMap) {
+      const conf = tableConfig.extendedFieldsToTableFieldsMap[k];
 
-            const fields = [...Array.from(fieldsToSelect.values()).map((v) => v.fullFieldToSelect)].join(', ');
-            const joinsStr: string[] = [];
-            for (const [key, value] of joins) {
-               joinsStr.push(
-                  `LEFT JOIN ${key} ON ${value.relationship} ${
-                     value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
-                  }`,
-               );
+      if (!isOtherTableMapping(conf) || conf.cardinality.name !== 'oneToMany') {
+         continue;
+      }
+      const extendedFieldsToSelect = req.getFields()[k as unknown as keyof Fields] as RequestableFields<any>; // TODO fix this cast
+      if (extendedFieldsToSelect === undefined) {
+         continue;
+      }
+
+      // loop on all fields of table
+      const fieldsToSelect = createNewFieldsToSelect<any>();
+      for (const subkey in conf.tableConfig.domainFieldsToTableFieldsMap) {
+         const map = getDomainFieldsToTableFieldsMapping(conf.tableConfig, subkey);
+         if (isSameTableMapping(map)) {
+            if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
+               addFieldToSelect(fieldsToSelect, conf.tableConfig.getTableName(), map.name, subkey);
             }
-            const id = createRequestFullFieldName(tableConfig.tableName, tableConfig.tablePrimaryKey);
-            const pk = createSqlAlias(tableConfig.tableName, tableConfig.tablePrimaryKey);
+         } //TODO here manage other table mapping
+      }
 
-            const select = `SELECT ${id}, ${fields}`;
-            const from = `FROM ${tableConfig.tableName}`;
-            // const filters: string[] = []; //processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
-            const where = `WHERE ${tableConfig.tableName}.${tableConfig.tablePrimaryKey} IN (${ids.join(', ')})`;
+      if (fieldsToSelect.size === 0) {
+         continue;
+      }
+      // process join
+      const joins: Join = new Map();
+      const exp = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap();
+      const mod = exp[req.getName()];
+      const joinTableName = conf.tableConfig.tableName;
+      const map = joins.get(joinTableName);
+      if (map === undefined) {
+         if (mod.cardinality.name === 'oneToOne') {
+            joins.set(joinTableName, {
+               relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${
+                  mod.cardinality.foreignKey as string
+               }`,
+               filters: [],
+            });
+         }
+      }
 
-            const resultsSql = `${select}
+      const fields = [...Array.from(fieldsToSelect.values()).map((v) => v.fullFieldToSelect)].join(', ');
+      const joinsStr: string[] = [];
+      for (const [key, value] of joins) {
+         joinsStr.push(
+            `LEFT JOIN ${key} ON ${value.relationship} ${
+               value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
+            }`,
+         );
+      }
+      joinsStr.push(conf.tableConfig.getAdditionalJoin());
+
+      const id = createRequestFullFieldName(tableConfig.tableName, tableConfig.tablePrimaryKey);
+      const pk = createSqlAlias(tableConfig.tableName, tableConfig.tablePrimaryKey);
+
+      const select = `SELECT ${id}, ${fields}`;
+      const from = `FROM ${tableConfig.tableName}`;
+      // const filters: string[] = []; //processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
+      const where = `WHERE ${tableConfig.tableName}.${tableConfig.tablePrimaryKey} IN (${ids.join(', ')})`;
+
+      const resultsSql = `${select}
 ${from}
 ${joinsStr.join('\n')}
 ${where}
 LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}`;
 
-            const { res: dbRecords, report } = await executeRequest(tableConfig.select, resultsSql);
-            resultsToReconcile.report.requests.push(report);
+      const { res: dbRecords, report } = await executeRequest(tableConfig.select, resultsSql);
+      resultsToReconcile.report.requests.push(report);
 
-            for (const resourceId of ids) {
-               const toPopulate = resultsToReconcile.results.find(
-                  (d) => d[tableConfig.tablePrimaryKey].toString() === resourceId,
-               );
-               if (toPopulate === undefined) {
-                  console.log(`big problem, cannot find resource ${tableConfig.tableName} of id [${resourceId}]`);
-                  continue;
-               }
-
-               const domainPk = createSqlAlias(conf.tableConfig.tableName, conf.tableConfig.tablePrimaryKey);
-               const records = dbRecords
-                  .filter((r) => r[pk].toString() === resourceId)
-                  .map((r) => {
-                     const domain: any = {};
-                     for (const [key, value] of fieldsToSelect) {
-                        if (domainPk === key) {
-                           continue;
-                        }
-                        domain[value.domainFieldname] = r[key];
-                     }
-                     return domain;
-                  });
-               toPopulate[k] =
-                  conf.tableConfig.fromDbRecordsToDomains !== undefined
-                     ? conf.tableConfig.fromDbRecordsToDomains(records)
-                     : records;
-            }
+      for (const resourceId of ids) {
+         const toPopulate = resultsToReconcile.results.find(
+            (d) => d[tableConfig.tablePrimaryKey].toString() === resourceId,
+         );
+         if (toPopulate === undefined) {
+            console.log(`big problem, cannot find resource ${tableConfig.tableName} of id [${resourceId}]`);
+            continue;
          }
+
+         const domainPk = createSqlAlias(conf.tableConfig.tableName, conf.tableConfig.tablePrimaryKey);
+         const records = dbRecords
+            .filter((r) => r[pk].toString() === resourceId)
+            .map((r) => {
+               const domain: any = {};
+               for (const [key, value] of fieldsToSelect) {
+                  if (domainPk === key) {
+                     continue;
+                  }
+                  domain[value.domainFieldname] = r[key];
+               }
+               return domain;
+            });
+         toPopulate[k] =
+            conf.tableConfig.fromDbRecordsToDomains !== undefined
+               ? conf.tableConfig.fromDbRecordsToDomains(records)
+               : records;
       }
    }
+}
 
+async function fetchExpandablesOneToMany<
+   Fields,
+   ExpandableFields,
+   TableFields extends string,
+   Name extends string,
+   Extended,
+>(
+   resultsToReconcile: DomainResult,
+   req: DomainRequest<Name, Fields, ExpandableFields>,
+   tableConfig:
+      | TableConfig<Fields, ExpandableFields, TableFields>
+      | ExtendableTableConfig<Fields, TableFields, Extended>,
+   ids: string[],
+): Promise<void> {
    const expandables = req.getExpandables();
    for (const expKey in expandables) {
       const conf = getExpandableTableDetails(tableConfig.getDomainExpandableFieldsToTableFieldsMap(), expKey);

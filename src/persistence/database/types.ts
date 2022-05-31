@@ -117,6 +117,7 @@ export function isExtendableTableConfig<Fields, TableFields extends string>(
 ): tc is ExtendableTableConfig<Fields, TableFields, any> {
    return (tc as any).extendedFieldsToTableFieldsMap !== undefined;
 }
+
 export class ExtendedTableConfig<Domain, Expandables, TableFields extends string> extends TableConfig<
    any,
    Expandables,
@@ -125,13 +126,20 @@ export class ExtendedTableConfig<Domain, Expandables, TableFields extends string
    constructor(
       tableName: string,
       tablePrimaryKey: string,
-      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>,
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>, //TODO a type which can have same mapping or other
       public readonly fromDbRecordsToDomains: (
          dbRecords: Array<{ [key: string]: undefined | any }>,
       ) => Array<NestedFilteringFields<Domain>>,
       public readonly isToSelect: (config: NestedRequestableFields<Domain>, key: TableFields) => boolean,
    ) {
       super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
+   }
+
+   getTableName(): string {
+      return this.tableName;
+   }
+   getAdditionalJoin(): string {
+      return '';
    }
 }
 
