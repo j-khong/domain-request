@@ -583,6 +583,235 @@ describe('Data fetch tests ', () => {
          test(input, role, domainRequestName, expected).then(done).catch(done);
       });
    });
+   describe('extended fields', () => {
+      it('1 level 2 extended 1toN only', function (done) {
+         const domainRequestName: DomainRequestName = 'building';
+         const role = 'admin';
+         let input = {
+            fields: {
+               pictures: {
+                  fields: {
+                     name: true,
+                     url: true,
+                  },
+               },
+            },
+         };
+
+         const expected = {
+            total: 4,
+            domainName: 'building',
+            results: [
+               {
+                  id: 1,
+                  pictures: [
+                     {
+                        name: 'A',
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                     },
+                  ],
+               },
+               {
+                  id: 2,
+                  pictures: [
+                     {
+                        name: 'B',
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     },
+                  ],
+               },
+               {
+                  id: 3,
+                  pictures: [
+                     {
+                        name: 'C',
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     },
+                  ],
+               },
+               {
+                  id: 4,
+                  pictures: [
+                     {
+                        name: 'D',
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     },
+                  ],
+               },
+            ],
+         };
+         test(input, role, domainRequestName, expected).then(done).catch(done);
+      });
+      it('1 level 2 extended 1toN + 1 extended 1toN', function (done) {
+         const domainRequestName: DomainRequestName = 'building';
+         const role = 'admin';
+         let input = {
+            fields: {
+               opening_hours: { fields: { day: true } },
+               pictures: {
+                  fields: {
+                     name: true,
+                     url: true,
+                  },
+               },
+            },
+         };
+
+         const expected = {
+            total: 4,
+            domainName: 'building',
+            results: [
+               {
+                  id: 1,
+                  openingHours: [
+                     {
+                        day: 1,
+                     },
+                     {
+                        day: 3,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'A',
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                     },
+                  ],
+               },
+               {
+                  id: 2,
+                  openingHours: [
+                     {
+                        day: null,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'B',
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     },
+                  ],
+               },
+               {
+                  id: 3,
+                  openingHours: [
+                     {
+                        day: 1,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'C',
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     },
+                  ],
+               },
+               {
+                  id: 4,
+                  openingHours: [
+                     {
+                        day: null,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'D',
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     },
+                  ],
+               },
+            ],
+         };
+         test(input, role, domainRequestName, expected).then(done).catch(done);
+      });
+      it('1 field + 1 level 2 extended 1toN + 1 extended 1toN', function (done) {
+         const domainRequestName: DomainRequestName = 'building';
+         const role = 'admin';
+         let input = {
+            fields: {
+               name: true,
+               opening_hours: { fields: { day: true } },
+               pictures: {
+                  fields: {
+                     name: true,
+                     url: true,
+                  },
+               },
+            },
+         };
+
+         const expected = {
+            total: 4,
+            domainName: 'building',
+            results: [
+               {
+                  id: 1,
+                  name: 'A',
+                  openingHours: [
+                     {
+                        day: 1,
+                     },
+                     {
+                        day: 3,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'A',
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                     },
+                  ],
+               },
+               {
+                  id: 2,
+                  name: 'B',
+                  openingHours: [
+                     {
+                        day: null,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'B',
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     },
+                  ],
+               },
+               {
+                  id: 3,
+                  name: 'C',
+                  openingHours: [
+                     {
+                        day: 1,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'C',
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     },
+                  ],
+               },
+               {
+                  id: 4,
+                  name: 'D',
+                  openingHours: [
+                     {
+                        day: null,
+                     },
+                  ],
+                  pictures: [
+                     {
+                        name: 'D',
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     },
+                  ],
+               },
+            ],
+         };
+         test(input, role, domainRequestName, expected).then(done).catch(done);
+      });
+   });
    describe('expandable fields', () => {
       it('1 expandable 1to1 only', function (done) {
          const domainRequestName: DomainRequestName = 'student';
