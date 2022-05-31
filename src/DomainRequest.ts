@@ -118,6 +118,7 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
    dontSelectCount(): void {
       this.selectCount = false;
    }
+
    isSelectCount(): boolean {
       return this.selectCount;
    }

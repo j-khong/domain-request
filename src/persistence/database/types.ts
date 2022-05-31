@@ -61,8 +61,10 @@ export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends Doma
         [Property in keyof ExpandableFields]: DomainExpandableFieldsToTableFields<TableFields>;
      };
 
-export type DbRecord = { [key: string]: string | number | Date | boolean };
-export type SelectMethodResult = Array<DbRecord>;
+export interface DbRecord {
+   [key: string]: string | number | Date | boolean;
+}
+export type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
 export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
    constructor(
@@ -126,7 +128,7 @@ export class ExtendedTableConfig<Domain, Expandables, TableFields extends string
    constructor(
       tableName: string,
       tablePrimaryKey: string,
-      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>, //TODO a type which can have same mapping or other
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>, // TODO a type which can have same mapping or other
       public readonly fromDbRecordsToDomains: (
          dbRecords: Array<{ [key: string]: undefined | any }>,
       ) => Array<NestedFilteringFields<Domain>>,
@@ -138,6 +140,7 @@ export class ExtendedTableConfig<Domain, Expandables, TableFields extends string
    getTableName(): string {
       return this.tableName;
    }
+
    getAdditionalJoin(): string {
       return '';
    }

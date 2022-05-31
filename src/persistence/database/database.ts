@@ -372,7 +372,7 @@ async function fetchExtendedOneToMany<
             if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
                addFieldToSelect(fieldsToSelect, conf.tableConfig.getTableName(), map.name, subkey);
             }
-         } //TODO here manage other table mapping
+         } // TODO here manage other table mapping
       }
 
       if (fieldsToSelect.size === 0) {
