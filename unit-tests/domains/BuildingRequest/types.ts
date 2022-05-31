@@ -25,6 +25,7 @@ export interface Picture {
    url: string;
    name: string;
    description: string;
+   status: string;
 }
 export interface OpeningHours {
    day: number;

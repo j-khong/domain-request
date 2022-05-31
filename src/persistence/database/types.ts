@@ -137,12 +137,58 @@ export class ExtendedTableConfig<Domain, Expandables, TableFields extends string
       super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
    }
 
-   getTableName(): string {
+   getTableName(fieldname: string): string {
       return this.tableName;
    }
 
    getAdditionalJoin(): string {
       return '';
+   }
+}
+
+export class Level2ExtendedTableConfig<Domain, Expandables, TableFields extends string> extends ExtendedTableConfig<
+   Domain,
+   Expandables,
+   TableFields
+> {
+   constructor(
+      private readonly level1Table: {
+         tableName: string;
+         tablePrimaryKey: string;
+         tableForeignKeyToLevel2: string;
+      },
+      private readonly level2Table: {
+         tableName: string;
+         tablePrimaryKey: string;
+      },
+      private readonly fieldnamesByTables: Map<string, TableFields[]>,
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<any, TableFields>, // TODO a type which can have same mapping or other
+      fromDbRecordsToDomains: (
+         dbRecords: Array<{ [key: string]: undefined | any }>,
+      ) => Array<NestedFilteringFields<Domain>>,
+      isToSelect: (config: NestedRequestableFields<Domain>, key: TableFields) => boolean,
+   ) {
+      super(
+         level1Table.tableName,
+         level1Table.tablePrimaryKey,
+         domainFieldsToTableFieldsMap,
+         fromDbRecordsToDomains,
+         isToSelect,
+      );
+   }
+
+   getAdditionalJoin(): string {
+      return `LEFT JOIN ${this.level2Table.tableName} ON ${this.level2Table.tableName}.${this.level2Table.tablePrimaryKey} = ${this.tableName}.${this.level1Table.tableForeignKeyToLevel2}`;
+   }
+
+   getTableName(fieldname: TableFields): string {
+      for (const [tableName, fieldnames] of this.fieldnamesByTables) {
+         if (fieldnames.includes(fieldname)) {
+            return tableName;
+         }
+      }
+      // default
+      return this.tableName;
    }
 }
 

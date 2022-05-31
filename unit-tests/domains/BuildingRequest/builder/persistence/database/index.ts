@@ -3,6 +3,7 @@ import {
    DatabaseTableWithExtended,
    ExtendableTableConfig,
    ExtendedTableConfig,
+   Level2ExtendedTableConfig,
    SelectMethod,
    toNumber,
    toString,
@@ -119,28 +120,27 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
    },
 );
 
-type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'id_building';
-class PictureExtendedTableConfig extends ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames> {
-   getTableName(): string {
-      return 'pictures';
-   }
-   getAdditionalJoin(): string {
-      return 'LEFT JOIN pictures ON pictures.id = building_pictures.id_picture';
-   }
-}
-const picturesTable = new PictureExtendedTableConfig(
-   'building_pictures',
-   'id',
+type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'status' | 'id_building';
+
+const picturesTable = new Level2ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames>(
+   { tableName: 'building_pictures', tablePrimaryKey: 'id', tableForeignKeyToLevel2: 'id_picture' },
+   { tableName: 'pictures', tablePrimaryKey: 'id' },
+   new Map<string, PictureTableFieldNames[]>([
+      ['pictures', ['id', 'url', 'name', 'description']],
+      ['building_pictures', ['status']],
+   ]),
    {
       url: { name: 'url', convert: toString },
       name: { name: 'name', convert: toString },
       description: { name: 'description', convert: toString },
+      status: { name: 'status', convert: toString },
    },
    (
       data: Array<{
          name?: string;
          url?: string;
          description?: string;
+         status?: string;
       }>,
    ): Array<NestedFilteringFields<Picture>> => {
       const ret: any[] = [];
@@ -155,6 +155,9 @@ const picturesTable = new PictureExtendedTableConfig(
          if (d.description !== undefined) {
             res.description = d.description;
          }
+         if (d.status !== undefined) {
+            res.status = d.status;
+         }
          ret.push(res);
       }
       return ret;
@@ -167,4 +170,5 @@ const picturesTable = new PictureExtendedTableConfig(
       return config[thekey as 'url' | 'name' | 'description'];
    },
 );
+
 export const dbTable = new Database();

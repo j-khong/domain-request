@@ -8,6 +8,7 @@ export class PictureRequestBuilder extends DomainRequestBuilder<'pictures', Modi
          name: { validate: validateString, defaultValue: '' },
          url: { validate: validateString, defaultValue: '' },
          description: { validate: validateString, defaultValue: '' },
+         status: { validate: validateString, defaultValue: '' },
       });
       this.setExpandables({});
    }

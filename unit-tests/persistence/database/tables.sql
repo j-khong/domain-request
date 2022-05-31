@@ -93,6 +93,7 @@ CREATE TABLE `building_pictures` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_building` int(11) NOT NULL,
   `id_picture` int(11) NOT NULL,
+  `status` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `building_pictures__IDX_building_id` (`id_building`),
   CONSTRAINT `building_pictures__FK_building_id` FOREIGN KEY (`id_building`) REFERENCES `buildings` (`id`),
@@ -145,8 +146,8 @@ INSERT INTO `pictures` (`name`, `description`, `url`) VALUES
 ('C', 'bla', 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg'),
 ('D', 'bla', 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg');
 
-INSERT INTO building_pictures (id_building, id_picture) VALUES
-((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "A") ),
-((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "B") ),
-((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "C") ),
-((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D") )
+INSERT INTO building_pictures (id_building, id_picture, status) VALUES
+((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "A"), 'on' ),
+((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "B"), 'on' ),
+((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "C"), 'on' ),
+((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D"), 'on' )

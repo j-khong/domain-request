@@ -593,6 +593,7 @@ describe('Data fetch tests ', () => {
                   fields: {
                      name: true,
                      url: true,
+                     status: true,
                   },
                },
             },
@@ -608,6 +609,7 @@ describe('Data fetch tests ', () => {
                      {
                         name: 'A',
                         url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        status: 'on',
                      },
                   ],
                },
@@ -617,6 +619,7 @@ describe('Data fetch tests ', () => {
                      {
                         name: 'B',
                         url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        status: 'on',
                      },
                   ],
                },
@@ -626,6 +629,7 @@ describe('Data fetch tests ', () => {
                      {
                         name: 'C',
                         url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        status: 'on',
                      },
                   ],
                },
@@ -635,6 +639,7 @@ describe('Data fetch tests ', () => {
                      {
                         name: 'D',
                         url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        status: 'on',
                      },
                   ],
                },

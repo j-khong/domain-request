@@ -370,7 +370,7 @@ async function fetchExtendedOneToMany<
          const map = getDomainFieldsToTableFieldsMapping(conf.tableConfig, subkey);
          if (isSameTableMapping(map)) {
             if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
-               addFieldToSelect(fieldsToSelect, conf.tableConfig.getTableName(), map.name, subkey);
+               addFieldToSelect(fieldsToSelect, conf.tableConfig.getTableName(map.name), map.name, subkey);
             }
          } // TODO here manage other table mapping
       }
