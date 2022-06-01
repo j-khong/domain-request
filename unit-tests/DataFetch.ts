@@ -43,7 +43,7 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                   openingHours: [
                      {
                         day: 1,
@@ -119,7 +119,7 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                   openingHours: [
                      {
                         day: 1,
@@ -188,7 +188,7 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                   openingHours: [
                      {
                         day: 1,
@@ -242,7 +242,7 @@ describe('Data fetch tests ', () => {
             total: 1,
             results: [
                {
-                  id: 1,
+                  id: '1',
                   openingHours: [
                      {
                         day: 1,
@@ -312,17 +312,17 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
                {
                   name: 'D',
                   status: 'work in progress',
-                  id: 4,
+                  id: '4',
                },
             ],
          };
@@ -348,12 +348,12 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
             ],
          };
@@ -389,17 +389,17 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
                {
                   name: 'D',
                   status: 'work in progress',
-                  id: 4,
+                  id: '4',
                },
             ],
          };
@@ -426,17 +426,17 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
                {
                   name: 'D',
                   status: 'work in progress',
-                  id: 4,
+                  id: '4',
                },
             ],
          };
@@ -473,12 +473,12 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
             ],
          };
@@ -515,17 +515,17 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
                {
                   name: 'D',
                   status: 'work in progress',
-                  id: 4,
+                  id: '4',
                },
             ],
          };
@@ -566,17 +566,17 @@ describe('Data fetch tests ', () => {
                {
                   name: 'A',
                   status: 'opened',
-                  id: 1,
+                  id: '1',
                },
                {
                   name: 'C',
                   status: 'opened',
-                  id: 3,
+                  id: '3',
                },
                {
                   name: 'D',
                   status: 'work in progress',
-                  id: 4,
+                  id: '4',
                },
             ],
          };
@@ -604,7 +604,7 @@ describe('Data fetch tests ', () => {
             domainName: 'building',
             results: [
                {
-                  id: 1,
+                  id: '1',
                   pictures: [
                      {
                         name: 'A',
@@ -614,7 +614,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 2,
+                  id: '2',
                   pictures: [
                      {
                         name: 'B',
@@ -624,7 +624,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 3,
+                  id: '3',
                   pictures: [
                      {
                         name: 'C',
@@ -634,7 +634,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 4,
+                  id: '4',
                   pictures: [
                      {
                         name: 'D',
@@ -667,7 +667,7 @@ describe('Data fetch tests ', () => {
             domainName: 'building',
             results: [
                {
-                  id: 1,
+                  id: '1',
                   openingHours: [
                      {
                         day: 1,
@@ -684,7 +684,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 2,
+                  id: '2',
                   openingHours: [
                      {
                         day: null,
@@ -698,7 +698,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 3,
+                  id: '3',
                   openingHours: [
                      {
                         day: 1,
@@ -712,7 +712,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 4,
+                  id: '4',
                   openingHours: [
                      {
                         day: null,
@@ -750,7 +750,7 @@ describe('Data fetch tests ', () => {
             domainName: 'building',
             results: [
                {
-                  id: 1,
+                  id: '1',
                   name: 'A',
                   openingHours: [
                      {
@@ -768,7 +768,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 2,
+                  id: '2',
                   name: 'B',
                   openingHours: [
                      {
@@ -783,7 +783,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 3,
+                  id: '3',
                   name: 'C',
                   openingHours: [
                      {
@@ -798,7 +798,7 @@ describe('Data fetch tests ', () => {
                   ],
                },
                {
-                  id: 4,
+                  id: '4',
                   name: 'D',
                   openingHours: [
                      {
@@ -840,7 +840,7 @@ describe('Data fetch tests ', () => {
             total: 2,
             results: [
                {
-                  id: 1,
+                  id: '1',
                   expandables: {
                      country: {
                         name: 'france',
@@ -849,7 +849,7 @@ describe('Data fetch tests ', () => {
                   },
                },
                {
-                  id: 2,
+                  id: '2',
                   expandables: {
                      country: {
                         name: 'france',
@@ -904,32 +904,32 @@ describe('Data fetch tests ', () => {
             results: [
                {
                   firstname: 'pierre',
-                  id: 1,
+                  id: '1',
                   expandables: {
                      courseApplication: [
                         {
-                           courseId: 1,
-                           id: 1,
+                           courseId: '1',
+                           id: '1',
                         },
                         {
-                           courseId: 2,
-                           id: 3,
+                           courseId: '2',
+                           id: '3',
                         },
                         {
-                           courseId: 3,
-                           id: 4,
+                           courseId: '3',
+                           id: '4',
                         },
                      ],
                   },
                },
                {
                   firstname: 'jeanne',
-                  id: 2,
+                  id: '2',
                   expandables: {
                      courseApplication: [
                         {
-                           courseId: 1,
-                           id: 2,
+                           courseId: '1',
+                           id: '2',
                         },
                      ],
                   },
@@ -962,12 +962,12 @@ describe('Data fetch tests ', () => {
             results: [
                {
                   firstname: 'pierre',
-                  id: 1,
+                  id: '1',
                   expandables: {
                      courseApplication: [
                         {
-                           courseId: 1,
-                           id: 1,
+                           courseId: '1',
+                           id: '1',
                            expandables: {
                               course: {
                                  name: 'Math 101',
@@ -975,8 +975,8 @@ describe('Data fetch tests ', () => {
                            },
                         },
                         {
-                           courseId: 2,
-                           id: 3,
+                           courseId: '2',
+                           id: '3',
                            expandables: {
                               course: {
                                  name: 'Arts',
@@ -984,8 +984,8 @@ describe('Data fetch tests ', () => {
                            },
                         },
                         {
-                           courseId: 3,
-                           id: 4,
+                           courseId: '3',
+                           id: '4',
                            expandables: {
                               course: {
                                  name: 'History',
@@ -997,12 +997,12 @@ describe('Data fetch tests ', () => {
                },
                {
                   firstname: 'jeanne',
-                  id: 2,
+                  id: '2',
                   expandables: {
                      courseApplication: [
                         {
-                           courseId: 1,
-                           id: 2,
+                           courseId: '1',
+                           id: '2',
                            expandables: {
                               course: {
                                  name: 'Math 101',

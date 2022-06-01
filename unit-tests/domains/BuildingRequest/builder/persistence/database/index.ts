@@ -1,5 +1,6 @@
 import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
+   buildSameTableMapping,
    DatabaseTableWithExtended,
    ExtendableTableConfig,
    ExtendedTableConfig,
@@ -21,9 +22,9 @@ class Database extends DatabaseTableWithExtended<DomainRequestName, Fields, Tabl
             'buildings', // tableName
             'id', // tablePrimaryKey
             {
-               id: { name: 'id', convert: toTableId },
-               name: { name: 'name', convert: toString },
-               status: { name: 'status', convert: toString },
+               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
+               name: buildSameTableMapping('name', toString),
+               status: buildSameTableMapping('status', toString),
             }, // domainFieldsToTableFieldsMap
             {
                openingHours: {
@@ -70,9 +71,10 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
    'building_opening_hours', // tableName
    'id', // tablePrimaryKey
    {
-      day: { name: 'day', convert: toNumber },
-      start: { name: 'start', convert: toString },
-      end: { name: 'end', convert: toString },
+      id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
+      day: buildSameTableMapping('day', toNumber),
+      start: buildSameTableMapping('start', toString),
+      end: buildSameTableMapping('end', toString),
    }, // domainFieldsToTableFieldsMap
    (
       data: Array<{
@@ -130,10 +132,10 @@ const picturesTable = new Level2ExtendedTableConfig<Picture, { building: {} }, P
       ['building_pictures', ['status']],
    ]),
    {
-      url: { name: 'url', convert: toString },
-      name: { name: 'name', convert: toString },
-      description: { name: 'description', convert: toString },
-      status: { name: 'status', convert: toString },
+      url: buildSameTableMapping('url', toString),
+      name: buildSameTableMapping('name', toString),
+      description: buildSameTableMapping('description', toString),
+      status: buildSameTableMapping('status', toString),
    },
    (
       data: Array<{

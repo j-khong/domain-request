@@ -17,7 +17,8 @@ export const toDate = (o: Date): string => `'${fromDateToMysqlDate(o)}'`;
 
 export interface SameTableMapping<TableFields extends string> {
    name: TableFields;
-   convert: (o: any) => number | string | number[];
+   convertToDb: (o: any) => number | string | number[];
+   convertToDomain: (o: any) => any;
 }
 export interface OtherTableMapping<TableFields extends string> {
    tableConfig: ExtendedTableConfig<any, any, any>;
@@ -25,7 +26,7 @@ export interface OtherTableMapping<TableFields extends string> {
 }
 
 export function isSameTableMapping<TableFields extends string>(o: any): o is SameTableMapping<TableFields> {
-   return o.name !== undefined && o.convert !== undefined;
+   return o.name !== undefined && o.convertToDb !== undefined;
 }
 export function isOtherTableMapping<TableFields extends string>(o: any): o is OtherTableMapping<TableFields> {
    return o.tableConfig !== undefined && o.cardinality !== undefined;
@@ -33,6 +34,18 @@ export function isOtherTableMapping<TableFields extends string>(o: any): o is Ot
 export type DomainFieldsToTableFieldsMap<DomainFields, TableFields extends string> = {
    [Property in keyof DomainFields]: SameTableMapping<TableFields>;
 };
+
+export function buildSameTableMapping<TableFields extends string>(
+   name: TableFields,
+   convertToDb: (o: any) => number | string | number[],
+   convertToDomain: (o: any) => any = (o: any) => o,
+): SameTableMapping<TableFields> {
+   return {
+      name,
+      convertToDb,
+      convertToDomain,
+   };
+}
 
 export type ExtendedDomainFieldsToTableFieldsMap<DomainFields, TableFields extends string> = {
    [Property in keyof DomainFields]: OtherTableMapping<TableFields>;
@@ -99,9 +112,11 @@ export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
       }
    }
 }
+
+export class SimpleTableConfig<Fields, TableFields extends string> extends TableConfig<Fields, any, TableFields> {}
 export class ExtendableTableConfig<Fields, TableFields extends string, Extended> extends TableConfig<
    Fields,
-   {},
+   any,
    TableFields
 > {
    constructor(
@@ -115,7 +130,7 @@ export class ExtendableTableConfig<Fields, TableFields extends string, Extended>
 }
 
 export function isExtendableTableConfig<Fields, TableFields extends string>(
-   tc: TableConfig<Fields, {}, TableFields>,
+   tc: TableConfig<Fields, any, TableFields>,
 ): tc is ExtendableTableConfig<Fields, TableFields, any> {
    return (tc as any).extendedFieldsToTableFieldsMap !== undefined;
 }

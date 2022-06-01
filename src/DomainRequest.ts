@@ -574,11 +574,18 @@ export abstract class DomainRequestBuilder<
    }
 }
 
-export class DomainRequestWithExtended<
+export class DomainRequestBuilderWithExtended<
    Name extends string,
    Fields extends DomainFields,
    Extended,
 > extends DomainRequestBuilder<Name, Fields, {}, Extended> {}
+
+export class SimpleDomainRequestBuilder<Name extends string, Fields extends DomainFields> extends DomainRequestBuilder<
+   Name,
+   Fields,
+   {},
+   {}
+> {}
 
 export type Validator = (val: any) => { valid: boolean; reason: string };
 

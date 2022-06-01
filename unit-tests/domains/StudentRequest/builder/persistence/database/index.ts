@@ -6,6 +6,7 @@ import {
    DatabaseTable,
    toBoolean,
    DatabaseTableWithExpandables,
+   buildSameTableMapping,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -28,14 +29,14 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
             'students', // tableName
             'id', // tablePrimaryKey
             {
-               id: { name: 'id', convert: toTableId },
-               firstname: { name: 'firstname', convert: toString },
-               lastname: { name: 'lastname', convert: toString },
-               yearOfBirth: { name: 'year_of_birth', convert: toString },
-               nationalCardId: { name: 'national_card_id', convert: toString },
-               countryId: { name: 'id_country', convert: toString },
-               hasScholarship: { name: 'has_scholarship', convert: toBoolean },
-               categoryId: { name: 'id_category', convert: toString },
+               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
+               firstname: buildSameTableMapping('firstname', toString),
+               lastname: buildSameTableMapping('lastname', toString),
+               yearOfBirth: buildSameTableMapping('year_of_birth', toString),
+               nationalCardId: buildSameTableMapping('national_card_id', toString),
+               countryId: buildSameTableMapping('id_country', toString),
+               hasScholarship: buildSameTableMapping('has_scholarship', toBoolean),
+               categoryId: buildSameTableMapping('id_category', toString),
             }, // domainFieldsToTableFieldsMap
          ),
       );

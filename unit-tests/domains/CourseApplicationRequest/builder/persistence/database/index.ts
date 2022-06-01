@@ -1,4 +1,5 @@
 import {
+   buildSameTableMapping,
    DatabaseTable,
    DatabaseTableWithExpandables,
    DomainExpandableFieldsToTableFieldsMap,
@@ -18,9 +19,9 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
             'course_applications', // tableName
             'id', // tablePrimaryKey
             {
-               id: { name: 'id', convert: toTableId },
-               studentId: { name: 'id_student', convert: toTableId },
-               courseId: { name: 'id_course', convert: toTableId },
+               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
+               studentId: buildSameTableMapping('id_student', toTableId, (o) => o.toString()),
+               courseId: buildSameTableMapping('id_course', toTableId, (o) => o.toString()),
             }, // domainFieldsToTableFieldsMap
          ),
       );

@@ -1,19 +1,25 @@
-import { TableConfig, toTableId, toString, SimpleDatabaseTable } from '../../../../../../src/persistence/database';
+import {
+   SimpleTableConfig,
+   toTableId,
+   toString,
+   SimpleDatabaseTable,
+   buildSameTableMapping,
+} from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
-import { ExpandableFields, Fields } from '../../../types';
+import { Fields } from '../../../types';
 
 type Key = 'id';
 type TableFields = Key | 'name';
 
-class Database extends SimpleDatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends SimpleDatabaseTable<DomainRequestName, Fields, TableFields> {
    constructor() {
       super(
-         new TableConfig<Fields, ExpandableFields, TableFields>(
+         new SimpleTableConfig<Fields, TableFields>(
             'courses', // tableName
             'id', // tablePrimaryKey
             {
-               id: { name: 'id', convert: toTableId },
-               name: { name: 'name', convert: toString },
+               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
+               name: buildSameTableMapping('name', toString),
             }, // domainFieldsToTableFieldsMap
          ),
       );
