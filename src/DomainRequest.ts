@@ -30,16 +30,30 @@ function isOrderbySort(o: any): o is OrderbySort {
 
 type NaturalKey<Type extends string> = Type[];
 export class DomainRequest<Name extends string, Fields extends DomainFields, Expandables extends DomainExpandables> {
+   private readonly expandables: {
+      [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
+   };
+
+   private readonly extended: {
+      [Property in keyof Fields]: DomainRequest<Name, any, any>;
+   };
+
    constructor(
       private readonly name: Name,
       private readonly naturalKey: NaturalKey<Extract<keyof Fields, string>>,
       private readonly fields: RequestableFields<Fields>,
       private readonly filters: FilteringFields<Fields>,
-      private readonly expandables: {
+      expandables: {
          [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
       },
+      extended: {
+         [Property in keyof Fields]: DomainRequest<Name, any, any>;
+      },
       private readonly options: Options<Fields>,
-   ) {}
+   ) {
+      this.expandables = expandables;
+      this.extended = extended;
+   }
 
    getName(): Name {
       return this.name;
@@ -110,6 +124,12 @@ export class DomainRequest<Name extends string, Fields extends DomainFields, Exp
       return this.expandables;
    }
 
+   getExtended(): {
+      [Property in keyof Fields]: DomainRequest<Name, any, any>;
+   } {
+      return this.extended;
+   }
+
    getNaturalKey(): NaturalKey<Extract<keyof Fields, string>> {
       return this.naturalKey;
    }
@@ -136,6 +156,9 @@ export interface RequestValues<
    };
    expandables: {
       [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], DomainFields>;
+   };
+   extended: {
+      [Property in keyof Fields]: DomainRequest<Name, any, any>;
    };
    options: {
       options: Options<Fields>;
@@ -193,6 +216,7 @@ export abstract class DomainRequestBuilder<
             filters: sanitizedFilters,
             expandables: expandablesRequests.requests as any, // TODO fix that
             options: sanitizedOptions,
+            extended: sanitizedFields.extendedDomainRequests,
          }),
          errors: [
             ...sanitizedFields.errors,
@@ -214,6 +238,7 @@ export abstract class DomainRequestBuilder<
    private sanitizeFieldsToSelect(inputFieldsToSelect: Tree): {
       fields: RequestableFields<Fields>;
       errors: InputErrors;
+      extendedDomainRequests: { [Property in keyof Fields]: DomainRequest<Name, any, any> };
    } {
       // const ignoredFields
 
@@ -227,12 +252,13 @@ export abstract class DomainRequestBuilder<
       }
 
       const errors: InputErrors = [];
-
+      const extendedDomainRequests: any = {};
       if (this.extended !== undefined) {
          for (const field in this.extended) {
             const snakedFieldName = this.camelToInputStyle(field);
             const val = inputFieldsToSelect[snakedFieldName];
             const dr = this.extended[field].build(val, []);
+            extendedDomainRequests[field] = dr.request;
             fieldsToSelect[field as keyof Fields] = dr.request.getFields(); // TODO fix this cast
             errors.push(...dr.errors);
          }
@@ -248,7 +274,7 @@ export abstract class DomainRequestBuilder<
             });
          }
       }
-      return { fields: fieldsToSelect, errors };
+      return { fields: fieldsToSelect, errors, extendedDomainRequests };
    }
 
    public buildDefaultRequestableFields(): RequestableFields<Fields> {
@@ -516,7 +542,9 @@ export abstract class DomainRequestBuilder<
       }
       const ret: any = { requests: {}, errors: [] };
       for (const key in this.expReqBuilders) {
-         if (dontDoThese.includes(key as unknown as Name)) {
+         // key can be a currentContext name => take the global context name
+         const globalContextName = this.expReqBuilders[key].name;
+         if (dontDoThese.includes(globalContextName)) {
             continue;
          }
          const input = inputFieldsToSelect[this.camelToInputStyle(key)] as Tree;
@@ -569,6 +597,7 @@ export abstract class DomainRequestBuilder<
          values.fields,
          values.filters.filters,
          values.expandables,
+         values.extended,
          values.options.options,
       );
    }

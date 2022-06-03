@@ -133,7 +133,7 @@ ${where}`;
       let orderby = '';
       const orderBy = req.getOptions().orderby;
       if (orderBy !== undefined) {
-         orderby = `ORDER BY ${orderBy.fieldname as string} ${orderBy.sort}`;
+         orderby = `ORDER BY \`${orderBy.fieldname as string}\` ${orderBy.sort}`;
       }
 
       const resultsSql = `${select}
@@ -273,11 +273,19 @@ async function fetchExtendedOneToMany<
          continue;
       }
 
+      const extendedRequest: DomainRequest<any, any, any> = (req.getExtended() as any)[k];
+      const orderBy = extendedRequest.getOptions().orderby;
+      let orderField = '';
+
       // loop on all fields of table
       const fieldsToSelect = createNewFieldsToSelect<any>();
       for (const subkey in conf.tableConfig.domainFieldsToTableFieldsMap) {
          const map = getDomainFieldsToTableFieldsMapping(conf.tableConfig, subkey);
          if (isSameTableMapping(map)) {
+            // order by field is not necessarily to select
+            if (orderBy !== undefined && orderBy.fieldname === subkey) {
+               orderField = `${conf.tableConfig.getTableName(map.name)}.${map.name}`;
+            }
             if (conf.tableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
                addFieldToSelect(
                   fieldsToSelect,
@@ -293,6 +301,7 @@ async function fetchExtendedOneToMany<
       if (fieldsToSelect.size === 0) {
          continue;
       }
+
       // process join
       const joins: Join = new Map();
       const exp = conf.tableConfig.getDomainExpandableFieldsToTableFieldsMap();
@@ -305,7 +314,7 @@ async function fetchExtendedOneToMany<
                relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${
                   mod.cardinality.foreignKey as string
                }`,
-               filters: [],
+               filters: processFilters(conf.tableConfig, extendedRequest),
             });
          }
       }
@@ -326,14 +335,21 @@ async function fetchExtendedOneToMany<
 
       const select = `SELECT ${id}, ${fields}`;
       const from = `FROM ${tableConfig.tableName}`;
-      // const filters: string[] = []; //processFilters(req, tableConfig.domainFieldsToTableFieldsMap);
       const where = `WHERE ${tableConfig.tableName}.${tableConfig.tablePrimaryKey} IN (${ids.join(', ')})`;
+
+      let orderby = '';
+      if (orderBy !== undefined) {
+         orderby = `ORDER BY ${orderField} ${orderBy.sort}`;
+      }
 
       const resultsSql = `${select}
 ${from}
 ${joinsStr.join('\n')}
 ${where}
-LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}`;
+${orderby}
+`; // No limit as it can concern different ids, doing the limit in result reconciliation
+
+      const limit = extendedRequest.getOptions().pagination.limit;
 
       const { res: dbRecords, report } = await executeRequest(tableConfig.select, resultsSql);
       resultsToReconcile.report.requests.push(report);
@@ -347,9 +363,10 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
             continue;
          }
 
+         let count = 0;
          const domainPk = createSqlAlias(conf.tableConfig.tableName, conf.tableConfig.tablePrimaryKey);
          const records = dbRecords
-            .filter((r) => r[pk].toString() === resourceId)
+            .filter((r) => r[pk].toString() === resourceId && limit > count++)
             .map((r) => {
                const domain: any = {};
                for (const [key, value] of fieldsToSelect) {
@@ -367,6 +384,19 @@ LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}
       }
    }
 }
+
+// function buildOrderBy<F>(o: Options<F>, tableConfig:ExtendedTableConfig<): string {
+//    if (o.orderby === undefined) return '';
+
+//    const map = getDomainFieldsToTableFieldsMapping(tableConfig, key);
+//    if (isSameTableMapping(map)) {
+//       // order by field is not necessarily to select
+//       if (o.orderby.fieldname === key) {
+//          return createSqlAlias(tableConfig.getTableName(map.name), map.name);
+//       }
+//    }
+//    return '';
+// }
 
 async function fetchExpandablesOneToMany<
    Fields,
@@ -445,7 +475,7 @@ async function fetchExpandablesOneToMany<
          const resourceId = result[requestField];
          const toPopulate = resultsToReconcile.results.find((d) => d[tableConfig.tablePrimaryKey] === resourceId);
          if (toPopulate === undefined) {
-            console.log(`big problem--, cannot find resource ${tableConfig.tableName} of id [${resourceId}]`);
+            console.log(`big problem, cannot find resource ${tableConfig.tableName} of id [${resourceId as string}]`);
             continue;
          }
          if (toPopulate.expandables === undefined) {
