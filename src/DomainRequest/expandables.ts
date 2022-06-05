@@ -3,29 +3,7 @@ import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, Reques
 
 export interface DomainExpandables extends DomainFields {}
 
-export interface RequestValues<
-   Name extends string,
-   Fields extends DomainFields,
-   Expandables extends DomainExpandables,
-> {
-   fields: RequestableFields<Fields>;
-   filters: {
-      filters: FilteringFields<Fields>;
-      errors: InputErrors;
-   };
-   expandables: {
-      [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], DomainFields>;
-   };
-   extended: {
-      [Property in keyof Fields]: DomainRequest<Name, any, any>;
-   };
-   options: {
-      options: Options<Fields>;
-      errors: InputErrors;
-   };
-}
-
-export abstract class DomainRequestBuilder<
+export abstract class DomainWithExpandablesRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
    Expandables extends DomainExpandables,
@@ -45,7 +23,7 @@ export abstract class DomainRequestBuilder<
       const expandablesRequests = this.buildExpandablesRequests(expandables, dontExpandThese);
 
       return {
-         request: new DomainRequest<Name, Fields, Expandables>(
+         request: new DomainWithExpandablesRequest<Name, Fields, Expandables>(
             this.name,
             this.naturalKey,
             sanitizedFields.fields,
@@ -65,12 +43,12 @@ export abstract class DomainRequestBuilder<
 
    private expReqBuilders:
       | {
-           [Property in keyof Expandables]: DomainRequestBuilder<Name, DomainFields, DomainExpandables>;
+           [Property in keyof Expandables]: DomainWithExpandablesRequestBuilder<Name, DomainFields, DomainExpandables>;
         }
       | undefined;
 
    setExpandables(expandablesRequestsBuilders: {
-      [Property in keyof Expandables]: DomainRequestBuilder<Name, DomainFields, DomainExpandables>;
+      [Property in keyof Expandables]: DomainWithExpandablesRequestBuilder<Name, DomainFields, DomainExpandables>;
    }): void {
       this.expReqBuilders = expandablesRequestsBuilders;
    }
@@ -80,7 +58,7 @@ export abstract class DomainRequestBuilder<
       dontDoThese: Name[],
    ): {
       requests: {
-         [Property in keyof Expandables]: DomainRequest<Name, Fields, Expandables>;
+         [Property in keyof Expandables]: SimpleDomainRequest<Name, Fields>;
       };
       errors: InputErrors;
    } {
@@ -95,10 +73,9 @@ export abstract class DomainRequestBuilder<
             continue;
          }
          const input = inputFieldsToSelect[this.camelToInputStyle(key)] as Tree;
-         const built = (this.expReqBuilders[key] as DomainRequestBuilder<Name, DomainFields, DomainExpandables>).build(
-            input,
-            [...dontDoThese, this.name],
-         );
+         const built = (
+            this.expReqBuilders[key] as DomainWithExpandablesRequestBuilder<Name, DomainFields, DomainExpandables>
+         ).build(input, [...dontDoThese, this.name]);
          ret.requests[key] = built.request;
          ret.errors.push(...built.errors);
       }
@@ -127,7 +104,7 @@ export abstract class DomainRequestBuilder<
    }
 }
 
-export class DomainRequest<
+export class DomainWithExpandablesRequest<
    Name extends string,
    Fields extends DomainFields,
    Expandables extends DomainExpandables,
@@ -139,14 +116,14 @@ export class DomainRequest<
       filters: FilteringFields<Fields>,
       options: Options<Fields>,
       private readonly expandables: {
-         [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
+         [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
       },
    ) {
       super(name, naturalKey, fields, filters, options);
    }
 
    getExpandables(): {
-      [Property in keyof Expandables]: DomainRequest<Name, Expandables[Property], any>;
+      [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
    } {
       return this.expandables;
    }

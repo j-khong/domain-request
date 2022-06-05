@@ -1,12 +1,12 @@
 import {
    DomainExpandableFieldsToTableFieldsMap,
-   TableConfig,
    toTableId,
    toString,
-   DatabaseTable,
    toBoolean,
    DatabaseTableWithExpandables,
    buildSameTableMapping,
+   ExpandablesTableConfig,
+   SimpleDatabaseTable,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -25,7 +25,7 @@ type TableFields =
 class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
       super(
-         new TableConfig<Fields, ExpandableFields, TableFields>(
+         new ExpandablesTableConfig<Fields, ExpandableFields, TableFields>(
             'students', // tableName
             'id', // tablePrimaryKey
             {
@@ -41,8 +41,9 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
          ),
       );
    }
+
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
-      [Property in DomainRequestName]: DatabaseTable<DomainRequestName, Fields, ExpandableFields, TableFields>;
+      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
          country: {

@@ -7,15 +7,9 @@ import {
    isOrArrayComparison,
    SimpleDomainRequest,
 } from '../../DomainRequest';
-import { SameTableMapping, SelectMethod, SimpleTableConfig } from './TableConfig';
-import { FieldsToSelect } from './types';
-import {
-   addFieldToSelect,
-   comparisonOperatorMap,
-   createNewFieldsToSelect,
-   createSqlAlias,
-   executeRequest,
-} from './functions';
+import { DbRecord, SameTableMapping, SelectMethod, SimpleTableConfig } from './TableConfig';
+import { ComparisonOperatorMap, DatabaseOperator, FieldsToSelect, Join } from './types';
+import { addFieldToSelect, createNewFieldsToSelect, createSqlAlias, executeRequest } from './functions';
 
 export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends string> {
    constructor(protected readonly tableConfig: SimpleTableConfig<F, TF>) {}
@@ -56,11 +50,21 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       resultsToReconcile: DomainResult,
       req: SimpleDomainRequest<DRN, F>,
    ): Promise<string[] | undefined> {
-      const { fields: fieldsToSelect, hasSelected } = this.getFieldsToSelect(this.tableConfig, req);
+      const { fields: fieldsToSelect, hasSelected, joins } = this.getFieldsToSelect(this.tableConfig, req);
+
+      const joinsStr: string[] = [];
+      for (const [key, value] of joins) {
+         joinsStr.push(
+            `LEFT JOIN ${key} ON ${value.relationship} ${
+               value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
+            }`,
+         );
+      }
 
       if (!hasSelected) {
          return undefined;
       }
+
       // add natural key, if not there
       for (const key of req.getNaturalKey()) {
          const mapping = this.getDomainFieldsToTableFieldsMapping(this.tableConfig, key);
@@ -82,8 +86,11 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
 
       if (req.isSelectCount()) {
-         const resultsCountSql = `SELECT count(${this.tableConfig.tableName}.${this.tableConfig.tablePrimaryKey}) as total
+         const resultsCountSql = `SELECT count(${this.tableConfig.tableName}.${
+            this.tableConfig.tablePrimaryKey
+         }) as total
  ${from}
+ ${joinsStr.join('\n')}
  ${where}`;
          const { res: resCount, report } = await executeRequest(this.tableConfig.select, resultsCountSql);
          resultsToReconcile.total = Number.parseInt(resCount[0].total as any);
@@ -98,6 +105,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
 
       const resultsSql = `${select}
  ${from}
+ ${joinsStr.join('\n')}
  ${where}
  ${orderby}
  LIMIT ${req.getOptions().pagination.offset},${req.getOptions().pagination.limit}`;
@@ -108,12 +116,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       for (const dbRecord of dbResults) {
          ids.push(dbRecord[pk].toString());
 
-         const result: any = {};
-         for (const key of fieldsToSelect.keys()) {
-            const fieldToSelect = fieldsToSelect.get(key);
-            const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
-            result[fieldName] = fieldToSelect?.convertToDomain(dbRecord[key]);
-         }
+         const result = this.createResultToPopulate(dbRecord, fieldsToSelect);
 
          resultsToReconcile.results.push(result);
       }
@@ -122,27 +125,38 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       return ids;
    }
 
-   protected getFieldsToSelect(
-      tableConfig: SimpleTableConfig<F, TF>,
-      req: SimpleDomainRequest<DRN, F>,
+   protected createResultToPopulate(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect<F>): any {
+      const result: any = {};
+      for (const key of fieldsToSelect.keys()) {
+         const fieldToSelect = fieldsToSelect.get(key);
+         const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
+         result[fieldName] = fieldToSelect?.convertToDomain(dbRecord[key]);
+      }
+      return result;
+   }
+
+   protected getFieldsToSelect<Fields, TableFields extends string>(
+      tableConfig: SimpleTableConfig<Fields, TableFields>,
+      req: SimpleDomainRequest<DRN, Fields>,
    ): {
       hasSelected: boolean;
-      fields: FieldsToSelect<F>;
+      fields: FieldsToSelect<Fields>;
+      joins: Join;
    } {
-      const fields = createNewFieldsToSelect<F>();
+      const fields = createNewFieldsToSelect<Fields>();
       for (const v of req.getFieldsNames()) {
          const mapping = this.getDomainFieldsToTableFieldsMapping(tableConfig, v);
 
          addFieldToSelect(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
       }
-      return { fields, hasSelected: fields.size > 0 };
+      return { fields, hasSelected: fields.size > 0, joins: new Map() };
    }
 
-   protected getDomainFieldsToTableFieldsMapping(
-      tableConfig: SimpleTableConfig<F, TF>,
-      key: keyof F,
-   ): SameTableMapping<TF> {
-      const mapping: SameTableMapping<TF> = tableConfig.domainFieldsToTableFieldsMap[key];
+   protected getDomainFieldsToTableFieldsMapping<Fields, TableFields extends string>(
+      tableConfig: SimpleTableConfig<Fields, TableFields>,
+      key: keyof Fields,
+   ): SameTableMapping<TableFields> {
+      const mapping: SameTableMapping<TableFields> = tableConfig.domainFieldsToTableFieldsMap[key];
       if (mapping === undefined) {
          throw new Error(`configuration problem: no field [${key as string}] in domain to db field mapping`);
       }
@@ -193,3 +207,63 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       return result;
    }
 }
+
+function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[]): string {
+   let val: number | string = '';
+   if (Array.isArray(value)) {
+      if (value.length > 0) {
+         val = value[0];
+      }
+   } else {
+      val = value;
+   }
+   return `${field} ${operator} ${val}`;
+}
+
+const comparisonOperatorMap: ComparisonOperatorMap = {
+   equals: {
+      format: (field: string, value: number | string | number[]): string => commonFormat(field, '=', value),
+   },
+   greaterThan: {
+      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>', value),
+   },
+   greaterThanOrEquals: {
+      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>=', value),
+   },
+   lesserThan: {
+      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<', value),
+   },
+   lesserThanOrEquals: {
+      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<=', value),
+   },
+   contains: {
+      format: (field: string, value: string | number | number[]): string =>
+         commonFormat(
+            field,
+            'LIKE',
+            ((value: string | number | number[]) => {
+               if (typeof value === 'string' && value.length > 2) {
+                  if (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'") {
+                     const rawData = value.slice(1, value.length - 1);
+                     value = `'%${rawData}%'`;
+                  }
+               }
+               return value;
+            })(value),
+         ),
+   },
+   isIn: {
+      format: (field: string, value: string | number | number[]): string => {
+         return commonFormat(
+            field,
+            'IN',
+            ((value: string | number | number[]) => {
+               if (Array.isArray(value)) {
+                  return `(${value.join(', ')})`;
+               }
+               return value;
+            })(value),
+         );
+      },
+   },
+};

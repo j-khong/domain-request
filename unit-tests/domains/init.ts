@@ -24,6 +24,6 @@ const factories: {
    course: Course.getFactory(),
    studentCategory: StudentCategory.getFactory(),
    building: Building.getFactory(),
-   // student: Student.getFactory(),
-   // courseApplication: CourseApplication.getFactory(),
+   student: Student.getFactory(),
+   courseApplication: CourseApplication.getFactory(),
 };

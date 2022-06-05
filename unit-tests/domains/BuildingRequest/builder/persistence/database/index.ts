@@ -1,7 +1,6 @@
 import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
    buildSameTableMapping,
-   DatabaseTableWithExtended,
    ExtendableDatabaseTable,
    ExtendableTableConfig,
    ExtendedTableConfig,

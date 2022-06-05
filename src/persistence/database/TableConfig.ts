@@ -1,5 +1,5 @@
 import { DomainFields, NestedFilteringFields, NestedRequestableFields } from '../../DomainRequest';
-import { DatabaseTable } from './database';
+import { SimpleDatabaseTable } from './simple';
 
 // can be an id (string | number) but also an ids list (1,45,3) to be used with IN ()
 export const toTableId = (o: any): number[] => o.split(',').map((n: string) => toNumber(n));
@@ -63,8 +63,8 @@ interface OneToMany {
 type Cardinality<TableFields extends string> = OneToOne<TableFields> | OneToMany;
 
 export interface DomainExpandableFieldsToTableFields<TableFields extends string> {
-   tableConfig: TableConfig<any, any, any>;
-   dbt: DatabaseTable<any, any, any, TableFields>;
+   tableConfig: SimpleTableConfig<any, any>;
+   dbt: SimpleDatabaseTable<any, any, TableFields>;
    cardinality: Cardinality<TableFields>;
    globalContextDomainName?: string; // when your Domain expandable name is different from the Domain name (wihch is unique)
 }
@@ -79,39 +79,39 @@ export interface DbRecord {
 }
 export type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
-export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
-   constructor(
-      public readonly tableName: string,
-      public readonly tablePrimaryKey: string,
-      public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-   ) {}
+// export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
+//    constructor(
+//       public readonly tableName: string,
+//       public readonly tablePrimaryKey: string,
+//       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
+//    ) {}
 
-   public select: SelectMethod = async (sql: string) => {
-      console.log(`SELECT METHOD is not SET for ${this.tableName}`, sql);
-      return [];
-   };
+//    public select: SelectMethod = async (sql: string) => {
+//       console.log(`SELECT METHOD is not SET for ${this.tableName}`, sql);
+//       return [];
+//    };
 
-   private domainExpandableFieldsToTable:
-      | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
-      | undefined;
+//    private domainExpandableFieldsToTable:
+//       | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
+//       | undefined;
 
-   getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
-      if (this.domainExpandableFieldsToTable === undefined) {
-         throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
-      }
-      return this.domainExpandableFieldsToTable;
-   }
+//    getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+//       if (this.domainExpandableFieldsToTable === undefined) {
+//          throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
+//       }
+//       return this.domainExpandableFieldsToTable;
+//    }
 
-   init(
-      domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
-      select?: SelectMethod,
-   ): void {
-      this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
-      if (select !== undefined) {
-         this.select = select;
-      }
-   }
-}
+//    init(
+//       domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
+//       select?: SelectMethod,
+//    ): void {
+//       this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
+//       if (select !== undefined) {
+//          this.select = select;
+//       }
+//    }
+// }
 
 export class SimpleTableConfig<Fields, TableFields extends string> {
    constructor(
@@ -229,6 +229,30 @@ export class Level2ExtendedTableConfig<Domain, TableFields extends string> exten
       }
       // default
       return this.tableName;
+   }
+}
+
+export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extends string> extends SimpleTableConfig<
+   Fields,
+   TableFields
+> {
+   private domainExpandableFieldsToTable:
+      | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
+      | undefined;
+
+   getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+      if (this.domainExpandableFieldsToTable === undefined) {
+         throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
+      }
+      return this.domainExpandableFieldsToTable;
+   }
+
+   init(
+      select: SelectMethod,
+      domainExpandableFieldsToTable?: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
+   ): void {
+      super.init(select);
+      this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
    }
 }
 

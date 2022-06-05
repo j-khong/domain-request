@@ -57,18 +57,19 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       return ret;
    }
 
-   protected getFieldsToSelect(
-      tableConfig: ExtendableTableConfig<F, E, TF>,
-      req: DomainWithExtendedRequest<DRN, F, E>,
+   protected getFieldsToSelect<Fields, Extended, TableFields extends string>(
+      tableConfig: ExtendableTableConfig<Fields, Extended, TableFields>,
+      req: DomainWithExtendedRequest<DRN, Fields, Extended>,
    ): {
       hasSelected: boolean;
-      fields: FieldsToSelect<F>;
+      fields: FieldsToSelect<Fields>;
+      joins: Join;
    } {
       const res = super.getFieldsToSelect(tableConfig, req);
       if (!res.hasSelected) {
          // check if there is extended fields selected
          for (const key in req.getFields()) {
-            if (tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof E] !== undefined) {
+            if (tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended] !== undefined) {
                if (req.isToSelectOrHasToSelect(key)) {
                   res.hasSelected = true;
                   break;
@@ -108,7 +109,7 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
 
             // order by field is not necessarily to select
             if (orderBy !== undefined && orderBy.fieldname === subkey) {
-               orderField = `${extendedTableConfig.getTableName(map.name)}.${map.name}`;
+               orderField = `${extendedTableConfig.getTableName(map.name)}.${map.name as string}`;
             }
             if (extendedTableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
                addFieldToSelect(

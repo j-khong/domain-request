@@ -1,4 +1,4 @@
 export * from './TableConfig';
-export * from './database';
+export * from './expandables';
 export * from './simple';
 export * from './extended';

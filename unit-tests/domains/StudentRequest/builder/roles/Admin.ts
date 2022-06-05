@@ -1,5 +1,5 @@
 import {
-   DomainRequestBuilder,
+   DomainWithExpandablesRequestBuilder,
    validateBoolean,
    validateId,
    validateNumber,
@@ -11,7 +11,7 @@ import { Fields as MainFields, ExpandableFields as MainExpandableFields, domainR
 type Fields = Pick<MainFields, keyof MainFields>;
 export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
 
-export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
+export class RequestBuilder extends DomainWithExpandablesRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
       super(domainRequestName, ['id'], {
          id: { validate: validateId, defaultValue: '' },

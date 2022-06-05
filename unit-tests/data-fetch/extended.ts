@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { getDomainRequestHandler } from '../domains/init';
 import { DomainRequestName, Role } from '../domains/types';
 
-describe('Data fetch tests ', () => {
+describe('Data fetch for extended ', () => {
    describe('fields and extended', () => {
       it('requests 1 existing field', function (done) {
          const domainRequestName: DomainRequestName = 'building';
