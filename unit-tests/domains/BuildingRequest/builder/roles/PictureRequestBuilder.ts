@@ -1,8 +1,8 @@
-import { DomainRequestBuilder, validateString } from '../../../../../src';
+import { SimpleDomainRequestBuilder, validateString } from '../../../../../src';
 import { Picture } from '../../types';
 
 type Modified = Pick<Picture, keyof Picture>;
-export class PictureRequestBuilder extends DomainRequestBuilder<'pictures', Modified, {}> {
+export class PictureRequestBuilder extends SimpleDomainRequestBuilder<'pictures', Modified> {
    constructor() {
       super('pictures', [], {
          name: { validate: validateString, defaultValue: '' },
@@ -10,6 +10,5 @@ export class PictureRequestBuilder extends DomainRequestBuilder<'pictures', Modi
          description: { validate: validateString, defaultValue: '' },
          status: { validate: validateString, defaultValue: '' },
       });
-      this.setExpandables({});
    }
 }

@@ -1,4 +1,4 @@
-import { isString } from '../../../src/type-checkers';
+import { isString } from '../../../src/DomainRequest/type-checkers';
 import { DomainRequestName } from '../types';
 
 const status = ['opened', 'closed', 'work in progress'] as const;

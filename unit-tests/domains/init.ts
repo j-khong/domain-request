@@ -21,9 +21,9 @@ const factories: {
    [Property in DomainRequestName]: Factory<Role, DomainRequestName>;
 } = {
    country: Country.getFactory(),
-   student: Student.getFactory(),
    course: Course.getFactory(),
-   courseApplication: CourseApplication.getFactory(),
    studentCategory: StudentCategory.getFactory(),
    building: Building.getFactory(),
+   // student: Student.getFactory(),
+   // courseApplication: CourseApplication.getFactory(),
 };

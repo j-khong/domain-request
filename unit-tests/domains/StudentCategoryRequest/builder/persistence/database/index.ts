@@ -1,7 +1,7 @@
 import {
    buildSameTableMapping,
    SimpleDatabaseTable,
-   TableConfig,
+   SimpleTableConfig,
    toString,
    toTableId,
 } from '../../../../../../src/persistence/database';
@@ -13,7 +13,7 @@ type TableFields = Key | 'name';
 class Database extends SimpleDatabaseTable<DomainRequestName, Fields, TableFields> {
    constructor() {
       super(
-         new TableConfig<Fields, {}, TableFields>(
+         new SimpleTableConfig<Fields, TableFields>(
             'student_categories', // tableName
             'id', // tablePrimaryKey
             {

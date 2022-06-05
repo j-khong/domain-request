@@ -2,6 +2,7 @@ import { NestedRequestableFields, NestedFilteringFields } from '../../../../../.
 import {
    buildSameTableMapping,
    DatabaseTableWithExtended,
+   ExtendableDatabaseTable,
    ExtendableTableConfig,
    ExtendedTableConfig,
    Level2ExtendedTableConfig,
@@ -15,10 +16,10 @@ import { ExtendedFields, Fields, OpeningHours, Picture } from '../../../types';
 
 type Key = 'id';
 type TableFields = Key | 'name' | 'status';
-class Database extends DatabaseTableWithExtended<DomainRequestName, Fields, TableFields> {
+class Database extends ExtendableDatabaseTable<DomainRequestName, Fields, ExtendedFields, TableFields> {
    constructor() {
       super(
-         new ExtendableTableConfig<Fields, TableFields, ExtendedFields>(
+         new ExtendableTableConfig<Fields, ExtendedFields, TableFields>(
             'buildings', // tableName
             'id', // tablePrimaryKey
             {
@@ -41,33 +42,21 @@ class Database extends DatabaseTableWithExtended<DomainRequestName, Fields, Tabl
    }
 
    protected extendedTableConfigToInit(select: SelectMethod): void {
-      openingHoursTable.init(
-         {
-            building: {
-               cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
-               tableConfig: this.getTableConfig(),
-               dbt: this as any,
-            },
-         },
-         select,
-      );
+      openingHoursTable.init(select, {
+         cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
+         tableConfig: this.getTableConfig(),
+      });
 
-      picturesTable.init(
-         {
-            building: {
-               cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
-               tableConfig: this.getTableConfig(),
-               dbt: this as any,
-            },
-         },
-         select,
-      );
+      picturesTable.init(select, {
+         cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
+         tableConfig: this.getTableConfig(),
+      });
    }
 }
 
 type TableFieldNames = 'id' | 'day' | 'start' | 'end' | 'id_building';
 
-const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }, TableFieldNames>(
+const openingHoursTable = new ExtendedTableConfig<OpeningHours, TableFieldNames>(
    'building_opening_hours', // tableName
    'id', // tablePrimaryKey
    {
@@ -124,7 +113,7 @@ const openingHoursTable = new ExtendedTableConfig<OpeningHours, { building: {} }
 
 type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'status' | 'id_building';
 
-const picturesTable = new Level2ExtendedTableConfig<Picture, { building: {} }, PictureTableFieldNames>(
+const picturesTable = new Level2ExtendedTableConfig<Picture, PictureTableFieldNames>(
    { tableName: 'building_pictures', tablePrimaryKey: 'id', tableForeignKeyToLevel2: 'id_picture' },
    { tableName: 'pictures', tablePrimaryKey: 'id' },
    new Map<string, PictureTableFieldNames[]>([

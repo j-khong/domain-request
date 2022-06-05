@@ -1,12 +1,12 @@
 import { DomainRequestName } from '../../../types';
-import { DomainRequestBuilderWithExtended, validateId, validateString } from '../../../../../src/DomainRequest';
+import { DomainWithExtendedRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest';
 import { domainRequestName, ExtendedFields, Fields as MainFields, validateStatus } from '../../types';
 import { PictureRequestBuilder } from './PictureRequestBuilder';
 import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 
-export class RequestBuilder extends DomainRequestBuilderWithExtended<DomainRequestName, Fields, ExtendedFields> {
+export class RequestBuilder extends DomainWithExtendedRequestBuilder<DomainRequestName, Fields, ExtendedFields> {
    constructor() {
       super(
          domainRequestName,

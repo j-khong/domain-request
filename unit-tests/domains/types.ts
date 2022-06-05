@@ -1,3 +1,3 @@
-export type DomainRequestName = 'student' | 'country' | 'courseApplication' | 'course' | 'studentCategory' | 'building';
+export type DomainRequestName = 'country' | 'course' | 'studentCategory' | 'building'; //|'student' |  'courseApplication'  ;
 
 export type Role = 'admin' | 'student';

@@ -1,8 +1,17 @@
-import { DomainRequestBuilder, validateNumber, validateString } from '../../../../../src';
+import {
+   DomainWithExtendedRequestBuilder,
+   SimpleDomainRequestBuilder,
+   validateNumber,
+   validateString,
+} from '../../../../../src';
 import { OpeningHours, TimeSlot } from '../../types';
 
 type Modified = Pick<OpeningHours, 'day'>;
-export class OpeningHoursRequestBuilder extends DomainRequestBuilder<'openingHours', Modified, {}> {
+export class OpeningHoursRequestBuilder extends DomainWithExtendedRequestBuilder<
+   'openingHours',
+   Modified,
+   { slots: TimeSlot }
+> {
    constructor() {
       super(
          'openingHours',
@@ -14,15 +23,13 @@ export class OpeningHoursRequestBuilder extends DomainRequestBuilder<'openingHou
             slots: new SlotsRequestBuilder(),
          },
       );
-      this.setExpandables({});
    }
 }
-export class SlotsRequestBuilder extends DomainRequestBuilder<'slots', TimeSlot, {}> {
+export class SlotsRequestBuilder extends SimpleDomainRequestBuilder<'slots', TimeSlot> {
    constructor() {
       super('slots', [], {
          start: { validate: validateString, defaultValue: '' },
          end: { validate: validateString, defaultValue: '' },
       });
-      this.setExpandables({});
    }
 }
