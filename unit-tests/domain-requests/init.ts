@@ -1,9 +1,9 @@
-import * as Student from './StudentRequest';
-import * as Country from './CountryRequest';
-import * as CourseApplication from './CourseApplicationRequest';
-import * as Course from './CourseRequest';
-import * as StudentCategory from './StudentCategoryRequest';
-import * as Building from './BuildingRequest';
+import * as Student from './Student';
+import * as Country from './Country';
+import * as CourseApplication from './CourseApplication';
+import * as Course from './Course';
+import * as StudentCategory from './StudentCategory';
+import * as Building from './Building';
 
 import { DomainRequestName, Role } from './types';
 import { select } from '../persistence/database/dbUtils';
