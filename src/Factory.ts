@@ -25,31 +25,25 @@ export function initFactories<DomainRequestName extends string, Role extends str
 
    for (const requestNameKey in factories) {
       const factory = factories[requestNameKey as DomainRequestName];
-      factory.initRolesBuilders(builders);
+      factory.initRolesBuildersWithExpandables(builders);
       factory.dbTable.init(select, dbTables);
    }
 }
 
 export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
    getRoleDomainRequestBuilder: (role: Role) => SimpleDomainRequestBuilder<DomainRequestName, any>;
-   fetchData: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
+   fetchDomain: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
 }
 
 export interface Factory<Role extends string, DomainRequestName extends string> {
    getAllRolesRequestBuilders: () => DomainBuildersByRole<
       Role,
       DomainRequestName,
-      DomainWithExpandablesRequestBuilder<DomainRequestName, any, any>
+      SimpleDomainRequestBuilder<DomainRequestName, any>
    >;
-   getRoleDomainRequestBuilder: (role: Role) => DomainWithExpandablesRequestBuilder<DomainRequestName, any, any>;
-   fetchData: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
-   initRolesBuilders: (allbuilders: {
-      [Property in DomainRequestName]: DomainBuildersByRole<
-         Role,
-         DomainRequestName,
-         DomainWithExpandablesRequestBuilder<DomainRequestName, any, any>
-      >;
-   }) => void;
+   getRoleDomainRequestBuilder: (role: Role) => SimpleDomainRequestBuilder<DomainRequestName, any>;
+   fetchDomain: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
+   initRolesBuildersWithExpandables: (allbuilders: AllBuilders<Role, DomainRequestName>) => void;
    dbTable: SimpleDatabaseTable<DomainRequestName, any, any>;
 }
 
@@ -58,15 +52,12 @@ export function getFactoryForSimple<R extends string, DRN extends string, F exte
       [Property in R]: SimpleDomainRequestBuilder<DRN, F>;
    },
    dbTable: SimpleDatabaseTable<DRN, F, TF>,
-): any {
-   // Factory<R, DRN> {
+): Factory<R, DRN> {
    return {
       getAllRolesRequestBuilders: () => builder,
       getRoleDomainRequestBuilder: (role: R) => builder[role],
-      initRolesBuilders /* with expandbles */: (allBuilders: {
-         [Property in DRN]: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, any, any>>;
-      }) => {},
-      fetchData: async (req: any) => dbTable.fetch(req),
+      initRolesBuildersWithExpandables: (allBuilders: AllBuilders<R, DRN>) => {},
+      fetchDomain: async (req: any) => dbTable.fetch(req),
       dbTable,
    };
 }
@@ -82,15 +73,12 @@ export function getFactoryForExtended<
       [Property in R]: DomainWithExtendedRequestBuilder<DRN, F, E>;
    },
    dbTable: ExtendableDatabaseTable<DRN, F, E, TF>,
-): any {
-   // Factory<R, DRN> {
+): Factory<R, DRN> {
    return {
       getAllRolesRequestBuilders: () => builder,
       getRoleDomainRequestBuilder: (role: R) => builder[role],
-      initRolesBuilders /* with expandbles */: (allBuilders: {
-         [Property in DRN]: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, any, any>>;
-      }) => {},
-      fetchData: async (req: any) => dbTable.fetch(req),
+      initRolesBuildersWithExpandables: (allBuilders: AllBuilders<R, DRN>) => {},
+      fetchDomain: async (req: any) => dbTable.fetch(req),
       dbTable,
    };
 }
@@ -110,34 +98,28 @@ export function getFactoryForExpandables<
    return {
       getAllRolesRequestBuilders: () => builder,
       getRoleDomainRequestBuilder: (role: R) => builder[role],
-      initRolesBuilders: (allBuilders: {
-         [Property in DRN]: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, any, any>>;
-      }) => initAllRolesDomainRequestBuilders(allBuilders, domainRequestToInit, expandables),
-      fetchData: async (req) => dbTable.fetch(req as any),
+      initRolesBuildersWithExpandables: (allBuilders: AllBuilders<R, DRN>) =>
+         initAllRolesDomainRequestBuilders(allBuilders, domainRequestToInit, expandables),
+      fetchDomain: async (req) => dbTable.fetch(req as any),
       dbTable,
    };
 }
 
 export type ExpandableName<DomainRequestName extends string, Expandables extends DomainExpandables> =
    | DomainRequestName
-   | { globalContext: DomainRequestName; currentContext: keyof Expandables };
+   | { globalContext: DomainRequestName; currentContext: Extract<keyof Expandables, string> };
 
 function initAllRolesDomainRequestBuilders<
    DomainRequestName extends string,
    Role extends string,
    Expandables extends DomainExpandables,
 >(
-   builders: {
-      [Property in DomainRequestName]: DomainBuildersByRole<
-         Role,
-         DomainRequestName,
-         DomainWithExpandablesRequestBuilder<DomainRequestName, any, any>
-      >;
-   },
+   builders: AllBuilders<Role, DomainRequestName>,
    domainRequestToInit: DomainRequestName,
    expandables: Array<ExpandableName<DomainRequestName, Expandables>>,
 ): void {
    const requestBuilderToInit = builders[domainRequestToInit];
+
    for (const keyRole in requestBuilderToInit) {
       const ret: any = {};
       for (const k of expandables) {
@@ -145,18 +127,32 @@ function initAllRolesDomainRequestBuilders<
          let current = k as string;
          if (typeof k === 'object') {
             global = k.globalContext;
-            current = k.currentContext as string;
+            current = k.currentContext;
          }
          ret[current] = builders[global as DomainRequestName][keyRole];
       }
-      requestBuilderToInit[keyRole].setExpandables(ret);
+      const reqBuilder = requestBuilderToInit[keyRole] as DomainWithExpandablesRequestBuilder<
+         DomainRequestName,
+         any,
+         any
+      >;
+      if (reqBuilder.setExpandables === undefined) {
+         throw new Error(
+            `Configuration error: for role ${keyRole} of domain request ${domainRequestToInit}, request builder must be of type DomainWithExpandablesRequestBuilder`,
+         );
+      }
+      reqBuilder.setExpandables(ret);
    }
 }
 
 type DomainBuildersByRole<
    Role extends string,
    Name extends string,
-   RequestBuilder extends DomainWithExpandablesRequestBuilder<Name, any, any>,
+   RequestBuilder extends SimpleDomainRequestBuilder<Name, any>,
 > = {
    [Property in Role]: RequestBuilder;
+};
+
+type AllBuilders<Role extends string, Name extends string> = {
+   [Property in Name]: DomainBuildersByRole<Role, Name, SimpleDomainRequestBuilder<Name, any>>;
 };

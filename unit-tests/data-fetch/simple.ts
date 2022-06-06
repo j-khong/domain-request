@@ -691,7 +691,7 @@ async function test(input: any, role: Role, domainRequestName: DomainRequestName
    const handler = getDomainRequestHandler(domainRequestName);
    const domainRequestBuilder = handler.getRoleDomainRequestBuilder(role);
    const buildResult = domainRequestBuilder.build(input);
-   const result = await handler.fetchData(buildResult.request);
+   const result = await handler.fetchDomain(buildResult.request);
 
    expect(result.domainName).to.equals(domainRequestName);
    expect(result.total).to.equals(expected.total);
