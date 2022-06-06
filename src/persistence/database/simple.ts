@@ -39,10 +39,11 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       //  fields of the domain
       //  expanded fields of oneToOne Domains
       const ids = await this.fetchFieldsAndOneToOne(ret, req);
-      if (ids === undefined) {
+      if (ids === undefined || ids.length === 0) {
          return ret;
       }
 
+      await this.fetchOneToMany(ret, req, ids);
       return ret;
    }
 
@@ -206,6 +207,12 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
 
       return result;
    }
+
+   protected async fetchOneToMany(
+      resultsToReconcile: DomainResult,
+      req: SimpleDomainRequest<DRN, F>,
+      ids: string[],
+   ): Promise<void> {}
 }
 
 function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[]): string {

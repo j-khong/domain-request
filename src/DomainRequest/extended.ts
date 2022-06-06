@@ -1,3 +1,4 @@
+import { AddOnManager, IsExtended } from './addons';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
 import { isBoolean } from './type-checkers';
 import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, RequestableFields, Validator } from './types';
@@ -7,6 +8,7 @@ export class DomainWithExtendedRequestBuilder<
    Fields extends DomainFields,
    Extended,
 > extends SimpleDomainRequestBuilder<Name, Fields> {
+   private readonly addonsManager: AddOnManager;
    constructor(
       name: Name,
       naturalKey: NaturalKey<Extract<keyof Fields, string>>,
@@ -22,6 +24,8 @@ export class DomainWithExtendedRequestBuilder<
       },
    ) {
       super(name, naturalKey, validatorFilterMap);
+      this.addonsManager = new AddOnManager();
+      this.addonsManager.setExtended(this.name);
    }
 
    build(input: any): {
@@ -31,19 +35,12 @@ export class DomainWithExtendedRequestBuilder<
       const { fields, filters, options } = this.splitValues(input);
 
       const sanitizedFields = this.sanitizeFieldsToSelect(fields);
-
-      const extendedDomainRequests: any = {};
-      for (const field in this.extended) {
-         const snakedFieldName = this.camelToInputStyle(field);
-         const val = fields[snakedFieldName];
-         const dr = this.extended[field].build(val);
-         extendedDomainRequests[field] = dr.request;
-         sanitizedFields.fields[field] = dr.request.getFields();
-         sanitizedFields.errors.push(...dr.errors);
-      }
-
       const sanitizedFilters = this.sanitizeFilters(filters);
       const sanitizedOptions = this.sanitizeOptions(options);
+
+      const extendedDomainRequests = this.addonsManager
+         .getExtended(this.name)
+         .buildExtendedRequests(this.extended, this.camelToInputStyle, fields, sanitizedFields);
 
       return {
          request: new DomainWithExtendedRequest<Name, Fields, Extended>(
@@ -52,18 +49,19 @@ export class DomainWithExtendedRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
-            extendedDomainRequests,
+            extendedDomainRequests as {
+               [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
+            },
          ),
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };
    }
 }
 
-export class DomainWithExtendedRequest<
-   Name extends string,
-   Fields extends DomainFields,
-   Extended,
-> extends SimpleDomainRequest<Name, Fields> {
+export class DomainWithExtendedRequest<Name extends string, Fields extends DomainFields, Extended>
+   extends SimpleDomainRequest<Name, Fields>
+   implements IsExtended<Name, Fields, Extended>
+{
    constructor(
       name: Name,
       naturalKey: NaturalKey<Extract<keyof Fields, string>>,

@@ -1,5 +1,7 @@
-import { AddOnManager, HasExpandables, IsExpandable } from './addons';
+import { AddOnManager, HasExpandables, IsExpandable, IsExtended } from './addons';
+import { DomainExpandables, DomainWithExpandablesRequestBuilder } from './expandables';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
+import { isBoolean } from './type-checkers';
 import {
    DomainFields,
    FilteringFields,
@@ -11,11 +13,10 @@ import {
    Validator,
 } from './types';
 
-export interface DomainExpandables extends DomainFields {}
-
-export abstract class DomainWithExpandablesRequestBuilder<
+export class DomainWithExtendedAndExpandablesRequestBuilder<
       Name extends string,
       Fields extends DomainFields,
+      Extended,
       Expandables extends DomainExpandables,
    >
    extends SimpleDomainRequestBuilder<Name, Fields>
@@ -32,9 +33,19 @@ export abstract class DomainWithExpandablesRequestBuilder<
             authorizedValues?: string[];
          };
       },
+      private readonly extended: {
+         [Property in keyof Extended]: SimpleDomainRequestBuilder<any, any>;
+      },
    ) {
       super(name, naturalKey, validatorFilterMap);
       this.addonsManager = new AddOnManager();
+      this.addonsManager.setExtended(this.name);
+   }
+
+   setExpandables(expandablesRequestsBuilders: {
+      [Property in keyof Expandables]: DomainWithExpandablesRequestBuilder<Name, Fields, Expandables>;
+   }): void {
+      this.addonsManager.setExpandables(this.name, expandablesRequestsBuilders);
    }
 
    build(
@@ -50,35 +61,30 @@ export abstract class DomainWithExpandablesRequestBuilder<
       const sanitizedFilters = this.sanitizeFilters(filters);
       const sanitizedOptions = this.sanitizeOptions(options);
 
+      const extendedDomainRequests = this.addonsManager
+         .getExtended(this.name)
+         .buildExtendedRequests(this.extended, this.camelToInputStyle, fields, sanitizedFields);
+
       const expandablesRequests = this.addonsManager
          .getExpandables(this.name)
          .buildExpandablesRequests(this.name, this.camelToInputStyle, expandables, dontExpandThese);
 
       return {
-         request: new DomainWithExpandablesRequest<Name, Fields, Expandables>(
+         request: new DomainWithExtendedAndExpandablesRequest<Name, Fields, Extended, Expandables>(
             this.name,
             this.naturalKey,
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
+            extendedDomainRequests as {
+               [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
+            },
             expandablesRequests.requests as {
                [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
             },
          ),
-
-         errors: [
-            ...sanitizedFields.errors,
-            ...sanitizedFilters.errors,
-            ...sanitizedOptions.errors,
-            ...expandablesRequests.errors,
-         ],
+         errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };
-   }
-
-   setExpandables(expandablesRequestsBuilders: {
-      [Property in keyof Expandables]: DomainWithExpandablesRequestBuilder<Name, Fields, Expandables>;
-   }): void {
-      this.addonsManager.setExpandables(this.name, expandablesRequestsBuilders);
    }
 
    protected splitValues(input: Tree): {
@@ -102,14 +108,15 @@ export abstract class DomainWithExpandablesRequestBuilder<
       };
    }
 }
-
-export class DomainWithExpandablesRequest<
+// Expandables extends DomainExpandables
+export class DomainWithExtendedAndExpandablesRequest<
       Name extends string,
       Fields extends DomainFields,
+      Extended,
       Expandables extends DomainExpandables,
    >
    extends SimpleDomainRequest<Name, Fields>
-   implements IsExpandable<Name, Expandables>
+   implements IsExtended<Name, Fields, Extended>, IsExpandable<Name, Expandables>
 {
    constructor(
       name: Name,
@@ -117,11 +124,49 @@ export class DomainWithExpandablesRequest<
       fields: RequestableFields<Fields>,
       filters: FilteringFields<Fields>,
       options: Options<Fields>,
+      private readonly extended: {
+         [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
+      },
       private readonly expandables: {
          [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
       },
    ) {
       super(name, naturalKey, fields, filters, options);
+   }
+
+   // check the field:
+   //  - is selectable (if simple field)
+   //  - has a selectable (if extended field)
+   isToSelectOrHasToSelect(key: keyof RequestableFields<Fields>): boolean {
+      const fieldValue = this.fields[key];
+      return this.checkIsToSelect(fieldValue);
+   }
+
+   private checkIsToSelect(o: boolean | RequestableFields<any>): boolean {
+      if (o === undefined) {
+         return false;
+      }
+      if (isBoolean(o)) {
+         return o;
+      }
+
+      for (const key in o) {
+         const res = this.checkIsToSelect(o[key]);
+         if (res) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   getExtendedFields(k: Extract<keyof Extended, string>): RequestableFields<Extended> | undefined {
+      return this.getFields()[k] as RequestableFields<Extended>;
+   }
+
+   getExtended(): {
+      [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
+   } {
+      return this.extended;
    }
 
    getExpandables(): {

@@ -24,8 +24,6 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       return this.tableConfig;
    }
 
-   protected abstract extendedTableConfigToInit(select: SelectMethod): void;
-
    init(
       select: SelectMethod,
       allDbTables: {
@@ -36,26 +34,7 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       this.extendedTableConfigToInit(select);
    }
 
-   async fetch(req: DomainWithExtendedRequest<DRN, F, E>): Promise<DomainResult> {
-      const results: any[] = [];
-      const ret = {
-         domainName: req.getName(),
-         results,
-         report: new Report(),
-         total: 0,
-      };
-      // fetch results with
-      //  fields of the domain
-      //  expanded fields of oneToOne Domains
-      const ids = await this.fetchFieldsAndOneToOne(ret, req);
-      if (ids === undefined || ids.length === 0) {
-         return ret;
-      }
-
-      await this.fetchExtendedOneToMany(ret, req, ids);
-
-      return ret;
-   }
+   protected abstract extendedTableConfigToInit(select: SelectMethod): void;
 
    protected getFieldsToSelect<Fields, Extended, TableFields extends string>(
       tableConfig: ExtendableTableConfig<Fields, Extended, TableFields>,
@@ -79,6 +58,14 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       }
 
       return res;
+   }
+
+   protected async fetchOneToMany(
+      resultsToReconcile: DomainResult,
+      req: DomainWithExtendedRequest<DRN, F, E>,
+      ids: string[],
+   ): Promise<void> {
+      return this.fetchExtendedOneToMany(resultsToReconcile, req, ids);
    }
 
    async fetchExtendedOneToMany(

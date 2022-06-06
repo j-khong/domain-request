@@ -33,6 +33,10 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       private readonly MAX_LIMIT = 5000,
    ) {}
 
+   getName(): Name {
+      return this.name;
+   }
+
    build(input: any): {
       request: SimpleDomainRequest<Name, Fields>;
       errors: InputErrors;
