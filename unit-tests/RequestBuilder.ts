@@ -1,18 +1,17 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { getDomainRequestHandler } from './domains/init';
+import { getDomainRequestHandler } from './domain-requests/init';
 import {
-   DomainRequest,
-   DomainRequestBuilder,
-   Tree,
    Comparison,
-   isComparison,
    isAndArrayComparison,
    isOrArrayComparison,
-   InputErrors,
+   SimpleDomainRequest,
+   SimpleDomainRequestBuilder,
+   DomainWithExpandablesRequest,
 } from '../src/DomainRequest';
-import { DomainRequestName, Role } from './domains/types';
+import { DomainRequestName, Role } from './domain-requests/types';
+import { InputErrors, isComparison, Tree } from '../src/DomainRequest/types';
 
 describe('Request Builder tests ', () => {
    describe('request simple fields (no expandables)', () => {
@@ -720,14 +719,14 @@ interface Expected {
 
 function test(input: Tree, role: Role, expected: Expected) {
    const factory = getDomainRequestHandler('student');
-   const res = factory.getRoleDomainRequestBuilder(role).build(input, []);
+   const res = factory.getRoleDomainRequestBuilder(role).build(input);
    // console.log('res:', JSON.stringify(res, null, 2));
-
-   compareRequestBuilder('student', res.request, expected);
-   compareRequestBuilder('country', res.request.getExpandables().country, expected.expandables.country);
+   const expReq = res.request as DomainWithExpandablesRequest<DomainRequestName, any, any>;
+   compareRequestBuilder('student', expReq, expected);
+   compareRequestBuilder('country', expReq.getExpandables().country, expected.expandables.country);
    compareRequestBuilder(
       'courseApplication',
-      res.request.getExpandables().courseApplication,
+      expReq.getExpandables().courseApplication,
       expected.expandables.courseApplication,
    );
 
@@ -743,7 +742,11 @@ function test(input: Tree, role: Role, expected: Expected) {
    }
 }
 
-function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<string, F, Exp>, expected: Expected): void {
+function compareRequestBuilder<F, Exp>(
+   name: string,
+   request: SimpleDomainRequest<string, F>,
+   expected: Expected,
+): void {
    const actualFieldsKeys = Object.keys(request.getFields()) as Array<keyof F>;
    expect(actualFieldsKeys.length, `${name} fields length`).to.equals(Object.keys(expected.fields).length);
    for (const key of actualFieldsKeys) {
@@ -787,11 +790,14 @@ function compareRequestBuilder<F, Exp>(name: string, request: DomainRequest<stri
    expect(request.getOptions().pagination.limit).to.equals(expected.options.pagination.limit);
    expect(request.getOptions().pagination.offset).to.equals(expected.options.pagination.offset);
 
-   const actualExpKeys = Object.keys(request.getExpandables()) as Array<keyof Exp>;
-   expect(actualExpKeys.length, `${name} expandables length`).to.equals(Object.keys(expected.expandables).length);
-   for (const key of actualExpKeys) {
-      compareRequestBuilder(`${name} > ${key}`, request.getExpandables()[key], expected.expandables[key]);
-      // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
+   const expReq = request as DomainWithExpandablesRequest<string, F, any>;
+   if (expReq.getExpandables !== undefined) {
+      const actualExpKeys = Object.keys(expReq.getExpandables()) as Array<keyof Exp>;
+      expect(actualExpKeys.length, `${name} expandables length`).to.equals(Object.keys(expected.expandables).length);
+      for (const key of actualExpKeys) {
+         compareRequestBuilder(`${name} > ${key}`, expReq.getExpandables()[key], expected.expandables[key]);
+         // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
+      }
    }
 }
 
@@ -835,7 +841,7 @@ function getCourseDefaultExpected(role: Role): Expected {
    return result;
 }
 
-function buildExpected(requestBuilder: DomainRequestBuilder<DomainRequestName, any, any>): Expected {
+function buildExpected(requestBuilder: SimpleDomainRequestBuilder<DomainRequestName, any>): Expected {
    const defaultFields = requestBuilder.buildDefaultRequestableFields();
 
    return {

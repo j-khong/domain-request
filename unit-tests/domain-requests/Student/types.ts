@@ -1,7 +1,7 @@
 import { ExpandableName } from '../../../src';
-import * as CourseApplication from '../CourseApplicationRequest';
-import * as Country from '../CountryRequest';
-import * as StudentCategory from '../StudentCategoryRequest';
+import * as CourseApplication from '../CourseApplication';
+import * as Country from '../Country';
+import * as StudentCategory from '../StudentCategory';
 import { DomainRequestName } from '../types';
 
 export interface Fields {

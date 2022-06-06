@@ -1,8 +1,8 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { getDomainRequestHandler } from '../domains/init';
-import { DomainRequestName, Role } from '../domains/types';
+import { getDomainRequestHandler } from '../domain-requests/init';
+import { DomainRequestName, Role } from '../domain-requests/types';
 
 describe('Data fetch for simple ', () => {
    describe('fields', () => {
@@ -690,7 +690,7 @@ interface Expected {
 async function test(input: any, role: Role, domainRequestName: DomainRequestName, expected: Expected): Promise<void> {
    const handler = getDomainRequestHandler(domainRequestName);
    const domainRequestBuilder = handler.getRoleDomainRequestBuilder(role);
-   const buildResult = domainRequestBuilder.build(input, []);
+   const buildResult = domainRequestBuilder.build(input);
    const result = await handler.fetchData(buildResult.request);
 
    expect(result.domainName).to.equals(domainRequestName);

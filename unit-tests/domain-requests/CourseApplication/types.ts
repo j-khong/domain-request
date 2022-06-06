@@ -1,6 +1,6 @@
 import { ExpandableName } from '../../../src';
-import * as CR from '../CourseRequest';
-import * as SRF from '../StudentRequest';
+import * as CR from '../Course';
+import * as SRF from '../Student';
 import { DomainRequestName } from '../types';
 
 export interface Fields {

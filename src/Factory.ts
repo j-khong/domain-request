@@ -31,7 +31,7 @@ export function initFactories<DomainRequestName extends string, Role extends str
 }
 
 export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
-   getRoleDomainRequestBuilder: (role: Role) => DomainWithExpandablesRequestBuilder<DomainRequestName, any, any>;
+   getRoleDomainRequestBuilder: (role: Role) => SimpleDomainRequestBuilder<DomainRequestName, any>;
    fetchData: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
 }
 
