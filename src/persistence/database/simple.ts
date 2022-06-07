@@ -1,15 +1,16 @@
 import { Report, DomainResult } from '../index';
+import { SimpleDomainRequest } from '../../DomainRequest';
+import { DbRecord, SelectMethod, SimpleTableConfig } from './TableConfig';
+import { FieldsToSelect, Join } from './types';
 import {
-   AndArrayComparison,
-   OrArrayComparison,
-   Comparison,
-   isAndArrayComparison,
-   isOrArrayComparison,
-   SimpleDomainRequest,
-} from '../../DomainRequest';
-import { DbRecord, SameTableMapping, SelectMethod, SimpleTableConfig } from './TableConfig';
-import { ComparisonOperatorMap, DatabaseOperator, FieldsToSelect, Join } from './types';
-import { addFieldToSelect, createNewFieldsToSelect, createSqlAlias, executeRequest } from './functions';
+   addFieldToSelect,
+   createResultAndPopulate,
+   createSqlAlias,
+   executeRequest,
+   getDomainFieldsToTableFieldsMapping,
+   getFieldsToSelect,
+   processFilters,
+} from './functions';
 
 export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends string> {
    constructor(protected readonly tableConfig: SimpleTableConfig<F, TF>) {}
@@ -68,7 +69,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
 
       // add natural key, if not there
       for (const key of req.getNaturalKey()) {
-         const mapping = this.getDomainFieldsToTableFieldsMapping(this.tableConfig, key);
+         const mapping = getDomainFieldsToTableFieldsMapping(this.tableConfig, key);
 
          addFieldToSelect(
             fieldsToSelect,
@@ -83,7 +84,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       const select = `SELECT ${fields}`;
 
       const from = `FROM ${this.tableConfig.tableName}`;
-      const filters = this.processFilters(this.tableConfig, req);
+      const filters = processFilters(this.tableConfig, req);
       const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
 
       if (req.isSelectCount()) {
@@ -117,7 +118,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       for (const dbRecord of dbResults) {
          ids.push(dbRecord[pk].toString());
 
-         const result = this.createResultToPopulate(dbRecord, fieldsToSelect);
+         const result = this.createResultAndPopulate(dbRecord, fieldsToSelect);
 
          resultsToReconcile.results.push(result);
       }
@@ -126,86 +127,19 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       return ids;
    }
 
-   protected createResultToPopulate(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect<F>): any {
-      const result: any = {};
-      for (const key of fieldsToSelect.keys()) {
-         const fieldToSelect = fieldsToSelect.get(key);
-         const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
-         result[fieldName] = fieldToSelect?.convertToDomain(dbRecord[key]);
-      }
-      return result;
+   protected createResultAndPopulate(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect<F>): any {
+      return createResultAndPopulate(dbRecord, fieldsToSelect);
    }
 
-   protected getFieldsToSelect<Fields, TableFields extends string>(
-      tableConfig: SimpleTableConfig<Fields, TableFields>,
-      req: SimpleDomainRequest<DRN, Fields>,
+   protected getFieldsToSelect(
+      tableConfig: SimpleTableConfig<F, TF>,
+      req: SimpleDomainRequest<DRN, F>,
    ): {
       hasSelected: boolean;
-      fields: FieldsToSelect<Fields>;
+      fields: FieldsToSelect<F>;
       joins: Join;
    } {
-      const fields = createNewFieldsToSelect<Fields>();
-      for (const v of req.getFieldsNames()) {
-         const mapping = this.getDomainFieldsToTableFieldsMapping(tableConfig, v);
-
-         addFieldToSelect(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
-      }
-      return { fields, hasSelected: fields.size > 0, joins: new Map() };
-   }
-
-   protected getDomainFieldsToTableFieldsMapping<Fields, TableFields extends string>(
-      tableConfig: SimpleTableConfig<Fields, TableFields>,
-      key: keyof Fields,
-   ): SameTableMapping<TableFields> {
-      const mapping: SameTableMapping<TableFields> = tableConfig.domainFieldsToTableFieldsMap[key];
-      if (mapping === undefined) {
-         throw new Error(`configuration problem: no field [${key as string}] in domain to db field mapping`);
-      }
-
-      return mapping;
-   }
-
-   protected processFilters(tableConfig: SimpleTableConfig<F, TF>, req: SimpleDomainRequest<DRN, F>): string[] {
-      const filters = req.getFilters();
-      const result: string[] = [];
-
-      for (const key in filters) {
-         const fieldMapper = this.getDomainFieldsToTableFieldsMapping(tableConfig, key);
-         const comparison = filters[key];
-         if (comparison === undefined) {
-            continue;
-         }
-
-         const populateValue = (c: Comparison<F>, result: string[]): void => {
-            const comparisonMapper = comparisonOperatorMap[c.operator];
-            result.push(
-               comparisonMapper.format(
-                  `${tableConfig.tableName}.${fieldMapper.name}`,
-                  fieldMapper.convertToDb(c.value),
-               ),
-            );
-         };
-         const populateFromArray = (arr: Array<Comparison<F>>, result: string[], link: 'AND' | 'OR'): void => {
-            if (arr !== undefined && arr.length > 0) {
-               const res: string[] = [];
-               for (const comp of arr) {
-                  populateValue(comp, res);
-               }
-               result.push(`(${res.join(` ${link} `)})`);
-            }
-         };
-         const populate = (c: AndArrayComparison<F> | OrArrayComparison<F>): void => {
-            if (isAndArrayComparison(c)) {
-               populateFromArray(c.and as Array<Comparison<F>>, result, 'AND');
-            } else if (isOrArrayComparison(c)) {
-               populateFromArray(c.or as Array<Comparison<F>>, result, 'OR');
-            }
-         };
-
-         populate(comparison);
-      }
-
-      return result;
+      return getFieldsToSelect(tableConfig, req);
    }
 
    protected async fetchOneToMany(
@@ -214,63 +148,3 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       ids: string[],
    ): Promise<void> {}
 }
-
-function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[]): string {
-   let val: number | string = '';
-   if (Array.isArray(value)) {
-      if (value.length > 0) {
-         val = value[0];
-      }
-   } else {
-      val = value;
-   }
-   return `${field} ${operator} ${val}`;
-}
-
-const comparisonOperatorMap: ComparisonOperatorMap = {
-   equals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '=', value),
-   },
-   greaterThan: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>', value),
-   },
-   greaterThanOrEquals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>=', value),
-   },
-   lesserThan: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<', value),
-   },
-   lesserThanOrEquals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<=', value),
-   },
-   contains: {
-      format: (field: string, value: string | number | number[]): string =>
-         commonFormat(
-            field,
-            'LIKE',
-            ((value: string | number | number[]) => {
-               if (typeof value === 'string' && value.length > 2) {
-                  if (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'") {
-                     const rawData = value.slice(1, value.length - 1);
-                     value = `'%${rawData}%'`;
-                  }
-               }
-               return value;
-            })(value),
-         ),
-   },
-   isIn: {
-      format: (field: string, value: string | number | number[]): string => {
-         return commonFormat(
-            field,
-            'IN',
-            ((value: string | number | number[]) => {
-               if (Array.isArray(value)) {
-                  return `(${value.join(', ')})`;
-               }
-               return value;
-            })(value),
-         );
-      },
-   },
-};

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/brace-style */
 import { DomainFields, NestedFilteringFields, NestedRequestableFields } from '../../DomainRequest';
 import { SimpleDatabaseTable } from './simple';
 
@@ -79,39 +80,6 @@ export interface DbRecord {
 }
 export type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
-// export class TableConfig<Fields, ExpandableFields, TableFields extends string> {
-//    constructor(
-//       public readonly tableName: string,
-//       public readonly tablePrimaryKey: string,
-//       public readonly domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
-//    ) {}
-
-//    public select: SelectMethod = async (sql: string) => {
-//       console.log(`SELECT METHOD is not SET for ${this.tableName}`, sql);
-//       return [];
-//    };
-
-//    private domainExpandableFieldsToTable:
-//       | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
-//       | undefined;
-
-//    getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
-//       if (this.domainExpandableFieldsToTable === undefined) {
-//          throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
-//       }
-//       return this.domainExpandableFieldsToTable;
-//    }
-
-//    init(
-//       domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
-//       select?: SelectMethod,
-//    ): void {
-//       this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
-//       if (select !== undefined) {
-//          this.select = select;
-//       }
-//    }
-// }
 
 export class SimpleTableConfig<Fields, TableFields extends string> {
    constructor(
@@ -130,10 +98,17 @@ export class SimpleTableConfig<Fields, TableFields extends string> {
    }
 }
 
-export class ExtendableTableConfig<Fields, Extended, TableFields extends string> extends SimpleTableConfig<
-   Fields,
-   TableFields
-> {
+export interface IsExtendableTableConfig<Extended, TableFields extends string> {
+   getExtendedFieldsToTableFieldsMap: () => ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>;
+   getTableName: () => string;
+   getTablePrimaryKey: () => string;
+   getSelect: () => SelectMethod;
+}
+
+export class ExtendableTableConfig<Fields, Extended, TableFields extends string>
+   extends SimpleTableConfig<Fields, TableFields>
+   implements IsExtendableTableConfig<Extended, TableFields>
+{
    constructor(
       tableName: string,
       tablePrimaryKey: string,
@@ -141,6 +116,22 @@ export class ExtendableTableConfig<Fields, Extended, TableFields extends string>
       public readonly extendedFieldsToTableFieldsMap: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
    ) {
       super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
+   }
+
+   getExtendedFieldsToTableFieldsMap(): ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields> {
+      return this.extendedFieldsToTableFieldsMap;
+   }
+
+   getTableName(): string {
+      return this.tableName;
+   }
+
+   getTablePrimaryKey(): string {
+      return this.tablePrimaryKey;
+   }
+
+   getSelect(): SelectMethod {
+      return this.select;
    }
 }
 
@@ -232,10 +223,15 @@ export class Level2ExtendedTableConfig<Domain, TableFields extends string> exten
    }
 }
 
-export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extends string> extends SimpleTableConfig<
-   Fields,
-   TableFields
-> {
+export interface IsExpandablesTableConfig<E, TF extends string> {
+   getDomainExpandableFieldsToTableFieldsMap: () => DomainExpandableFieldsToTableFieldsMap<E, TF>;
+   getTableName: () => string;
+   getTablePrimaryKey: () => string;
+}
+export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extends string>
+   extends SimpleTableConfig<Fields, TableFields>
+   implements IsExpandablesTableConfig<ExpandableFields, TableFields>
+{
    private domainExpandableFieldsToTable:
       | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
       | undefined;
@@ -253,6 +249,63 @@ export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extend
    ): void {
       super.init(select);
       this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
+   }
+
+   getTableName(): string {
+      return this.tableName;
+   }
+
+   getTablePrimaryKey(): string {
+      return this.tablePrimaryKey;
+   }
+}
+
+export class ExtendableAndExpandablesTableConfig<Fields, Extended, ExpandableFields, TableFields extends string>
+   extends SimpleTableConfig<Fields, TableFields>
+   implements IsExpandablesTableConfig<ExpandableFields, TableFields>, IsExtendableTableConfig<Extended, TableFields>
+{
+   constructor(
+      tableName: string,
+      tablePrimaryKey: string,
+      domainFieldsToTableFieldsMap: DomainFieldsToTableFieldsMap<Fields, TableFields>,
+      public readonly extendedFieldsToTableFieldsMap: ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields>,
+   ) {
+      super(tableName, tablePrimaryKey, domainFieldsToTableFieldsMap);
+   }
+
+   private domainExpandableFieldsToTable:
+      | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
+      | undefined;
+
+   getDomainExpandableFieldsToTableFieldsMap(): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+      if (this.domainExpandableFieldsToTable === undefined) {
+         throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
+      }
+      return this.domainExpandableFieldsToTable;
+   }
+
+   init(
+      select: SelectMethod,
+      domainExpandableFieldsToTable?: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
+   ): void {
+      super.init(select);
+      this.domainExpandableFieldsToTable = domainExpandableFieldsToTable;
+   }
+
+   getExtendedFieldsToTableFieldsMap(): ExtendedDomainFieldsToTableFieldsMap<Extended, TableFields> {
+      return this.extendedFieldsToTableFieldsMap;
+   }
+
+   getTableName(): string {
+      return this.tableName;
+   }
+
+   getTablePrimaryKey(): string {
+      return this.tablePrimaryKey;
+   }
+
+   getSelect(): SelectMethod {
+      return this.select;
    }
 }
 

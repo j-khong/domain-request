@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/brace-style */
 import { AddOnManager, IsExtended } from './addons';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
 import { isBoolean } from './type-checkers';
@@ -39,7 +40,7 @@ export class DomainWithExtendedRequestBuilder<
       const sanitizedOptions = this.sanitizeOptions(options);
 
       const extendedDomainRequests = this.addonsManager
-         .getExtended(this.name)
+         .getExtended<Name, Fields, Extended>(this.name)
          .buildExtendedRequests(this.extended, this.camelToInputStyle, fields, sanitizedFields);
 
       return {
@@ -49,9 +50,7 @@ export class DomainWithExtendedRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
-            extendedDomainRequests as {
-               [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
-            },
+            extendedDomainRequests,
          ),
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };

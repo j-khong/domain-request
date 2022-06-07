@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/brace-style */
 import { AddOnManager, HasExpandables, IsExpandable, IsExtended } from './addons';
 import { DomainExpandables, DomainWithExpandablesRequestBuilder } from './expandables';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
@@ -62,11 +63,11 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
       const sanitizedOptions = this.sanitizeOptions(options);
 
       const extendedDomainRequests = this.addonsManager
-         .getExtended(this.name)
+         .getExtended<Name, Fields, Extended>(this.name)
          .buildExtendedRequests(this.extended, this.camelToInputStyle, fields, sanitizedFields);
 
       const expandablesRequests = this.addonsManager
-         .getExpandables(this.name)
+         .getExpandables<Name, Fields, Expandables>(this.name)
          .buildExpandablesRequests(this.name, this.camelToInputStyle, expandables, dontExpandThese);
 
       return {
@@ -76,12 +77,8 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
-            extendedDomainRequests as {
-               [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
-            },
-            expandablesRequests.requests as {
-               [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
-            },
+            extendedDomainRequests,
+            expandablesRequests.requests,
          ),
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };
@@ -108,7 +105,6 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
       };
    }
 }
-// Expandables extends DomainExpandables
 export class DomainWithExtendedAndExpandablesRequest<
       Name extends string,
       Fields extends DomainFields,

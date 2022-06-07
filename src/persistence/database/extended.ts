@@ -1,23 +1,21 @@
-import { Report, DomainResult } from '../index';
-import { DomainWithExtendedRequest, SimpleDomainRequest } from '../../DomainRequest';
-import { ExtendableTableConfig, ExtendedTableConfig, SelectMethod } from './TableConfig';
-import {
-   addFieldToSelect,
-   createNewFieldsToSelect,
-   createRequestFullFieldName,
-   createSqlAlias,
-   executeRequest,
-} from './functions';
+import { DomainResult } from '../index';
+import { DomainWithExtendedRequest } from '../../DomainRequest';
+import { ExtendableTableConfig, SelectMethod } from './TableConfig';
 import { FieldsToSelect, Join } from './types';
 import { SimpleDatabaseTable } from './simple';
+import { AddOnManager } from './addons';
+import { getFieldsToSelect } from './functions';
 
 export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF extends string> extends SimpleDatabaseTable<
    DRN,
    F,
    TF
 > {
+   private readonly addonManager: AddOnManager;
    constructor(protected readonly tableConfig: ExtendableTableConfig<F, E, TF>) {
       super(tableConfig);
+      this.addonManager = new AddOnManager();
+      this.addonManager.setExtended(tableConfig.tableName);
    }
 
    getTableConfig(): ExtendableTableConfig<F, E, TF> {
@@ -36,26 +34,16 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
 
    protected abstract extendedTableConfigToInit(select: SelectMethod): void;
 
-   protected getFieldsToSelect<Fields, Extended, TableFields extends string>(
-      tableConfig: ExtendableTableConfig<Fields, Extended, TableFields>,
-      req: DomainWithExtendedRequest<DRN, Fields, Extended>,
+   protected getFieldsToSelect(
+      tableConfig: ExtendableTableConfig<F, E, TF>,
+      req: DomainWithExtendedRequest<DRN, F, E>,
    ): {
       hasSelected: boolean;
-      fields: FieldsToSelect<Fields>;
+      fields: FieldsToSelect<F>;
       joins: Join;
    } {
-      const res = super.getFieldsToSelect(tableConfig, req);
-      if (!res.hasSelected) {
-         // check if there is extended fields selected
-         for (const key in req.getFields()) {
-            if (tableConfig.extendedFieldsToTableFieldsMap[key as unknown as keyof Extended] !== undefined) {
-               if (req.isToSelectOrHasToSelect(key)) {
-                  res.hasSelected = true;
-                  break;
-               }
-            }
-         }
-      }
+      const res = getFieldsToSelect(tableConfig, req);
+      this.addonManager.getExtended<DRN, F, E, TF>(this.tableConfig.tableName).checkHasToSelect(res, tableConfig, req);
 
       return res;
    }
@@ -65,135 +53,8 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       req: DomainWithExtendedRequest<DRN, F, E>,
       ids: string[],
    ): Promise<void> {
-      return this.fetchExtendedOneToMany(resultsToReconcile, req, ids);
-   }
-
-   async fetchExtendedOneToMany(
-      resultsToReconcile: DomainResult,
-      req: DomainWithExtendedRequest<DRN, F, E>,
-      ids: string[],
-   ): Promise<void> {
-      for (const k in this.tableConfig.extendedFieldsToTableFieldsMap) {
-         const conf = this.tableConfig.extendedFieldsToTableFieldsMap[k];
-
-         if (conf.cardinality.name !== 'oneToMany') {
-            continue;
-         }
-         const extendedFieldsToSelect = req.getExtendedFields(k);
-         if (extendedFieldsToSelect === undefined) {
-            continue;
-         }
-
-         const extendedRequest: SimpleDomainRequest<any, any> = req.getExtended()[k];
-         const orderBy = extendedRequest.getOptions().orderby;
-         let orderField = '';
-
-         const extendedTableConfig = conf.tableConfig as ExtendedTableConfig<any, any>;
-         // loop on all fields of table
-         const fieldsToSelect = createNewFieldsToSelect<any>();
-         for (const subkey in extendedTableConfig.domainFieldsToTableFieldsMap) {
-            const map = this.getDomainFieldsToTableFieldsMapping(extendedTableConfig, subkey as any);
-
-            // order by field is not necessarily to select
-            if (orderBy !== undefined && orderBy.fieldname === subkey) {
-               orderField = `${extendedTableConfig.getTableName(map.name)}.${map.name as string}`;
-            }
-            if (extendedTableConfig.isToSelect(extendedFieldsToSelect, subkey)) {
-               addFieldToSelect(
-                  fieldsToSelect,
-                  extendedTableConfig.getTableName(map.name),
-                  map.name,
-                  subkey,
-                  map.convertToDomain,
-               );
-            }
-            // TODO here manage other table mapping
-         }
-
-         if (fieldsToSelect.size === 0) {
-            continue;
-         }
-
-         // process join
-         const joins: Join = new Map();
-         const mod = extendedTableConfig.getExtandableMapping();
-         // const mod = exp[req.getName()];
-         const joinTableName = extendedTableConfig.tableName;
-         const map = joins.get(joinTableName);
-         if (map === undefined) {
-            if (mod.cardinality.name === 'oneToOne') {
-               joins.set(joinTableName, {
-                  relationship: `${mod.tableConfig.tableName}.${mod.tableConfig.tablePrimaryKey}=${joinTableName}.${
-                     mod.cardinality.foreignKey as string
-                  }`,
-                  filters: this.processFilters(extendedTableConfig, extendedRequest),
-               });
-            }
-         }
-
-         const fields = [...Array.from(fieldsToSelect.values()).map((v) => v.fullFieldToSelect)].join(', ');
-         const joinsStr: string[] = [];
-         for (const [key, value] of joins) {
-            joinsStr.push(
-               `LEFT JOIN ${key} ON ${value.relationship} ${
-                  value.filters.length > 0 ? ` AND (${value.filters.join(' AND ')})` : ''
-               }`,
-            );
-         }
-         joinsStr.push(extendedTableConfig.getAdditionalJoin());
-
-         const id = createRequestFullFieldName(this.tableConfig.tableName, this.tableConfig.tablePrimaryKey);
-         const pk = createSqlAlias(this.tableConfig.tableName, this.tableConfig.tablePrimaryKey);
-
-         const select = `SELECT ${id}, ${fields}`;
-         const from = `FROM ${this.tableConfig.tableName}`;
-         const where = `WHERE ${this.tableConfig.tableName}.${this.tableConfig.tablePrimaryKey} IN (${ids.join(', ')})`;
-
-         let orderby = '';
-         if (orderBy !== undefined) {
-            orderby = `ORDER BY ${orderField} ${orderBy.sort}`;
-         }
-
-         const resultsSql = `${select}
-${from}
-${joinsStr.join('\n')}
-${where}
-${orderby}
-`; // No limit as it can concern different ids, doing the limit in result reconciliation
-
-         const limit = extendedRequest.getOptions().pagination.limit;
-
-         const { res: dbRecords, report } = await executeRequest(this.tableConfig.select, resultsSql);
-         resultsToReconcile.report.requests.push(report);
-
-         for (const resourceId of ids) {
-            const toPopulate = resultsToReconcile.results.find(
-               (d) => d[this.tableConfig.tablePrimaryKey].toString() === resourceId,
-            );
-            if (toPopulate === undefined) {
-               console.log(`big problem, cannot find resource ${this.tableConfig.tableName} of id [${resourceId}]`);
-               continue;
-            }
-
-            let count = 0;
-            const domainPk = createSqlAlias(extendedTableConfig.tableName, extendedTableConfig.tablePrimaryKey);
-            const records = dbRecords
-               .filter((r) => r[pk].toString() === resourceId && limit > count++)
-               .map((r) => {
-                  const domain: any = {};
-                  for (const [key, value] of fieldsToSelect) {
-                     if (domainPk === key) {
-                        continue;
-                     }
-                     domain[value.domainFieldname] = r[key];
-                  }
-                  return domain;
-               });
-            toPopulate[k] =
-               extendedTableConfig.fromDbRecordsToDomains !== undefined
-                  ? extendedTableConfig.fromDbRecordsToDomains(records)
-                  : records;
-         }
-      }
+      return this.addonManager
+         .getExtended<DRN, F, E, TF>(this.tableConfig.tableName)
+         .fetchOneToMany(this.tableConfig, resultsToReconcile, req, ids);
    }
 }
