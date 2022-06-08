@@ -1,5 +1,6 @@
 import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
+   buildExpandablesToTableMapping,
    buildSameTableMapping,
    DatabaseTableWithExtendedAndExpandables,
    DomainExpandableFieldsToTableFieldsMap,
@@ -53,11 +54,10 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
-         sponsors: {
+         sponsors: buildExpandablesToTableMapping({
             cardinality: { name: 'oneToMany' },
-            tableConfig: allDbTables.buildingSponsor.getTableConfig(),
-            dbt: allDbTables.buildingSponsor,
-         },
+            dbTable: allDbTables.buildingSponsor,
+         }),
       };
    }
 

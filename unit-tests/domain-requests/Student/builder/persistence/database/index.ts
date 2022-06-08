@@ -7,6 +7,7 @@ import {
    buildSameTableMapping,
    ExpandablesTableConfig,
    SimpleDatabaseTable,
+   buildExpandablesToTableMapping,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -46,22 +47,19 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
-         country: {
+         country: buildExpandablesToTableMapping({
+            dbTable: allDbTables.country,
             cardinality: { name: 'oneToOne', foreignKey: 'id_country' },
-            tableConfig: allDbTables.country.getTableConfig(),
-            dbt: allDbTables.country,
-         },
-         category: {
-            globalContextDomainName: 'studentCategory',
+         }),
+         category: buildExpandablesToTableMapping({
+            dbTable: allDbTables.studentCategory,
             cardinality: { name: 'oneToOne', foreignKey: 'id_category' },
-            tableConfig: allDbTables.studentCategory.getTableConfig(),
-            dbt: allDbTables.studentCategory,
-         },
-         courseApplication: {
+            globalContextDomainName: 'studentCategory',
+         }),
+         courseApplication: buildExpandablesToTableMapping({
             cardinality: { name: 'oneToMany' },
-            tableConfig: allDbTables.courseApplication.getTableConfig(),
-            dbt: allDbTables.courseApplication,
-         },
+            dbTable: allDbTables.courseApplication,
+         }),
       };
    }
 }

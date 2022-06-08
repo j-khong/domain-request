@@ -1,4 +1,5 @@
 import {
+   buildExpandablesToTableMapping,
    buildSameTableMapping,
    DatabaseTableWithExpandables,
    DomainExpandableFieldsToTableFieldsMap,
@@ -31,16 +32,14 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
       return {
-         building: {
+         building: buildExpandablesToTableMapping({
             cardinality: { name: 'oneToOne', foreignKey: 'id_building' },
-            tableConfig: allDbTables.building.getTableConfig(),
-            dbt: allDbTables.building,
-         },
-         sponsor: {
+            dbTable: allDbTables.building,
+         }),
+         sponsor: buildExpandablesToTableMapping({
             cardinality: { name: 'oneToOne', foreignKey: 'id_sponsor' },
-            tableConfig: allDbTables.sponsor.getTableConfig(),
-            dbt: allDbTables.sponsor,
-         },
+            dbTable: allDbTables.sponsor,
+         }),
       };
    }
 }
