@@ -31,6 +31,7 @@ export class RequestBuilder extends DomainWithExtendedAndExpandablesRequestBuild
             id: { validate: validateId, defaultValue: '' },
             name: { validate: validateString, defaultValue: '' },
             status: { validate: validateStatus, defaultValue: 'opened' },
+            privateField: { validate: validateString, defaultValue: '' },
          },
          {
             openingHours: new OpeningHoursRequestBuilder(),

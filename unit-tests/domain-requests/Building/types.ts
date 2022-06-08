@@ -15,6 +15,7 @@ export interface Fields {
    id: string;
    name: string;
    status: Status;
+   privateField: string;
 }
 
 export interface ExtendedFields {

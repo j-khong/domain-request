@@ -50,7 +50,7 @@ export interface Factory<Role extends string, DomainRequestName extends string> 
 
 export function getFactoryForSimple<R extends string, DRN extends string, F extends DomainFields, TF extends string>(
    builder: {
-      [Property in R]: SimpleDomainRequestBuilder<DRN, F>;
+      [Property in R]: SimpleDomainRequestBuilder<DRN, any>;
    },
    dbTable: SimpleDatabaseTable<DRN, F, TF>,
 ): Factory<R, DRN> {
@@ -71,7 +71,7 @@ export function getFactoryForExtended<
    TF extends string,
 >(
    builder: {
-      [Property in R]: DomainWithExtendedRequestBuilder<DRN, F, E>;
+      [Property in R]: DomainWithExtendedRequestBuilder<DRN, any, any>;
    },
    dbTable: ExtendableDatabaseTable<DRN, F, E, TF>,
 ): Factory<R, DRN> {
@@ -91,7 +91,7 @@ export function getFactoryForExpandables<
    E extends DomainExpandables,
    TF extends string,
 >(
-   builder: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, F, E>>,
+   builder: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, any, any>>,
    dbTable: SimpleDatabaseTable<DRN, F, TF>,
    domainRequestToInit: DRN,
    expandables: Array<ExpandableName<DRN, E>>,
@@ -110,11 +110,10 @@ export function getFactoryForExtendedAndExpandables<
    R extends string,
    DRN extends string,
    F extends DomainFields,
-   Ext,
    Exp extends DomainExpandables,
    TF extends string,
 >(
-   builder: DomainBuildersByRole<R, DRN, DomainWithExtendedAndExpandablesRequestBuilder<DRN, F, Ext, Exp>>,
+   builder: DomainBuildersByRole<R, DRN, DomainWithExtendedAndExpandablesRequestBuilder<DRN, any, any, any>>,
    dbTable: SimpleDatabaseTable<DRN, F, TF>,
    domainRequestToInit: DRN,
    expandables: Array<ExpandableName<DRN, Exp>>,

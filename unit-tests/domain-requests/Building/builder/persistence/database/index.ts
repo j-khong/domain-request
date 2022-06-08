@@ -33,6 +33,7 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
                id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
                name: buildSameTableMapping('name', toString),
                status: buildSameTableMapping('status', toString),
+               privateField: buildSameTableMapping('status', toString),
             }, // domainFieldsToTableFieldsMap
             {
                openingHours: {

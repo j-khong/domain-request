@@ -15,7 +15,7 @@ import {
 import { PictureRequestBuilder } from './PictureRequestBuilder';
 import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder';
 
-type Fields = Pick<MainFields, keyof MainFields>;
+type Fields = Pick<MainFields, 'id' | 'name' | 'status'>;
 type Expandables = Pick<MainExpandables, keyof MainExpandables>;
 
 export class RequestBuilder extends DomainWithExtendedAndExpandablesRequestBuilder<
