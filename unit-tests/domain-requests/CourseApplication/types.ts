@@ -3,6 +3,8 @@ import * as CR from '../Course';
 import * as SRF from '../Student';
 import { DomainRequestName } from '../types';
 
+export const domainRequestName: DomainRequestName = 'courseApplication';
+
 export interface Fields {
    id: string;
    studentId: string;
@@ -14,5 +16,4 @@ export interface ExpandableFields {
    course: CR.Fields;
 }
 
-export const domainRequestName: DomainRequestName = 'courseApplication';
 export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = ['student', 'course'];

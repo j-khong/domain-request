@@ -1,24 +1,32 @@
 import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
    buildSameTableMapping,
-   ExtendableDatabaseTable,
-   ExtendableTableConfig,
+   DatabaseTableWithExtendedAndExpandables,
+   DomainExpandableFieldsToTableFieldsMap,
+   ExtendableAndExpandablesTableConfig,
    ExtendedTableConfig,
    Level2ExtendedTableConfig,
    SelectMethod,
+   SimpleDatabaseTable,
    toNumber,
    toString,
    toTableId,
 } from '../../../../../../src/persistence/database';
 import { DomainRequestName } from '../../../../types';
-import { ExtendedFields, Fields, OpeningHours, Picture } from '../../../types';
+import { ExtendedFields, ExpandableFields, Fields, OpeningHours, Picture } from '../../../types';
 
 type Key = 'id';
 type TableFields = Key | 'name' | 'status';
-class Database extends ExtendableDatabaseTable<DomainRequestName, Fields, ExtendedFields, TableFields> {
+class Database extends DatabaseTableWithExtendedAndExpandables<
+   DomainRequestName,
+   Fields,
+   ExtendedFields,
+   ExpandableFields,
+   TableFields
+> {
    constructor() {
       super(
-         new ExtendableTableConfig<Fields, ExtendedFields, TableFields>(
+         new ExtendableAndExpandablesTableConfig<Fields, ExtendedFields, ExpandableFields, TableFields>(
             'buildings', // tableName
             'id', // tablePrimaryKey
             {
@@ -38,6 +46,18 @@ class Database extends ExtendableDatabaseTable<DomainRequestName, Fields, Extend
             },
          ),
       );
+   }
+
+   buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
+      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
+   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+      return {
+         sponsors: {
+            cardinality: { name: 'oneToMany' },
+            tableConfig: allDbTables.buildingSponsor.getTableConfig(),
+            dbt: allDbTables.buildingSponsor,
+         },
+      };
    }
 
    protected extendedTableConfigToInit(select: SelectMethod): void {

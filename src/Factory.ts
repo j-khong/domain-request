@@ -7,6 +7,7 @@ import {
    DomainWithExpandablesRequestBuilder,
    SimpleDomainRequestBuilder,
    DomainWithExtendedRequestBuilder,
+   DomainWithExtendedAndExpandablesRequestBuilder,
 } from './DomainRequest';
 
 export function initFactories<DomainRequestName extends string, Role extends string>(
@@ -90,10 +91,33 @@ export function getFactoryForExpandables<
    E extends DomainExpandables,
    TF extends string,
 >(
-   builder: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, any, any>>,
+   builder: DomainBuildersByRole<R, DRN, DomainWithExpandablesRequestBuilder<DRN, F, E>>,
    dbTable: SimpleDatabaseTable<DRN, F, TF>,
    domainRequestToInit: DRN,
    expandables: Array<ExpandableName<DRN, E>>,
+): Factory<R, DRN> {
+   return {
+      getAllRolesRequestBuilders: () => builder,
+      getRoleDomainRequestBuilder: (role: R) => builder[role],
+      initRolesBuildersWithExpandables: (allBuilders: AllBuilders<R, DRN>) =>
+         initAllRolesDomainRequestBuilders(allBuilders, domainRequestToInit, expandables),
+      fetchDomain: async (req) => dbTable.fetch(req as any),
+      dbTable,
+   };
+}
+
+export function getFactoryForExtendedAndExpandables<
+   R extends string,
+   DRN extends string,
+   F extends DomainFields,
+   Ext,
+   Exp extends DomainExpandables,
+   TF extends string,
+>(
+   builder: DomainBuildersByRole<R, DRN, DomainWithExtendedAndExpandablesRequestBuilder<DRN, F, Ext, Exp>>,
+   dbTable: SimpleDatabaseTable<DRN, F, TF>,
+   domainRequestToInit: DRN,
+   expandables: Array<ExpandableName<DRN, Exp>>,
 ): Factory<R, DRN> {
    return {
       getAllRolesRequestBuilders: () => builder,

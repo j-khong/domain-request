@@ -1,4 +1,5 @@
 export * from './TableConfig';
-export * from './expandables';
 export * from './simple';
 export * from './extended';
+export * from './expandables';
+export * from './full';

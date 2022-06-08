@@ -4,6 +4,8 @@ import * as Country from '../Country';
 import * as StudentCategory from '../StudentCategory';
 import { DomainRequestName } from '../types';
 
+export const domainRequestName: DomainRequestName = 'student';
+
 export interface Fields {
    id: string;
    firstname: string;
@@ -21,7 +23,6 @@ export interface ExpandableFields {
    category: StudentCategory.Fields;
 }
 
-export const domainRequestName: DomainRequestName = 'student';
 export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = [
    'country',
    'courseApplication',

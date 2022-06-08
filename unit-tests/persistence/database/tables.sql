@@ -1,13 +1,22 @@
 DROP TABLE IF EXISTS `course_applications`;
 DROP TABLE IF EXISTS `building_opening_hours`;
 DROP TABLE IF EXISTS `building_pictures`;
+DROP TABLE IF EXISTS `building_sponsors`;
 DROP TABLE IF EXISTS `student_categories`;
 DROP TABLE IF EXISTS `students`;
 DROP TABLE IF EXISTS `countries`;
 DROP TABLE IF EXISTS `buildings`;
+DROP TABLE IF EXISTS `sponsors`;
 DROP TABLE IF EXISTS `courses`;
 DROP TABLE IF EXISTS `pictures`;
 
+
+CREATE TABLE `sponsors` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `sponsors__NK` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `buildings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -80,6 +89,18 @@ CREATE TABLE `building_opening_hours` (
   CONSTRAINT `building_opening_hours__FK_building_id` FOREIGN KEY (`id_building`) REFERENCES `buildings` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `building_sponsors` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_building` int(11) NOT NULL,
+  `id_sponsor` int(11) NOT NULL,
+  `contribution` int(5) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `building_sponsors__IDX_building_id` (`id_building`),
+  CONSTRAINT `building_sponsors__FK_building_id` FOREIGN KEY (`id_building`) REFERENCES `buildings` (`id`),
+  KEY `building_sponsors__IDX_sponsor_id` (`id_sponsor`),
+  CONSTRAINT `building_sponsors__FK_sponsor_id` FOREIGN KEY (`id_sponsor`) REFERENCES `sponsors` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 CREATE TABLE `pictures` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -103,16 +124,24 @@ CREATE TABLE `building_pictures` (
 
 
 
+INSERT INTO `sponsors` (`name`) VALUES
+('Rockefeller'),
+('Carnegie');
+
 INSERT INTO `buildings` (`name`, `status`) VALUES
 ('A', 'opened'),
 ('B', 'closed'),
 ('C', 'opened'),
 ('D', 'work in progress');
 
+INSERT INTO `building_sponsors` (`id_building`, `id_sponsor`, `contribution`) VALUES
+((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Rockefeller'), 100),
+((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Carnegie'), 200),
+((SELECT id FROM buildings WHERE `name`='B'), (SELECT id FROM sponsors WHERE `name`='Carnegie'), 500);
+
 INSERT INTO `countries` (`name`, `timezone`) VALUES
 ('france', 'Europe/Paris'),
 ('espagne', 'Europe/Madrid');
-
 
 INSERT INTO `student_categories` (`name`) VALUES
 ('Arts'),
