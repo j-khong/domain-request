@@ -328,7 +328,9 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          });
          return;
       }
-      if (this.validatorFilterMap[fieldname] === undefined) {
+
+      const cameledFieldName = this.inputStyleToCamel(fieldname);
+      if (this.validatorFilterMap[cameledFieldName] === undefined) {
          errors.push({ context: 'option', fieldName: 'orderby', reason: `unknown field name ${fieldname}` });
          return;
       }
@@ -340,7 +342,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          });
          return;
       }
-      options.orderby = { fieldname, sort };
+      options.orderby = { fieldname: cameledFieldName, sort };
    }
 
    protected splitValues(input: Tree): {

@@ -102,7 +102,8 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       let orderby = '';
       const orderBy = req.getOptions().orderby;
       if (orderBy !== undefined) {
-         orderby = `ORDER BY \`${orderBy.fieldname as string}\` ${orderBy.sort}`;
+         const mapping = getDomainFieldsToTableFieldsMapping(this.tableConfig, orderBy.fieldname);
+         orderby = `ORDER BY ${this.tableConfig.tableName}.${mapping.name} ${orderBy.sort}`;
       }
 
       const resultsSql = `${select}

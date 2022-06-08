@@ -98,6 +98,36 @@ describe('Data fetch for simple ', () => {
          };
          test(input, role, domainRequestName, expected).then(done).catch(done);
       });
+      it('requests existing fields with order by desc on field to map', function (done) {
+         const domainRequestName: DomainRequestName = 'country';
+         const role = 'student';
+         let input = {
+            fields: {
+               name: true,
+               timezone: true,
+            },
+            filters: {},
+            options: {
+               orderby: 'category_id desc',
+            },
+         };
+
+         const expected = {
+            domainName: 'country',
+            total: 2,
+            results: [
+               {
+                  firstname: 'pierre',
+                  id: '1',
+               },
+               {
+                  firstname: 'jeanne',
+                  id: '2',
+               },
+            ],
+         };
+         test(input, role, domainRequestName, expected).then(done).catch(done);
+      });
       it('requests existing fields with filter equals', function (done) {
          const domainRequestName: DomainRequestName = 'country';
          const role = 'student';
