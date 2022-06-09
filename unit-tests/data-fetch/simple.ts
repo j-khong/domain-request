@@ -99,12 +99,11 @@ describe('Data fetch for simple ', () => {
          test(input, role, domainRequestName, expected).then(done).catch(done);
       });
       it('requests existing fields with order by desc on field to map', function (done) {
-         const domainRequestName: DomainRequestName = 'country';
+         const domainRequestName: DomainRequestName = 'student';
          const role = 'student';
          let input = {
             fields: {
-               name: true,
-               timezone: true,
+               firstname: true,
             },
             filters: {},
             options: {

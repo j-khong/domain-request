@@ -78,18 +78,3 @@ describe('Data fetch for extended & expandables', () => {
       });
    });
 });
-
-// TODO
-//
-// tester fetch field extendable only
-
-// typologie
-// field primitifs
-// field extendable (one to one ou one to many)
-// field expandable (one to one ou one to many)
-
-// tester avec un mapping domain - table different
-// ex. domain "student" => table "students" (et pas student)
-
-// tester avec un mapping domain field - table field different
-// ex. domain field "studentId" => table field "id_student" (et pas student_id)

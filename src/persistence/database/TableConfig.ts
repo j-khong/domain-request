@@ -70,18 +70,32 @@ export interface DomainExpandableFieldsToTableFields<TableFields extends string>
    globalContextDomainName?: string; // when your Domain expandable name is different from the Domain name (wihch is unique)
 }
 
-export function buildExpandablesToTableMapping<TF extends string>(v: {
-   dbTable: SimpleDatabaseTable<any, any, TF>;
+export function buildExpandablesToTableMapping<DRN extends string, E extends DomainFields, TF extends string>(v: {
+   localContextDomainName: keyof E;
+   allDbTables: {
+      [Property in DRN]: SimpleDatabaseTable<DRN, any, any>;
+   };
    cardinality: Cardinality<TF>;
-   globalContextDomainName?: string;
-}): DomainExpandableFieldsToTableFields<TF> {
-   const { dbTable, cardinality, globalContextDomainName } = v;
-   return {
+   globalContextDomainName?: DRN;
+}): DomainExpandableFieldsToTableFieldsMap<E, TF> {
+   const { localContextDomainName, allDbTables, cardinality, globalContextDomainName } = v;
+
+   const dbTable = allDbTables[globalContextDomainName ?? (localContextDomainName as DRN)];
+   if (dbTable === undefined) {
+      throw new Error(
+         `please give the globalContextDomainName as localContextDomainName ${
+            localContextDomainName as string
+         } is different`,
+      );
+   }
+   const o: any = {};
+   o[localContextDomainName] = {
       cardinality,
       tableConfig: dbTable.getTableConfig(),
       dbt: dbTable,
       globalContextDomainName,
    };
+   return o;
 }
 
 export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =

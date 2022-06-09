@@ -45,20 +45,23 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
 
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
-   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, any> {
       return {
-         country: buildExpandablesToTableMapping({
-            dbTable: allDbTables.country,
+         ...buildExpandablesToTableMapping({
+            localContextDomainName: 'country',
+            allDbTables,
             cardinality: { name: 'oneToOne', foreignKey: 'id_country' },
          }),
-         category: buildExpandablesToTableMapping({
-            dbTable: allDbTables.studentCategory,
-            cardinality: { name: 'oneToOne', foreignKey: 'id_category' },
+         ...buildExpandablesToTableMapping({
+            localContextDomainName: 'category',
             globalContextDomainName: 'studentCategory',
+            allDbTables,
+            cardinality: { name: 'oneToOne', foreignKey: 'id_category' },
          }),
-         courseApplication: buildExpandablesToTableMapping({
+         ...buildExpandablesToTableMapping({
+            localContextDomainName: 'courseApplication',
             cardinality: { name: 'oneToMany' },
-            dbTable: allDbTables.courseApplication,
+            allDbTables,
          }),
       };
    }

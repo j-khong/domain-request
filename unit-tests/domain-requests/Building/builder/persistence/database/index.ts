@@ -52,13 +52,13 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
 
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
-   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
-      return {
-         sponsors: buildExpandablesToTableMapping({
-            cardinality: { name: 'oneToMany' },
-            dbTable: allDbTables.buildingSponsor,
-         }),
-      };
+   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, any> {
+      return buildExpandablesToTableMapping({
+         globalContextDomainName: 'buildingSponsor',
+         localContextDomainName: 'sponsors',
+         cardinality: { name: 'oneToMany' },
+         allDbTables,
+      });
    }
 
    protected extendedTableConfigToInit(select: SelectMethod): void {
