@@ -77,7 +77,7 @@ export function buildExpandablesToTableMapping<DRN extends string, E extends Dom
    };
    cardinality: Cardinality<TF>;
    globalContextDomainName?: DRN;
-}): DomainExpandableFieldsToTableFieldsMap<E, TF> {
+}): DomainExpandableFieldsToTableFields<TF> {
    const { localContextDomainName, allDbTables, cardinality, globalContextDomainName } = v;
 
    const dbTable = allDbTables[globalContextDomainName ?? (localContextDomainName as DRN)];
@@ -88,14 +88,12 @@ export function buildExpandablesToTableMapping<DRN extends string, E extends Dom
          } is different`,
       );
    }
-   const o: any = {};
-   o[localContextDomainName] = {
+   return {
       cardinality,
       tableConfig: dbTable.getTableConfig(),
       dbt: dbTable,
       globalContextDomainName,
    };
-   return o;
 }
 
 export type DomainExpandableFieldsToTableFieldsMap<ExpandableFields extends DomainFields, TableFields extends string> =

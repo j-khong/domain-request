@@ -23,9 +23,22 @@ export * from './full';
 selects
 - on simple
 - on extended
+   - 1to1  
+   - 1toN  
 - on expandables
+   - 1to1  
+   - 1toN  
 - with field name mapping (no camelToSnake mapping: buildingID -> id_building)
 - with different types (boolean, string, Date)
+- with value authorisation (role depending)
+- with field access (role depending)
+
+
+test request
+ domain
+   - expand 1to1
+       - expand 1to1
+
 
 introduce composed field? : sub domain object -> db fields
 

@@ -53,12 +53,14 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
       [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, any> {
-      return buildExpandablesToTableMapping({
-         globalContextDomainName: 'buildingSponsor',
-         localContextDomainName: 'sponsors',
-         cardinality: { name: 'oneToMany' },
-         allDbTables,
-      });
+      return {
+         sponsors: buildExpandablesToTableMapping({
+            globalContextDomainName: 'buildingSponsor',
+            localContextDomainName: 'sponsors',
+            cardinality: { name: 'oneToMany' },
+            allDbTables,
+         }),
+      };
    }
 
    protected extendedTableConfigToInit(select: SelectMethod): void {
