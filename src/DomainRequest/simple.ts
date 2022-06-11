@@ -423,6 +423,10 @@ export class SimpleDomainRequest<Name extends string, Fields extends DomainField
       return this.naturalKey;
    }
 
+   getId(): Extract<keyof Fields, string> {
+      return this.naturalKey[0];
+   }
+
    private selectCount = true;
    dontSelectCount(): void {
       this.selectCount = false;

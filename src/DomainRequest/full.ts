@@ -112,7 +112,7 @@ export class DomainWithExtendedAndExpandablesRequest<
       Expandables extends DomainExpandables,
    >
    extends SimpleDomainRequest<Name, Fields>
-   implements IsExtended<Name, Fields, Extended>, IsExpandable<Name, Expandables>
+   implements IsExtended<Name, Fields, Extended>, IsExpandable<Name, Fields, Expandables>
 {
    constructor(
       name: Name,

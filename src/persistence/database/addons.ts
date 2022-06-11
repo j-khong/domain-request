@@ -20,7 +20,6 @@ import {
    getDomainFieldsToTableFieldsMapping,
    getFieldsToSelect,
    processFilters,
-   splitSqlAlias,
 } from './functions';
 import { FieldsToSelect, Join } from './types';
 import { IsExpandable, IsExtended } from 'DomainRequest/addons';
@@ -213,85 +212,136 @@ class ExtendedDBAddOn<DRN extends string, F, E, TF extends string> {
 }
 
 class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends DomainExpandables, TF extends string> {
-   processOneToOneFieldsToSelect(
-      res: {
+   getFieldsToSelect(
+      tableConfig: IsExpandablesTableConfig<F, E, TF>,
+      req: IsExpandable<DRN, F, E>,
+   ): {
+      hasSelected: boolean;
+      fields: FieldsToSelect<F>;
+      joins: Join;
+   } {
+      const res: {
          hasSelected: boolean;
          fields: FieldsToSelect<F>;
          joins: Join;
-      },
-      req: IsExpandable<DRN, E>,
-      firstTableConfig: IsExpandablesTableConfig<E, TF>,
-   ): FieldsToSelect<E> {
-      const domainExpandableFieldsToTable = firstTableConfig.getDomainExpandableFieldsToTableFieldsMap();
-      const fieldsToSelect = createNewFieldsToSelect();
-      const joins: Join = new Map();
-      const expandables = req.getExpandables();
-      for (const expKey in expandables) {
-         const key = expKey as keyof E;
+      } = getFieldsToSelect(tableConfig as any, req as any);
 
-         //   get from map the table data needed
-         const tableDetails = getExpandableTableDetails(domainExpandableFieldsToTable, key);
-         if (tableDetails.cardinality.name !== 'oneToOne') {
-            continue;
-         }
-
-         const expandable = expandables[key];
-         if (expandable.getFieldsNames().length === 0) {
-            continue;
-         }
-         //   add the fields to the select list
-         const res = getFieldsToSelect(tableDetails.tableConfig, expandable as any);
-         for (const [key, value] of res.fields) {
-            fieldsToSelect.set(key, value as any);
-         }
-
-         // process join
-         const tableConfig = tableDetails.tableConfig;
-         const map = joins.get(tableConfig.tableName);
-         if (map === undefined) {
-            joins.set(tableConfig.tableName, {
-               relationship: `${tableConfig.tableName}.${
-                  tableConfig.tablePrimaryKey
-               }=${firstTableConfig.getTableName()}.${tableDetails.cardinality.foreignKey}`,
-               filters: [],
-            });
-         }
-
-         const filters = processFilters(tableConfig, expandable as any);
-
-         if (filters.length > 0) {
-            const joinDetails = joins.get(tableConfig.tableName);
-            if (undefined !== joinDetails) {
-               joinDetails.filters.push(...filters);
+      // search expandables 1to1 in tableConfig
+      for (const exp in tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
+         const expConf = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[exp];
+         // for each
+         if (expConf.cardinality.name === 'oneToOne') {
+            //   find in req the ones to be requested
+            const expandable = req.getExpandables()[exp];
+            if (expandable !== undefined && expandable.getFieldsNames().length > 0) {
+               const foreignKey = expConf.cardinality.foreignKey;
+               // find domain name from foreign key
+               let domainName: undefined | Extract<keyof F, string>;
+               for (const domainKey in tableConfig.getDomainFieldsToTableFieldsMap()) {
+                  if (tableConfig.getDomainFieldsToTableFieldsMap()[domainKey].name === foreignKey) {
+                     domainName = domainKey;
+                     break;
+                  }
+               }
+               if (domainName === undefined) {
+                  throw new Error('investigate, this cannot be undefined');
+               }
+               // add the foreign key
+               res.fields.set(createSqlAlias(tableConfig.getTableName(), foreignKey), {
+                  domainFieldname: domainName,
+                  fullFieldToSelect: createRequestFullFieldName(tableConfig.getTableName(), foreignKey),
+                  convertToDomain: (o: any) => o.toString(),
+               });
             }
          }
       }
 
-      // populate input res
-      for (const [key, value] of fieldsToSelect) {
-         if (res.fields.get(key) !== undefined) {
+      return res;
+   }
+
+   async fetchOneToOne(
+      resultsToReconcile: DomainResult,
+      req: IsExpandable<DRN, F, E>,
+      tableConfig: IsExpandablesTableConfig<F, E, TF>,
+   ): Promise<void> {
+      const expandables = req.getExpandables();
+      for (const expKey in expandables) {
+         const conf = getExpandableTableDetails(tableConfig.getDomainExpandableFieldsToTableFieldsMap(), expKey);
+         if (conf.cardinality.name !== 'oneToOne') {
+            continue;
+         }
+
+         const expandable = expandables[expKey];
+         if (expandable.getFieldsNames().length === 0) {
+            continue;
+         }
+
+         // find the matching DomainName of this key
+         let matchingDomainNameToFind: string | undefined;
+         for (const key in tableConfig.getDomainFieldsToTableFieldsMap()) {
+            if (tableConfig.getDomainFieldsToTableFieldsMap()[key].name === conf.cardinality.foreignKey) {
+               matchingDomainNameToFind = key;
+               break;
+            }
+         }
+         if (matchingDomainNameToFind === undefined) {
             throw new Error('investigate here');
          }
-         res.fields.set(key, value as any);
-      }
-      for (const [key, value] of joins) {
-         if (res.joins.get(key) !== undefined) {
-            throw new Error('investigate here');
+         const matchingDomainName = matchingDomainNameToFind;
+
+         const deleteValues = req.getFields()[matchingDomainName] === false;
+         // dans resultsToReconcile.results, recup les valeur des DomainName id à select
+         const values = new Set<string>();
+         for (const record of resultsToReconcile.results) {
+            values.add(record[matchingDomainName]);
          }
-         res.joins.set(key, value as any);
-      }
 
-      if (!res.hasSelected) {
-         res.hasSelected = fieldsToSelect.size > 0;
-      }
+         const requestField = expandable.getId();
 
-      return fieldsToSelect;
+         // add the filter
+         expandable.setField(requestField, true);
+         expandable.setFilter({ key: requestField, operator: 'isIn', value: [...values].join(',') as any });
+         expandable.dontSelectCount();
+
+         // const res = await fetch(conf.tableConfig, expandable, false);
+         const res = await conf.dbt.fetch(expandable);
+
+         for (const result of res.results) {
+            const idValue = result[requestField];
+            const toPopulates = resultsToReconcile.results.filter(
+               (d) => d[matchingDomainName].toString() === idValue.toString(),
+            );
+            if (toPopulates.length === 0) {
+               console.log(
+                  `big problem, cannot find resource ${tableConfig.getTableName()} of id [${idValue as string}]`,
+               );
+               continue;
+            }
+            for (const toPopulate of toPopulates) {
+               if (toPopulate.expandables === undefined) {
+                  toPopulate.expandables = {};
+               }
+
+               // add the expandable
+               /* eslint-disable @typescript-eslint/no-dynamic-delete */
+               delete result[requestField];
+               toPopulate.expandables[expandable.getName()] = result;
+            }
+         }
+         resultsToReconcile.report.requests.push(...res.report.requests);
+
+         if (deleteValues) {
+            for (const record of resultsToReconcile.results) {
+               delete record[matchingDomainName];
+            }
+         }
+      }
    }
 
    async fetchOneToMany(
       resultsToReconcile: DomainResult,
-      req: IsExpandable<DRN, E>,
-      tableConfig: IsExpandablesTableConfig<E, TF>,
+      req: IsExpandable<DRN, F, E>,
+      tableConfig: IsExpandablesTableConfig<F, E, TF>,
       ids: string[],
    ): Promise<void> {
       const expandables = req.getExpandables();
@@ -381,54 +431,8 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
       }
    }
 
-   createResultAndPopulate(
-      dbRecord: DbRecord,
-      allFieldsToSelect: FieldsToSelect<F>,
-      expandablesFieldsToSelectTmpToDel: FieldsToSelect<E>,
-      tableConfig: IsExpandablesTableConfig<E, TF>,
-   ): any {
-      // remove expandables fields to process simple and extended
-      const fieldsToSelect = new Map();
-      for (const [key, value] of allFieldsToSelect) {
-         if (expandablesFieldsToSelectTmpToDel.get(key) === undefined) {
-            fieldsToSelect.set(key, value);
-         }
-      }
-      const result = createResultAndPopulate(dbRecord, fieldsToSelect);
-
-      this.populateOneToOne(tableConfig, result, expandablesFieldsToSelectTmpToDel, dbRecord);
-
-      return result;
-   }
-
-   private populateOneToOne(
-      tableConfig: IsExpandablesTableConfig<E, TF>,
-      result: any,
-      expandableFieldsToSelect: FieldsToSelect<E>,
-      dbRecord: DbRecord,
-   ): void {
-      for (const key of expandableFieldsToSelect.keys()) {
-         let expandableName = splitSqlAlias(key)[0];
-
-         // block to manage when the expandable name is different from the Domain name
-         for (const k in tableConfig.getDomainExpandableFieldsToTableFieldsMap()) {
-            const exp = tableConfig.getDomainExpandableFieldsToTableFieldsMap()[k];
-            if (exp.tableConfig.tableName === expandableName) {
-               expandableName = k;
-               continue;
-            }
-         } // <--
-
-         if (result.expandables === undefined) {
-            result.expandables = {};
-         }
-         if (result.expandables[expandableName] === undefined) {
-            result.expandables[expandableName] = {};
-         }
-         const fieldToSelect = expandableFieldsToSelect.get(key);
-         const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
-         result.expandables[expandableName][fieldName] = fieldToSelect?.convertToDomain(dbRecord[key]);
-      }
+   createResultAndPopulate(dbRecord: DbRecord, allFieldsToSelect: FieldsToSelect<F>): any {
+      return createResultAndPopulate(dbRecord, allFieldsToSelect);
    }
 }
 

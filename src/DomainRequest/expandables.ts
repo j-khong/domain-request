@@ -108,7 +108,7 @@ export class DomainWithExpandablesRequest<
       Expandables extends DomainExpandables,
    >
    extends SimpleDomainRequest<Name, Fields>
-   implements IsExpandable<Name, Expandables>
+   implements IsExpandable<Name, Fields, Expandables>
 {
    constructor(
       name: Name,
@@ -127,5 +127,9 @@ export class DomainWithExpandablesRequest<
       [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
    } {
       return this.expandables;
+   }
+
+   getFields(): RequestableFields<Fields> {
+      return this.fields;
    }
 }

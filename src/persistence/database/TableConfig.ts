@@ -249,14 +249,15 @@ export class Level2ExtendedTableConfig<Domain, TableFields extends string> exten
    }
 }
 
-export interface IsExpandablesTableConfig<E, TF extends string> {
+export interface IsExpandablesTableConfig<F, E, TF extends string> {
    getDomainExpandableFieldsToTableFieldsMap: () => DomainExpandableFieldsToTableFieldsMap<E, TF>;
+   getDomainFieldsToTableFieldsMap: () => DomainFieldsToTableFieldsMap<F, TF>;
    getTableName: () => string;
    getTablePrimaryKey: () => string;
 }
 export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extends string>
    extends SimpleTableConfig<Fields, TableFields>
-   implements IsExpandablesTableConfig<ExpandableFields, TableFields>
+   implements IsExpandablesTableConfig<Fields, ExpandableFields, TableFields>
 {
    private domainExpandableFieldsToTable:
       | DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>
@@ -267,6 +268,10 @@ export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extend
          throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
       }
       return this.domainExpandableFieldsToTable;
+   }
+
+   getDomainFieldsToTableFieldsMap(): DomainFieldsToTableFieldsMap<Fields, TableFields> {
+      return this.domainFieldsToTableFieldsMap;
    }
 
    init(
@@ -288,7 +293,9 @@ export class ExpandablesTableConfig<Fields, ExpandableFields, TableFields extend
 
 export class ExtendableAndExpandablesTableConfig<Fields, Extended, ExpandableFields, TableFields extends string>
    extends SimpleTableConfig<Fields, TableFields>
-   implements IsExpandablesTableConfig<ExpandableFields, TableFields>, IsExtendableTableConfig<Extended, TableFields>
+   implements
+      IsExpandablesTableConfig<Fields, ExpandableFields, TableFields>,
+      IsExtendableTableConfig<Extended, TableFields>
 {
    constructor(
       tableName: string,
@@ -308,6 +315,10 @@ export class ExtendableAndExpandablesTableConfig<Fields, Extended, ExpandableFie
          throw new Error(`domainExpandableFieldsToTable is undefined for ${this.tableName}, call init`);
       }
       return this.domainExpandableFieldsToTable;
+   }
+
+   getDomainFieldsToTableFieldsMap(): DomainFieldsToTableFieldsMap<Fields, TableFields> {
+      return this.domainFieldsToTableFieldsMap;
    }
 
    init(

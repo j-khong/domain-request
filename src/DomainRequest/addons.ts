@@ -56,12 +56,14 @@ export interface IsExtended<Name extends string, Fields extends DomainFields, Ex
    getFields: () => RequestableFields<Fields>;
 }
 
-export interface IsExpandable<Name extends string, Expandables extends DomainExpandables> {
+export interface IsExpandable<Name extends string, Fields extends DomainFields, Expandables extends DomainExpandables> {
    getName: () => Name;
 
    getExpandables: () => {
       [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
    };
+
+   getFields: () => RequestableFields<Fields>;
 }
 
 export interface HasExpandables<

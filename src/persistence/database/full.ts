@@ -6,7 +6,6 @@ import {
    ExtendableAndExpandablesTableConfig,
    SelectMethod,
 } from './TableConfig';
-import { getFieldsToSelect } from './functions';
 import { FieldsToSelect, Join } from './types';
 import { SimpleDatabaseTable } from './simple';
 import { AddOnManager } from './addons';
@@ -56,13 +55,9 @@ export abstract class DatabaseTableWithExtendedAndExpandables<
       fields: FieldsToSelect<F>;
       joins: Join;
    } {
-      const res = getFieldsToSelect(tableConfig, req);
-
-      const fieldsToSelect = this.addonManager
-         .getExpandables<DRN, F, Exp, TF>(tableConfig.tableName)
-         .processOneToOneFieldsToSelect(res, req, tableConfig);
-
-      this.setPrivateTmpVal(fieldsToSelect as any);
+      const res = this.addonManager
+         .getExpandables<DRN, F, Exp, TF>(this.tableConfig.tableName)
+         .getFieldsToSelect(tableConfig, req);
 
       this.addonManager
          .getExtended<DRN, F, Ext, TF>(this.tableConfig.tableName)
@@ -72,23 +67,9 @@ export abstract class DatabaseTableWithExtendedAndExpandables<
    }
 
    protected createResultAndPopulate(dbRecord: DbRecord, allFieldsToSelect: FieldsToSelect<F>): any {
-      if (this.expandablesFieldsToSelectTmpToDel === undefined) {
-         throw new Error('investigate, this cannot be undefined');
-      }
-
       return this.addonManager
          .getExpandables<DRN, F, Exp, TF>(this.tableConfig.tableName)
-         .createResultAndPopulate(
-            dbRecord,
-            allFieldsToSelect,
-            this.expandablesFieldsToSelectTmpToDel,
-            this.tableConfig,
-         );
-   }
-
-   private expandablesFieldsToSelectTmpToDel: undefined | FieldsToSelect<Exp>;
-   private setPrivateTmpVal(v: FieldsToSelect<Exp>): void {
-      this.expandablesFieldsToSelectTmpToDel = v;
+         .createResultAndPopulate(dbRecord, allFieldsToSelect);
    }
 
    protected async fetchOneToMany(
@@ -96,11 +77,10 @@ export abstract class DatabaseTableWithExtendedAndExpandables<
       req: DomainWithExtendedAndExpandablesRequest<DRN, F, Ext, Exp>,
       ids: string[],
    ): Promise<void> {
-      await this.addonManager
-         .getExpandables<DRN, F, Exp, TF>(this.tableConfig.tableName)
-         .fetchOneToMany(resultsToReconcile, req, this.tableConfig, ids);
+      const addon = this.addonManager.getExpandables<DRN, F, Exp, TF>(this.tableConfig.tableName);
 
-      this.expandablesFieldsToSelectTmpToDel = undefined;
+      await addon.fetchOneToOne(resultsToReconcile, req, this.tableConfig);
+      await addon.fetchOneToMany(resultsToReconcile, req, this.tableConfig, ids);
 
       return this.addonManager
          .getExtended<DRN, F, Ext, TF>(this.tableConfig.tableName)
