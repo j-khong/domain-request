@@ -17,11 +17,27 @@ export function getFieldsToSelect<DRN extends string, Fields, TableFields extend
    fields: FieldsToSelect<Fields>;
    joins: Join;
 } {
+   const toComputeList = req.getFieldsToCompute();
+
    const fields = createNewFieldsToSelect<Fields>();
    for (const v of req.getFieldsNames()) {
       const mapping = getDomainFieldsToTableFieldsMapping(tableConfig, v);
 
-      addFieldToSelect(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
+      const toComputeData = toComputeList.get(v as Extract<keyof Fields, string>);
+      if (toComputeData !== undefined) {
+         addFieldToSelect(
+            fields,
+            tableConfig.tableName,
+            mapping.name,
+            v,
+            mapping.convertToDomain,
+            (t: string, f: string): string => {
+               return `${mapping.convertToCompute(toComputeData)} AS ${createSqlAlias(t, f)}`;
+            },
+         );
+      } else {
+         addFieldToSelect(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
+      }
    }
    return { fields, hasSelected: fields.size > 0, joins: new Map() };
 }
@@ -32,9 +48,10 @@ export function addFieldToSelect<Fields>(
    fieldName: string,
    key: keyof Fields,
    convertToDomain: (o: any) => any,
+   createRequestFullFieldNameCB: (t: string, f: string) => string = createRequestFullFieldName,
 ): void {
    m.set(createSqlAlias(tableName, fieldName), {
-      fullFieldToSelect: createRequestFullFieldName(tableName, fieldName),
+      fullFieldToSelect: createRequestFullFieldNameCB(tableName, fieldName),
       domainFieldname: key,
       convertToDomain,
    });
@@ -90,6 +107,7 @@ export function processFilters<DRN extends string, F, TF extends string>(
 ): string[] {
    const filters = req.getFilters();
    const result: string[] = [];
+   const toComputeList = req.getFieldsToCompute();
 
    for (const key in filters) {
       const fieldMapper = getDomainFieldsToTableFieldsMapping(tableConfig, key);
@@ -98,11 +116,15 @@ export function processFilters<DRN extends string, F, TF extends string>(
          continue;
       }
 
+      let fieldName = `${tableConfig.tableName}.${fieldMapper.name}`;
+      const toComputeData = toComputeList.get(key);
+      if (toComputeData !== undefined) {
+         fieldName = `${fieldMapper.convertToCompute(toComputeData)}`;
+      }
+
       const populateValue = (c: Comparison<F>, result: string[]): void => {
          const comparisonMapper = comparisonOperatorMap[c.operator];
-         result.push(
-            comparisonMapper.format(`${tableConfig.tableName}.${fieldMapper.name}`, fieldMapper.convertToDb(c.value)),
-         );
+         result.push(comparisonMapper.format(fieldName, fieldMapper.convertToDb(c.value)));
       };
       const populateFromArray = (arr: Array<Comparison<F>>, result: string[], link: 'AND' | 'OR'): void => {
          if (arr !== undefined && arr.length > 0) {

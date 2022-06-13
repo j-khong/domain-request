@@ -20,6 +20,7 @@ export interface SameTableMapping<TableFields extends string> {
    name: TableFields;
    convertToDb: (o: any) => number | string | number[];
    convertToDomain: (o: any) => any;
+   convertToCompute: (o: any) => string;
 }
 export interface OtherTableMapping<TableFields extends string> {
    tableConfig: SimpleTableConfig<any, any>;
@@ -40,11 +41,13 @@ export function buildSameTableMapping<TableFields extends string>(
    name: TableFields,
    convertToDb: (o: any) => number | string | number[],
    convertToDomain: (o: any) => any = (o: any) => o,
+   convertToCompute: (o: any) => string = (o: any) => o.toString(),
 ): SameTableMapping<TableFields> {
    return {
       name,
       convertToDb,
       convertToDomain,
+      convertToCompute,
    };
 }
 

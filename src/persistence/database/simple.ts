@@ -48,7 +48,7 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
       return ret;
    }
 
-   protected async fetchFieldsAndOneToOne(
+   private async fetchFieldsAndOneToOne(
       resultsToReconcile: DomainResult,
       req: SimpleDomainRequest<DRN, F>,
    ): Promise<string[] | undefined> {

@@ -62,6 +62,7 @@ export abstract class DomainWithExpandablesRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
+            this.getFieldsToCompute(),
             expandablesRequests.requests,
          ),
 
@@ -116,11 +117,12 @@ export class DomainWithExpandablesRequest<
       fields: RequestableFields<Fields>,
       filters: FilteringFields<Fields>,
       options: Options<Fields>,
+      fieldsToCompute: Map<Extract<keyof Fields, string>, any>,
       private readonly expandables: {
          [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
       },
    ) {
-      super(name, naturalKey, fields, filters, options);
+      super(name, naturalKey, fields, filters, options, fieldsToCompute);
    }
 
    getExpandables(): {

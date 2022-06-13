@@ -77,6 +77,7 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
+            this.getFieldsToCompute(),
             extendedDomainRequests,
             expandablesRequests.requests,
          ),
@@ -120,6 +121,7 @@ export class DomainWithExtendedAndExpandablesRequest<
       fields: RequestableFields<Fields>,
       filters: FilteringFields<Fields>,
       options: Options<Fields>,
+      fieldsToCompute: Map<Extract<keyof Fields, string>, any>,
       private readonly extended: {
          [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
       },
@@ -127,7 +129,7 @@ export class DomainWithExtendedAndExpandablesRequest<
          [Property in keyof Expandables]: SimpleDomainRequest<Name, any>;
       },
    ) {
-      super(name, naturalKey, fields, filters, options);
+      super(name, naturalKey, fields, filters, options, fieldsToCompute);
    }
 
    // check the field:

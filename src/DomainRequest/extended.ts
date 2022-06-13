@@ -50,6 +50,7 @@ export class DomainWithExtendedRequestBuilder<
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
+            this.getFieldsToCompute(),
             extendedDomainRequests,
          ),
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
@@ -67,11 +68,12 @@ export class DomainWithExtendedRequest<Name extends string, Fields extends Domai
       fields: RequestableFields<Fields>,
       filters: FilteringFields<Fields>,
       options: Options<Fields>,
+      fieldsToCompute: Map<Extract<keyof Fields, string>, any>,
       private readonly extended: {
          [Property in keyof Extended]: SimpleDomainRequest<Name, Fields>;
       },
    ) {
-      super(name, naturalKey, fields, filters, options);
+      super(name, naturalKey, fields, filters, options, fieldsToCompute);
    }
 
    // check the field:

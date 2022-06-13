@@ -54,6 +54,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
             sanitizedFields.fields,
             sanitizedFilters.filters,
             sanitizedOptions.options,
+            this.toCompute,
          ),
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };
@@ -77,8 +78,13 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       for (const field in fieldsToSelect) {
          const snakedFieldName = this.camelToInputStyle(field);
          const val = inputFieldsToSelect[snakedFieldName];
-         if (val !== undefined && (val === true || val === 1)) {
-            fieldsToSelect[field] = true;
+         if (val !== undefined) {
+            if (val === true || val === 1) {
+               fieldsToSelect[field] = true;
+            } else if (this.toCompute.has(field)) {
+               fieldsToSelect[field] = true;
+               this.toCompute.set(field, val);
+            }
          }
       }
 
@@ -370,6 +376,17 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          options,
       };
    }
+
+   private readonly toCompute: Map<Extract<keyof Fields, string>, any> = new Map();
+   addToCompute(arr: Array<Extract<keyof Fields, string>>): void {
+      for (const comp of arr) {
+         this.toCompute.set(comp, {});
+      }
+   }
+
+   protected getFieldsToCompute(): Map<Extract<keyof Fields, string>, any> {
+      return this.toCompute;
+   }
 }
 
 export class SimpleDomainRequest<Name extends string, Fields extends DomainFields> {
@@ -379,6 +396,7 @@ export class SimpleDomainRequest<Name extends string, Fields extends DomainField
       protected readonly fields: RequestableFields<Fields>,
       protected readonly filters: FilteringFields<Fields>,
       protected readonly options: Options<Fields>,
+      protected readonly fieldsToCompute: Map<Extract<keyof Fields, string>, any>,
    ) {}
 
    getName(): Name {
@@ -397,6 +415,10 @@ export class SimpleDomainRequest<Name extends string, Fields extends DomainField
          }
       }
       return ret;
+   }
+
+   getFieldsToCompute(): Map<Extract<keyof Fields, string>, any> {
+      return this.fieldsToCompute;
    }
 
    getFields(): RequestableFields<Fields> {
