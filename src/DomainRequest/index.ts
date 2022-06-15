@@ -18,3 +18,4 @@ export {
 
 export * from './validators';
 export * from './type-checkers';
+export * from './converters';

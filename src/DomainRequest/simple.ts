@@ -152,7 +152,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          }
       }
 
-      // for each field with restrictions in "and and "or", check if it has values
+      // for each field with restrictions in "and" and "or", check if it has values
       /// if not, add default in "or"
       for (const field of fieldsNames) {
          const validator = this.validatorFilterMap[field];

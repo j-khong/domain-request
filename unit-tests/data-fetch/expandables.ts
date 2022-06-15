@@ -19,6 +19,29 @@ describe('Data fetch for expandables', () => {
                },
             },
          };
+         // no data => use directly the resource instead of expanding
+         const expected = {
+            domainName: 'student',
+            total: 0,
+            results: [],
+         };
+         test(input, role, domainRequestName, expected).then(done).catch(done);
+      });
+      it('1 field + 1 expandable 1to1 only', function (done) {
+         const domainRequestName: DomainRequestName = 'student';
+         const role = 'student';
+         let input = {
+            fields: { firstname: true },
+            filters: {},
+            expandables: {
+               country: {
+                  fields: {
+                     name: true,
+                     timezone: true,
+                  },
+               },
+            },
+         };
 
          const expected = {
             domainName: 'student',
@@ -26,6 +49,7 @@ describe('Data fetch for expandables', () => {
             results: [
                {
                   id: '1',
+                  firstname: 'pierre',
                   expandables: {
                      country: {
                         name: 'france',
@@ -34,6 +58,7 @@ describe('Data fetch for expandables', () => {
                   },
                },
                {
+                  firstname: 'jeanne',
                   id: '2',
                   expandables: {
                      country: {
