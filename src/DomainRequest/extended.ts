@@ -56,6 +56,15 @@ export class DomainWithExtendedRequestBuilder<
          errors: [...sanitizedFields.errors, ...sanitizedFilters.errors, ...sanitizedOptions.errors],
       };
    }
+
+   public buildDefaultRequestableFields(): RequestableFields<Fields> {
+      const ret = super.buildDefaultRequestableFields();
+
+      for (const key in this.extended) {
+         ret[key] = false;
+      }
+      return ret;
+   }
 }
 
 export class DomainWithExtendedRequest<Name extends string, Fields extends DomainFields, Extended>

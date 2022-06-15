@@ -85,6 +85,15 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
       };
    }
 
+   public buildDefaultRequestableFields(): RequestableFields<Fields> {
+      const ret = super.buildDefaultRequestableFields();
+
+      for (const key in this.extended) {
+         ret[key] = false;
+      }
+      return ret;
+   }
+
    protected splitValues(input: Tree): {
       fields: { [key: string]: any };
       filters: { [key: string]: any };
