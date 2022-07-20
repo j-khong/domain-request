@@ -8,6 +8,7 @@ import {
    ExpandablesTableConfig,
    SimpleDatabaseTable,
    buildExpandablesToTableMapping,
+   toNumber,
 } from '../../../../../../src/persistence/database';
 import { ExpandableFields, Fields } from '../../../types';
 import { DomainRequestName } from '../../../../types';
@@ -21,7 +22,8 @@ type TableFields =
    | 'national_card_id'
    | 'id_country'
    | 'id_category'
-   | 'has_scholarship';
+   | 'has_scholarship'
+   | 'distance_from';
 
 class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, TableFields> {
    constructor() {
@@ -33,11 +35,20 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
                id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
                firstname: buildSameTableMapping('firstname', toString),
                lastname: buildSameTableMapping('lastname', toString),
-               yearOfBirth: buildSameTableMapping('year_of_birth', toString),
+               yearOfBirth: buildSameTableMapping('year_of_birth', toNumber),
                nationalCardId: buildSameTableMapping('national_card_id', toString),
                countryId: buildSameTableMapping('id_country', toString),
                hasScholarship: buildSameTableMapping('has_scholarship', toBoolean),
                categoryId: buildSameTableMapping('id_category', toString),
+               distanceFrom: buildSameTableMapping(
+                  'distance_from',
+                  toNumber,
+                  (o: any) => o,
+                  (intputValues: any) => {
+                     // return `( 6371 * acos( cos(radians(${intputValues.latitude})) * cos(radians(latitude)) * cos( radians(longitude) - radians(${intputValues.longitude}) ) + sin(radians(${intputValues.latitude})) * sin(radians(latitude)) ) )`;
+                     return `( 6371 * acos( cos(radians(${intputValues.latitude})) * cos(radians(year_of_birth)) * cos( radians(year_of_birth) - radians(${intputValues.longitude}) ) + sin(radians(${intputValues.latitude})) * sin(radians(year_of_birth)) ) )`;
+                  },
+               ),
             }, // domainFieldsToTableFieldsMap
          ),
       );
@@ -48,7 +59,7 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, any> {
       return {
          country: buildExpandablesToTableMapping({
-            localContextDomainName: 'country',
+            globalContextDomainName: 'country',
             allDbTables,
             cardinality: { name: 'oneToOne', foreignKey: 'id_country' },
          }),
@@ -59,7 +70,7 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
             cardinality: { name: 'oneToOne', foreignKey: 'id_category' },
          }),
          courseApplication: buildExpandablesToTableMapping({
-            localContextDomainName: 'courseApplication',
+            globalContextDomainName: 'courseApplication',
             cardinality: { name: 'oneToMany' },
             allDbTables,
          }),

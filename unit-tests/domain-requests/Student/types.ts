@@ -15,7 +15,17 @@ export interface Fields {
    countryId: string;
    categoryId: string;
    hasScholarship: boolean;
+   distanceFrom: number;
 }
+
+interface Computed {
+   distanceFrom: {
+      latitude: string;
+      longitude: string;
+   };
+}
+
+export const computedNames: Array<keyof Computed> = ['distanceFrom'];
 
 export interface ExpandableFields {
    country: Country.Fields;

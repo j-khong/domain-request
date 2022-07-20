@@ -160,7 +160,7 @@ export function getDomainFieldsToTableFieldsMapping<Fields, TableFields extends 
    return mapping;
 }
 
-function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[]): string {
+function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[] | string[]): string {
    let val: number | string = '';
    if (Array.isArray(value)) {
       if (value.length > 0) {
@@ -174,26 +174,26 @@ function commonFormat(field: string, operator: DatabaseOperator, value: number |
 
 const comparisonOperatorMap: ComparisonOperatorMap = {
    equals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '=', value),
+      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '=', value),
    },
    greaterThan: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>', value),
+      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '>', value),
    },
    greaterThanOrEquals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '>=', value),
+      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '>=', value),
    },
    lesserThan: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<', value),
+      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '<', value),
    },
    lesserThanOrEquals: {
-      format: (field: string, value: number | string | number[]): string => commonFormat(field, '<=', value),
+      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '<=', value),
    },
    contains: {
-      format: (field: string, value: string | number | number[]): string =>
+      format: (field: string, value: string | number | number[] | string[]): string =>
          commonFormat(
             field,
             'LIKE',
-            ((value: string | number | number[]) => {
+            ((value: string | number | number[] | string[]) => {
                if (typeof value === 'string' && value.length > 2) {
                   if (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'") {
                      const rawData = value.slice(1, value.length - 1);
@@ -205,11 +205,11 @@ const comparisonOperatorMap: ComparisonOperatorMap = {
          ),
    },
    isIn: {
-      format: (field: string, value: string | number | number[]): string => {
+      format: (field: string, value: string | number | number[] | string[]): string => {
          return commonFormat(
             field,
             'IN',
-            ((value: string | number | number[]) => {
+            ((value: string | number | number[] | string[]) => {
                if (Array.isArray(value)) {
                   return `(${value.join(', ')})`;
                }
@@ -217,6 +217,19 @@ const comparisonOperatorMap: ComparisonOperatorMap = {
             })(value),
          );
       },
+   },
+   between: {
+      format: (field: string, value: string | number | number[] | string[]): string =>
+         commonFormat(
+            field,
+            'BETWEEN',
+            ((value: string | number | number[] | string[]) => {
+               if (Array.isArray(value) && value.length >= 2) {
+                  value = `'${value[0]}' AND '${value[1]}'`;
+               }
+               return value;
+            })(value),
+         ),
    },
 };
 

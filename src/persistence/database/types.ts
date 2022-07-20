@@ -15,9 +15,9 @@ export type Join = Map<
       filters: string[];
    }
 >;
-export type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN';
+export type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
 export type ComparisonOperatorMap = {
    [key in Operator]: {
-      format: (field: string, value: number | string | number[]) => string;
+      format: (field: string, value: number | string | number[] | string[]) => string;
    };
 };

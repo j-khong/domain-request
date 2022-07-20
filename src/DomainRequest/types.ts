@@ -51,6 +51,7 @@ const operators = [
    'greaterThanOrEquals',
    'lesserThan',
    'lesserThanOrEquals',
+   'between',
    'contains', // for strings
    'isIn', // for numbers list
 ] as const;

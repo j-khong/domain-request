@@ -6,7 +6,12 @@ import {
    validateString,
 } from '../../../../../src/DomainRequest';
 import { DomainRequestName } from '../../../types';
-import { Fields as MainFields, ExpandableFields as MainExpandableFields, domainRequestName } from '../../types';
+import {
+   Fields as MainFields,
+   ExpandableFields as MainExpandableFields,
+   domainRequestName,
+   computedNames,
+} from '../../types';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
@@ -22,6 +27,8 @@ export class RequestBuilder extends DomainWithExpandablesRequestBuilder<DomainRe
          countryId: { validate: validateString, defaultValue: '' },
          hasScholarship: { validate: validateBoolean, defaultValue: false },
          categoryId: { validate: validateString, defaultValue: '' },
+         distanceFrom: { validate: validateNumber, defaultValue: 0 },
       });
+      this.addToCompute(computedNames);
    }
 }

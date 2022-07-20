@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/brace-style */
-import { DomainFields, NestedFilteringFields, NestedRequestableFields } from '../../DomainRequest';
+import { DomainExpandables, DomainFields, NestedFilteringFields, NestedRequestableFields } from '../../DomainRequest';
 import { SimpleDatabaseTable } from './simple';
 
 // can be an id (string | number) but also an ids list (1,45,3) to be used with IN ()
@@ -14,7 +14,13 @@ export const toNumber = (o: any): number => {
 };
 export const toBoolean = (o: boolean): string => `${Number(o)}`;
 export const toString = (o: string): string => `'${o.toString()}'`;
-export const toDate = (o: Date): string => `'${fromDateToMysqlDate(o)}'`;
+export const toDate = (o: Date): string => {
+   if (Array.isArray(o) && o.length > 1) {
+      return `'${fromDateToMysqlDate(o[0])}' AND '${fromDateToMysqlDate(o[1])}'`;
+   } else {
+      return `'${fromDateToMysqlDate(o)}'`;
+   }
+};
 
 export interface SameTableMapping<TableFields extends string> {
    name: TableFields;
@@ -73,13 +79,13 @@ export interface DomainExpandableFieldsToTableFields<TableFields extends string>
    globalContextDomainName?: string; // when your Domain expandable name is different from the Domain name (wihch is unique)
 }
 
-export function buildExpandablesToTableMapping<DRN extends string, E extends DomainFields, TF extends string>(v: {
-   localContextDomainName: keyof E;
+export function buildExpandablesToTableMapping<DRN extends string, E extends DomainExpandables, TF extends string>(v: {
+   localContextDomainName?: keyof E;
    allDbTables: {
       [Property in DRN]: SimpleDatabaseTable<DRN, any, any>;
    };
    cardinality: Cardinality<TF>;
-   globalContextDomainName?: DRN;
+   globalContextDomainName: DRN;
 }): DomainExpandableFieldsToTableFields<TF> {
    const { localContextDomainName, allDbTables, cardinality, globalContextDomainName } = v;
 
@@ -349,7 +355,8 @@ export class ExtendableAndExpandablesTableConfig<Fields, Extended, ExpandableFie
    }
 }
 
-function fromDateToMysqlDate(d: Date): string {
+function fromDateToMysqlDate(input: Date): string {
+   const d = new Date(input);
    const date = [d.getFullYear(), format2digits(d.getMonth() + 1), format2digits(d.getDate())];
    const time = [d.getHours(), d.getMinutes(), d.getSeconds()];
    return `${date.join('-')} ${time.map((v) => format2digits(v)).join(':')}`;
