@@ -1,4 +1,4 @@
-import { isBoolean, isDate, isNumber, isString } from './type-checkers';
+import { isBoolean, isDate, isNumber, isString } from './type-checkers.ts';
 
 export function validateId(val: any): { valid: boolean; reason: string } {
    const valid = isString(val);

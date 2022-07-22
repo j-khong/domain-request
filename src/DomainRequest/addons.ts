@@ -1,6 +1,6 @@
-import { DomainExpandables, DomainWithExpandablesRequest, DomainWithExpandablesRequestBuilder } from './expandables';
-import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
-import { DomainFields, InputErrors, RequestableFields, Tree } from './types';
+import { DomainExpandables, DomainWithExpandablesRequest, DomainWithExpandablesRequestBuilder } from './expandables.ts';
+import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
+import { DomainFields, InputErrors, RequestableFields, Tree } from './types.ts';
 
 export class AddOnManager {
    private readonly map: Map<string, any>;

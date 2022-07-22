@@ -1,3 +1,3 @@
-export * from './Factory';
-export * from './persistence';
-export * from './DomainRequest';
+export * from './Factory.ts';
+export * from './persistence/index.ts';
+export * from './DomainRequest/index.ts';

@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/brace-style */
-import { DomainExpandables, DomainFields, NestedFilteringFields, NestedRequestableFields } from '../../DomainRequest';
-import { SimpleDatabaseTable } from './simple';
+import {
+   DomainExpandables,
+   DomainFields,
+   NestedFilteringFields,
+   NestedRequestableFields,
+} from '../../DomainRequest/index.ts';
+import { SimpleDatabaseTable } from './simple.ts';
 
 // can be an id (string | number) but also an ids list (1,45,3) to be used with IN ()
 export const toTableId = (o: any): number[] => o.split(',').map((n: string) => toNumber(n));

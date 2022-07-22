@@ -1,10 +1,10 @@
-import { DomainResult } from '../index';
-import { DomainWithExtendedRequest } from '../../DomainRequest';
-import { ExtendableTableConfig, SelectMethod } from './TableConfig';
-import { FieldsToSelect, Join } from './types';
-import { SimpleDatabaseTable } from './simple';
-import { AddOnManager } from './addons';
-import { getFieldsToSelect } from './functions';
+import { DomainResult } from '../index.ts';
+import { DomainWithExtendedRequest } from '../../DomainRequest/index.ts';
+import { ExtendableTableConfig, SelectMethod } from './TableConfig.ts';
+import { FieldsToSelect, Join } from './types.ts';
+import { SimpleDatabaseTable } from './simple.ts';
+import { AddOnManager } from './addons.ts';
+import { getFieldsToSelect } from './functions.ts';
 
 export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF extends string> extends SimpleDatabaseTable<
    DRN,

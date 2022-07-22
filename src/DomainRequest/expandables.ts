@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/brace-style */
-import { AddOnManager, HasExpandables, IsExpandable } from './addons';
-import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
+import { AddOnManager, HasExpandables, IsExpandable } from './addons.ts';
+import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
 import {
    DomainFields,
    FilteringFields,
@@ -10,7 +10,7 @@ import {
    RequestableFields,
    Tree,
    Validator,
-} from './types';
+} from './types.ts';
 
 export interface DomainExpandables extends DomainFields {}
 

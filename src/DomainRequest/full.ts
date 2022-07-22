@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/brace-style */
-import { AddOnManager, HasExpandables, IsExpandable, IsExtended } from './addons';
-import { DomainExpandables, DomainWithExpandablesRequestBuilder } from './expandables';
-import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
-import { isBoolean } from './type-checkers';
+import { AddOnManager, HasExpandables, IsExpandable, IsExtended } from './addons.ts';
+import { DomainExpandables, DomainWithExpandablesRequestBuilder } from './expandables.ts';
+import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
+import { isBoolean } from './type-checkers.ts';
 import {
    DomainFields,
    FilteringFields,
@@ -12,7 +12,7 @@ import {
    RequestableFields,
    Tree,
    Validator,
-} from './types';
+} from './types.ts';
 
 export class DomainWithExtendedAndExpandablesRequestBuilder<
       Name extends string,

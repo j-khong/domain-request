@@ -1,5 +1,5 @@
-import { camelToSnake, snakeToCamel } from './converters';
-import { isNumber, isString } from './type-checkers';
+import { camelToSnake, snakeToCamel } from './converters.ts';
+import { isNumber, isString } from './type-checkers.ts';
 import {
    Comparison,
    DomainFields,
@@ -17,7 +17,7 @@ import {
    RequestableFields,
    Tree,
    Validator,
-} from './types';
+} from './types.ts';
 
 export class SimpleDomainRequestBuilder<Name extends string, Fields extends DomainFields> {
    constructor(
@@ -75,7 +75,8 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       // const ignoredFields
 
       const fieldsToSelect = this.buildDefaultRequestableFields();
-      for (const field in fieldsToSelect) {
+      for (const f in fieldsToSelect) {
+         const field = f as Extract<keyof Fields, string>;
          const snakedFieldName = this.camelToInputStyle(field);
          const val = inputFieldsToSelect[snakedFieldName];
          if (val !== undefined) {
@@ -293,7 +294,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       if (inputOptions !== undefined) {
          if (inputOptions.limit !== undefined) {
             if (isNumber(inputOptions.limit)) {
-               options.pagination.limit = Math.min(inputOptions.limit, this.MAX_LIMIT);
+               options.pagination.limit = Math.min(inputOptions.limit as number, this.MAX_LIMIT);
             } else {
                errors.push({ context: 'option', fieldName: 'limit', reason: 'not a number' });
             }
@@ -325,7 +326,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          errors.push({ context: 'option', fieldName: 'orderby', reason: 'not a string' });
          return;
       }
-      const [fieldname, sort] = inputOptions.orderby.split(' ');
+      const [fieldname, sort] = (inputOptions.orderby as string).split(' ');
       if (fieldname === undefined) {
          errors.push({
             context: 'option',
@@ -436,7 +437,7 @@ export class SimpleDomainRequest<Name extends string, Fields extends DomainField
    setFilter(filter: {
       key: keyof FilteringFields<Fields>;
       operator: Operator;
-      value: FilteringFields<Fields>[keyof FilteringFields<Fields>];
+      value: any; //FilteringFields<Fields>[keyof FilteringFields<Fields>];
    }): void {
       (this.filters as any)[filter.key] = { and: [{ operator: filter.operator, value: filter.value }] };
    }

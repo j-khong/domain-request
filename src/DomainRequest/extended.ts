@@ -1,8 +1,16 @@
 /* eslint-disable @typescript-eslint/brace-style */
-import { AddOnManager, IsExtended } from './addons';
-import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple';
-import { isBoolean } from './type-checkers';
-import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, RequestableFields, Validator } from './types';
+import { AddOnManager, IsExtended } from './addons.ts';
+import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
+import { isBoolean } from './type-checkers.ts';
+import {
+   DomainFields,
+   FilteringFields,
+   InputErrors,
+   NaturalKey,
+   Options,
+   RequestableFields,
+   Validator,
+} from './types.ts';
 
 export class DomainWithExtendedRequestBuilder<
    Name extends string,
@@ -26,7 +34,7 @@ export class DomainWithExtendedRequestBuilder<
    ) {
       super(name, naturalKey, validatorFilterMap);
       this.addonsManager = new AddOnManager();
-      this.addonsManager.setExtended(this.name);
+      this.addonsManager.setExtended(this.getName());
    }
 
    build(input: any): {

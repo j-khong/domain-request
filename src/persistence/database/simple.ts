@@ -1,7 +1,7 @@
-import { Report, DomainResult } from '../index';
-import { SimpleDomainRequest } from '../../DomainRequest';
-import { DbRecord, SelectMethod, SimpleTableConfig } from './TableConfig';
-import { FieldsToSelect, Join } from './types';
+import { Report, DomainResult } from '../index.ts';
+import { SimpleDomainRequest } from '../../DomainRequest/index.ts';
+import { DbRecord, SelectMethod, SimpleTableConfig } from './TableConfig.ts';
+import { FieldsToSelect, Join } from './types.ts';
 import {
    addFieldToSelect,
    createResultAndPopulate,
@@ -10,7 +10,7 @@ import {
    getDomainFieldsToTableFieldsMapping,
    getFieldsToSelect,
    processFilters,
-} from './functions';
+} from './functions.ts';
 
 export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends string> {
    constructor(protected readonly tableConfig: SimpleTableConfig<F, TF>) {}

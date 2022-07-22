@@ -1,9 +1,9 @@
-export * from './simple';
-export * from './extended';
-export * from './expandables';
-export * from './full';
+export * from './simple.ts';
+export * from './extended.ts';
+export * from './expandables.ts';
+export * from './full.ts';
 
-export {
+export type {
    DomainFields,
    Operator,
    RequestableFields,
@@ -12,10 +12,9 @@ export {
    AndArrayComparison,
    OrArrayComparison,
    Comparison,
-   isAndArrayComparison,
-   isOrArrayComparison,
-} from './types';
+} from './types.ts';
+export { isAndArrayComparison, isOrArrayComparison } from './types.ts';
 
-export * from './validators';
-export * from './type-checkers';
-export * from './converters';
+export * from './validators.ts';
+export * from './type-checkers.ts';
+export * from './converters.ts';

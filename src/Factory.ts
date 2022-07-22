@@ -1,5 +1,6 @@
-import { DomainResult } from './persistence';
-import { SelectMethod, SimpleDatabaseTable, ExtendableDatabaseTable } from './persistence/database';
+import { DomainResult } from './persistence/index.ts';
+import { SelectMethod, SimpleDatabaseTable, ExtendableDatabaseTable } from './persistence/database/index.ts';
+
 import {
    DomainExpandables,
    DomainFields,
@@ -8,7 +9,7 @@ import {
    SimpleDomainRequestBuilder,
    DomainWithExtendedRequestBuilder,
    DomainWithExtendedAndExpandablesRequestBuilder,
-} from './DomainRequest';
+} from './DomainRequest/index.ts';
 
 export function initFactories<DomainRequestName extends string, Role extends string>(
    select: SelectMethod,
@@ -31,9 +32,9 @@ export function initFactories<DomainRequestName extends string, Role extends str
    }
 }
 
-export interface DomainRequestHandler<Role extends string, DomainRequestName extends string> {
-   getRoleDomainRequestBuilder: (role: Role) => SimpleDomainRequestBuilder<DomainRequestName, any>;
-   fetchDomain: (req: SimpleDomainRequest<DomainRequestName, any>) => Promise<DomainResult>;
+export interface DomainRequestHandler<Role extends string, DomainRequestName extends string, DF> {
+   getRoleDomainRequestBuilder: (role: Role) => SimpleDomainRequestBuilder<DomainRequestName, DF>;
+   fetchDomain: (req: SimpleDomainRequest<DomainRequestName, DF>) => Promise<DomainResult>;
 }
 
 export interface Factory<Role extends string, DomainRequestName extends string> {

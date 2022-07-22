@@ -1,5 +1,5 @@
-import { DomainResult } from '../index';
-import { DomainExpandables, DomainFields, SimpleDomainRequest } from '../../DomainRequest';
+import { DomainResult } from '../index.ts';
+import { DomainExpandables, DomainFields, SimpleDomainRequest } from '../../DomainRequest/index.ts';
 import {
    DbRecord,
    DomainExpandableFieldsToTableFields,
@@ -9,7 +9,7 @@ import {
    ExtendedTableConfig,
    IsExpandablesTableConfig,
    IsExtendableTableConfig,
-} from './TableConfig';
+} from './TableConfig.ts';
 import {
    addFieldToSelect,
    createNewFieldsToSelect,
@@ -20,9 +20,9 @@ import {
    getDomainFieldsToTableFieldsMapping,
    getFieldsToSelect,
    processFilters,
-} from './functions';
-import { FieldsToSelect, Join } from './types';
-import { IsExpandable, IsExtended } from 'DomainRequest/addons';
+} from './functions.ts';
+import { FieldsToSelect, Join } from './types.ts';
+import { IsExpandable, IsExtended } from '../../DomainRequest/addons.ts';
 
 export class AddOnManager {
    private readonly map: Map<string, any>;
@@ -397,7 +397,7 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
 
          // add the filter
          expandable.setField(requestField, true);
-         expandable.setFilter({ key: requestField, operator: 'isIn', value: ids.join(',') as any });
+         expandable.setFilter({ key: requestField, operator: 'isIn', value: ids.join(',') });
          expandable.dontSelectCount();
 
          // const res = await fetch(conf.tableConfig, expandable, false);
@@ -431,7 +431,7 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
       }
    }
 
-   createResultAndPopulate(dbRecord: DbRecord, allFieldsToSelect: FieldsToSelect<F>): any {
+   createResultAndPopulate(dbRecord: DbRecord, allFieldsToSelect: FieldsToSelect<F>): { [key: string]: string } {
       return createResultAndPopulate(dbRecord, allFieldsToSelect);
    }
 }

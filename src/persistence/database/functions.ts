@@ -5,9 +5,9 @@ import {
    isOrArrayComparison,
    OrArrayComparison,
    SimpleDomainRequest,
-} from '../..';
-import { DbRecord, SameTableMapping, SelectMethod, SelectMethodResult, SimpleTableConfig } from './TableConfig';
-import { ComparisonOperatorMap, DatabaseOperator, FieldsToSelect, Join } from './types';
+} from '../../index.ts';
+import { DbRecord, SameTableMapping, SelectMethod, SelectMethodResult, SimpleTableConfig } from './TableConfig.ts';
+import { ComparisonOperatorMap, DatabaseOperator, FieldsToSelect, Join } from './types.ts';
 
 export function getFieldsToSelect<DRN extends string, Fields, TableFields extends string>(
    tableConfig: SimpleTableConfig<Fields, TableFields>,
@@ -21,11 +21,11 @@ export function getFieldsToSelect<DRN extends string, Fields, TableFields extend
 
    const fields = createNewFieldsToSelect<Fields>();
    for (const v of req.getFieldsNames()) {
-      const mapping = getDomainFieldsToTableFieldsMapping(tableConfig, v);
+      const mapping = getDomainFieldsToTableFieldsMapping(tableConfig, v as keyof Fields);
 
       const toComputeData = toComputeList.get(v as Extract<keyof Fields, string>);
       if (toComputeData !== undefined) {
-         addFieldToSelect(
+         addFieldToSelect<Fields>(
             fields,
             tableConfig.tableName,
             mapping.name,
@@ -36,7 +36,7 @@ export function getFieldsToSelect<DRN extends string, Fields, TableFields extend
             },
          );
       } else {
-         addFieldToSelect(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
+         addFieldToSelect<Fields>(fields, tableConfig.tableName, mapping.name, v, mapping.convertToDomain);
       }
    }
    return { fields, hasSelected: fields.size > 0, joins: new Map() };
@@ -233,12 +233,18 @@ const comparisonOperatorMap: ComparisonOperatorMap = {
    },
 };
 
-export function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect<F>): any {
-   const result: any = {};
+export function createResultAndPopulate<F>(
+   dbRecord: DbRecord,
+   fieldsToSelect: FieldsToSelect<F>,
+): { [key: string]: string } {
+   const result: { [key: string]: string } = {};
    for (const key of fieldsToSelect.keys()) {
       const fieldToSelect = fieldsToSelect.get(key);
-      const fieldName = fieldToSelect !== undefined ? fieldToSelect.domainFieldname : '';
-      result[fieldName] = fieldToSelect?.convertToDomain(dbRecord[key]);
+      if (fieldToSelect !== undefined) {
+         result[fieldToSelect.domainFieldname as Extract<keyof F, string>] = fieldToSelect.convertToDomain(
+            dbRecord[key],
+         );
+      }
    }
    return result;
 }

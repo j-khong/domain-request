@@ -1,9 +1,14 @@
-import { DomainResult } from '../index';
-import { DomainWithExpandablesRequest } from '../../DomainRequest';
-import { DbRecord, DomainExpandableFieldsToTableFieldsMap, ExpandablesTableConfig, SelectMethod } from './TableConfig';
-import { FieldsToSelect, Join } from './types';
-import { SimpleDatabaseTable } from './simple';
-import { AddOnManager } from './addons';
+import { DomainResult } from '../index.ts';
+import { DomainWithExpandablesRequest } from '../../DomainRequest/index.ts';
+import {
+   DbRecord,
+   DomainExpandableFieldsToTableFieldsMap,
+   ExpandablesTableConfig,
+   SelectMethod,
+} from './TableConfig.ts';
+import { FieldsToSelect, Join } from './types.ts';
+import { SimpleDatabaseTable } from './simple.ts';
+import { AddOnManager } from './addons.ts';
 
 export abstract class DatabaseTableWithExpandables<
    DRN extends string,

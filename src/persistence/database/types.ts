@@ -1,4 +1,4 @@
-import { Operator } from '../../DomainRequest';
+import { Operator } from '../../DomainRequest/index.ts';
 
 export type FieldsToSelect<Fields> = Map<
    string,
