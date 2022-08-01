@@ -2,12 +2,11 @@ import {
    SimpleTableConfig,
    toTableId,
    toString,
-   toNumber,
    SimpleDatabaseTable,
    buildSameTableMapping,
-} from '../../../../../../src/persistence/database';
-import { DomainRequestName } from '../../../../types';
-import { Fields } from '../../../types';
+} from '../../../../../../src/persistence/database/index.ts';
+import { DomainRequestName } from '../../../../types.ts';
+import { Fields } from '../../../types.ts';
 
 type Key = 'id';
 type TableFields = Key | 'name';

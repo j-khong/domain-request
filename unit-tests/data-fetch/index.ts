@@ -1,7 +1,7 @@
-export * from './simple';
-export * from './extended';
-export * from './expandables';
-export * from './full';
+export * from './simple.ts';
+// export * from './extended';
+// export * from './expandables';
+// export * from './full';
 
 // TODO
 //
@@ -22,14 +22,14 @@ export * from './full';
 
 selects
 - on simple
-- on extended
+- on extended (=autre table, donc aspect purement persistence et pas domain)
    - 1to1  
    - 1toN  
-- on expandables
+- on expandables (= autre domain)
    - 1to1  
    - 1toN  
 - with field name mapping (no camelToSnake mapping: buildingID -> id_building)
-- with different types (boolean, string, Date)
+- with different types (boolean, string, number, Date)
 - with value authorisation (role depending)
 - with field access (role depending)
 
@@ -45,7 +45,17 @@ introduce composed field? : sub domain object -> db fields
 
 
 filters
-
+- all filters
+   'equals',
+   'greaterThan',
+   'greaterThanOrEquals',
+   'lesserThan',
+   'lesserThanOrEquals',
+   'between',
+   'contains', // for strings
+   'isIn', // for numbers list
+- with unauthorized field value
+- with unauthorized field
 
 options:
 orderby
@@ -69,7 +79,5 @@ orderby
  - sur champs extended sans mapping
     asc 
     desc
-
-
 
  */

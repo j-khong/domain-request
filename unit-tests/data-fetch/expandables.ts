@@ -3,6 +3,36 @@ import { test } from './test';
 import { DomainRequestName } from '../domain-requests/types';
 
 describe('Data fetch for expandables', () => {
+   // it('requests existing fields with order by desc on field to map', async () => {
+   //    const domainRequestName: DomainRequestName = 'student';
+   //    const role = 'student';
+   //    const input = {
+   //       fields: {
+   //          firstname: true,
+   //       },
+   //       filters: {},
+   //       options: {
+   //          orderby: 'category_id desc',
+   //       },
+   //    };
+
+   //    const expected = {
+   //       domainName: 'country',
+   //       total: 2,
+   //       results: [
+   //          {
+   //             firstname: 'pierre',
+   //             id: '1',
+   //          },
+   //          {
+   //             firstname: 'jeanne',
+   //             id: '2',
+   //          },
+   //       ],
+   //    };
+   //    await test(input, role, domainRequestName, expected);
+   // });
+
    describe('expandable fields', () => {
       it('1 expandable 1to1 only', function (done) {
          const domainRequestName: DomainRequestName = 'student';

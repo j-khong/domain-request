@@ -1,4 +1,4 @@
-import { DomainRequestName } from '../types';
+import { DomainRequestName } from '../types.ts';
 
 export const domainRequestName: DomainRequestName = 'country';
 

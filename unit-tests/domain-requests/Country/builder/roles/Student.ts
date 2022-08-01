@@ -1,6 +1,6 @@
-import { DomainRequestName } from '../../../types';
-import { SimpleDomainRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest';
-import { domainRequestName, Fields as MainFields } from '../../types';
+import { DomainRequestName } from '../../../types.ts';
+import { SimpleDomainRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest/index.ts';
+import { domainRequestName, Fields as MainFields } from '../../types.ts';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 

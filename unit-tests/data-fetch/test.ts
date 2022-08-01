@@ -1,6 +1,6 @@
-import { expect } from 'chai';
-import { getDomainRequestHandler } from '../domain-requests/init';
-import { DomainRequestName, Role } from '../domain-requests/types';
+import { assertEquals /*, assertStrictEquals, assertThrows*/ } from 'https://deno.land/std@0.149.0/testing/asserts.ts';
+import { getDomainRequestHandler } from '../domain-requests/init.ts';
+import { DomainRequestName, Role } from '../domain-requests/types.ts';
 
 export interface Expected {
    total: number;
@@ -18,7 +18,7 @@ export async function test(
    const buildResult = domainRequestBuilder.build(input);
    const result = await handler.fetchDomain(buildResult.request);
 
-   expect(result.domainName).to.equals(domainRequestName);
-   expect(result.total).to.equals(expected.total);
-   expect(result.results).to.deep.equals(expected.results);
+   assertEquals(result.domainName, domainRequestName);
+   assertEquals(result.total, expected.total);
+   assertEquals(result.results, expected.results);
 }

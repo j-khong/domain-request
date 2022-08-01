@@ -1,7 +1,6 @@
-import 'mocha';
-import { expect } from 'chai';
+import { /*afterEach, beforeEach, */ describe, it } from 'https://deno.land/std@0.149.0/testing/bdd.ts';
 
-import { getDomainRequestHandler } from './domain-requests/init';
+import { getDomainRequestHandler } from './domain-requests/init.ts';
 import {
    Comparison,
    isAndArrayComparison,
@@ -9,9 +8,9 @@ import {
    SimpleDomainRequest,
    SimpleDomainRequestBuilder,
    DomainWithExpandablesRequest,
-} from '../src/DomainRequest';
-import { DomainRequestName, Role } from './domain-requests/types';
-import { InputErrors, isComparison, Tree } from '../src/DomainRequest/types';
+} from '../src/DomainRequest/index.ts';
+import { DomainRequestName, Role } from './domain-requests/types.ts';
+import { InputErrors, isComparison, Tree } from '../src/DomainRequest/types.ts';
 
 describe('Request Builder tests ', () => {
    describe('request simple fields (no expandables)', () => {
