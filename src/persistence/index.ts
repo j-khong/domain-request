@@ -9,5 +9,6 @@ export class Report {
    public readonly requests: Array<{
       sql: string;
       timeInMs: number;
+      error?: string;
    }> = [];
 }

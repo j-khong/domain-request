@@ -48,7 +48,7 @@ export abstract class ExtendableDatabaseTable<DRN extends string, F, E, TF exten
       return res;
    }
 
-   protected async fetchOneToMany(
+   protected fetchOneToMany(
       resultsToReconcile: DomainResult,
       req: DomainWithExtendedRequest<DRN, F, E>,
       ids: string[],

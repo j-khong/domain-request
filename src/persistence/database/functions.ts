@@ -92,11 +92,19 @@ export async function executeRequest(
    };
 }> {
    const start = new Date();
-   const res = await select(sql);
+   const res = [];
+   let error: string | undefined;
+   try {
+      const tmp = await select(sql); // TODO try catch and add error to report
+      res.push(...tmp);
+   } catch (e) {
+      error = e.message;
+   }
    const end = new Date();
    const report = {
       sql: sql,
       timeInMs: end.getTime() - start.getTime(),
+      error,
    };
    return { res, report };
 }

@@ -95,7 +95,8 @@ export abstract class SimpleDatabaseTable<DRN extends string, F, TF extends stri
  ${joinsStr.join('\n')}
  ${where}`;
          const { res: resCount, report } = await executeRequest(this.tableConfig.select, resultsCountSql);
-         resultsToReconcile.total = Number.parseInt(resCount[0].total as any);
+         const total = resCount.length > 0 ? Number.parseInt(resCount[0].total as string) : 0;
+         resultsToReconcile.total = total;
          resultsToReconcile.report.requests.push(report);
       }
 
