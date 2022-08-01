@@ -30,7 +30,7 @@ export abstract class DomainWithExpandablesRequestBuilder<
          [Property in keyof Fields]: {
             validate: Validator;
             defaultValue: Fields[Property];
-            authorizedValues?: string[];
+            authorizedValues?: Fields[Property][];
          };
       },
    ) {

@@ -31,7 +31,7 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
          [Property in keyof Fields]: {
             validate: Validator;
             defaultValue: Fields[Property];
-            authorizedValues?: string[];
+            authorizedValues?: Fields[Property][];
          };
       },
       private readonly extended: {

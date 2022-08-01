@@ -27,7 +27,7 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          [Property in keyof Fields]: {
             validate: Validator;
             defaultValue: Fields[Property];
-            authorizedValues?: string[];
+            authorizedValues?: Fields[Property][];
          };
       },
       private readonly MAX_LIMIT = 5000,
