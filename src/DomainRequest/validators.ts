@@ -10,38 +10,42 @@ export function validateNumber(val: any): { valid: boolean; reason: string } {
    return { valid, reason: 'not a number' };
 }
 
-export function validateDate(val: any): { valid: boolean; reason: string } {
-   let valid = false;
-   if (Array.isArray(val)) {
-      for (const v of val) {
-         valid = isDate(v);
-         if (!valid) {
-            break;
-         }
-      }
-   } else {
-      valid = isDate(val);
-   }
-   return { valid, reason: 'not a date' };
+export function validateNumberAndArray(val: any): { valid: boolean; reason: string } {
+   return validateTypeAndArray(val, isNumber, 'number');
 }
 
-export function validateISODate(o: any): {
+export function validateDateAndArray(val: any): { valid: boolean; reason: string } {
+   return validateTypeAndArray(val, isDate, 'date');
+}
+
+export function validateISODateAndArray(o: any): {
+   valid: boolean;
+   reason: string;
+} {
+   return validateTypeAndArray(o, isIsoDate, 'date');
+}
+
+function validateTypeAndArray(
+   o: any,
+   typeValidator: (o: any) => boolean,
+   typeName: string,
+): {
    valid: boolean;
    reason: string;
 } {
    let valid = false;
    if (Array.isArray(o)) {
       for (const v of o) {
-         valid = isIsoDate(v);
+         valid = typeValidator(v);
          if (!valid) {
             break;
          }
       }
    } else {
-      valid = isIsoDate(o);
+      valid = typeValidator(o);
    }
 
-   return { valid, reason: 'not a date' };
+   return { valid, reason: `not a ${typeName}` };
 }
 
 function isIsoDate(o: any): boolean {

@@ -19,6 +19,13 @@ export const toNumber = (o: any): number => {
 };
 export const toBoolean = (o: boolean): string => `${Number(o)}`;
 export const toString = (o: string): string => `'${o.toString()}'`;
+export const toDatetime = (o: Date): string => {
+   if (Array.isArray(o) && o.length > 1) {
+      return `'${fromDatetimeToMysqlDatetime(o[0])}' AND '${fromDatetimeToMysqlDatetime(o[1])}'`;
+   } else {
+      return `'${fromDatetimeToMysqlDatetime(o)}'`;
+   }
+};
 export const toDate = (o: Date): string => {
    if (Array.isArray(o) && o.length > 1) {
       return `'${fromDateToMysqlDate(o[0])}' AND '${fromDateToMysqlDate(o[1])}'`;
@@ -360,11 +367,17 @@ export class ExtendableAndExpandablesTableConfig<Fields, Extended, ExpandableFie
    }
 }
 
+function fromDatetimeToMysqlDatetime(input: Date): string {
+   const d = new Date(input);
+   const formattedDate = fromDateToMysqlDate(d);
+   const time = [d.getHours(), d.getMinutes(), d.getSeconds()];
+   return `${formattedDate} ${time.map((v) => format2digits(v)).join(':')}`;
+}
+
 function fromDateToMysqlDate(input: Date): string {
    const d = new Date(input);
    const date = [d.getFullYear(), format2digits(d.getMonth() + 1), format2digits(d.getDate())];
-   const time = [d.getHours(), d.getMinutes(), d.getSeconds()];
-   return `${date.join('-')} ${time.map((v) => format2digits(v)).join(':')}`;
+   return date.join('-');
 }
 
 function format2digits(val: number): string {
