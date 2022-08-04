@@ -1,16 +1,8 @@
 /* eslint-disable @typescript-eslint/brace-style */
 import { AddOnManager, HasExpandables, IsExpandable } from './addons.ts';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
-import {
-   DomainFields,
-   FilteringFields,
-   InputErrors,
-   NaturalKey,
-   Options,
-   RequestableFields,
-   Tree,
-   Validator,
-} from './types.ts';
+import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, RequestableFields, Tree } from './types.ts';
+import { FiltersValidators } from './validators.ts';
 
 export interface DomainExpandables extends DomainFields {}
 
@@ -26,13 +18,7 @@ export abstract class DomainWithExpandablesRequestBuilder<
    constructor(
       name: Name,
       naturalKey: NaturalKey<Extract<keyof Fields, string>>,
-      validatorFilterMap: {
-         [Property in keyof Fields]: {
-            validate: Validator;
-            defaultValue: Fields[Property];
-            authorizedValues?: Fields[Property][];
-         };
-      },
+      validatorFilterMap: FiltersValidators<Fields>,
    ) {
       super(name, naturalKey, validatorFilterMap);
       this.addonsManager = new AddOnManager();

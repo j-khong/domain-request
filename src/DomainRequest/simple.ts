@@ -16,20 +16,14 @@ import {
    Options,
    RequestableFields,
    Tree,
-   Validator,
 } from './types.ts';
+import { FiltersValidators } from './validators.ts';
 
 export class SimpleDomainRequestBuilder<Name extends string, Fields extends DomainFields> {
    constructor(
       protected readonly name: Name,
       protected readonly naturalKey: NaturalKey<Extract<keyof Fields, string>>,
-      protected readonly validatorFilterMap: {
-         [Property in keyof Fields]: {
-            validate: Validator;
-            defaultValue: Fields[Property];
-            authorizedValues?: Fields[Property][];
-         };
-      },
+      protected readonly validatorFilterMap: FiltersValidators<Fields>,
       private readonly MAX_LIMIT = 5000,
    ) {}
 

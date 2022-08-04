@@ -15,6 +15,7 @@ export type {
 } from './types.ts';
 export { isAndArrayComparison, isOrArrayComparison } from './types.ts';
 
+export type { Validator } from './validators.ts';
 export * from './validators.ts';
 export * from './type-checkers.ts';
 export * from './converters.ts';

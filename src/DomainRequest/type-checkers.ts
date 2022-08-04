@@ -1,15 +1,26 @@
-export function isString(obj: any): obj is string {
-   return typeof obj === 'string';
+export type TypeChecker<Type> = (o: unknown) => o is Type;
+
+export function isString(o: unknown): o is string {
+   return typeof o === 'string';
 }
 
-export function isDate(obj: any): obj is Date {
-   return typeof obj === 'object' && obj.getTime !== undefined;
+export function isDate(o: unknown): o is Date {
+   return typeof o === 'object' && (o as any).getTime !== undefined;
 }
 
-export function isNumber(obj: any): obj is number {
-   return typeof obj === 'number';
+export function isIsoDate(o: unknown): o is string {
+   try {
+      const _d = new Date(o as any);
+      return true;
+   } catch (_e) {
+      return false;
+   }
 }
 
-export function isBoolean(obj: any): obj is boolean {
-   return typeof obj === 'boolean';
+export function isNumber(o: unknown): o is number {
+   return typeof o === 'number';
+}
+
+export function isBoolean(o: unknown): o is boolean {
+   return typeof o === 'boolean';
 }

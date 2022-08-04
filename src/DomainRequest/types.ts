@@ -43,8 +43,6 @@ export type NestedFilteringFields<Type> = {
       : Toarray<Type[Property]>;
 };
 
-export type Validator = (val: any) => { valid: boolean; reason: string };
-
 const operators = [
    'equals',
    'greaterThan',

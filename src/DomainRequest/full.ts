@@ -3,16 +3,8 @@ import { AddOnManager, HasExpandables, IsExpandable, IsExtended } from './addons
 import { DomainExpandables, DomainWithExpandablesRequestBuilder } from './expandables.ts';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
 import { isBoolean } from './type-checkers.ts';
-import {
-   DomainFields,
-   FilteringFields,
-   InputErrors,
-   NaturalKey,
-   Options,
-   RequestableFields,
-   Tree,
-   Validator,
-} from './types.ts';
+import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, RequestableFields, Tree } from './types.ts';
+import { FiltersValidators } from './validators.ts';
 
 export class DomainWithExtendedAndExpandablesRequestBuilder<
       Name extends string,
@@ -27,13 +19,7 @@ export class DomainWithExtendedAndExpandablesRequestBuilder<
    constructor(
       name: Name,
       naturalKey: NaturalKey<Extract<keyof Fields, string>>,
-      validatorFilterMap: {
-         [Property in keyof Fields]: {
-            validate: Validator;
-            defaultValue: Fields[Property];
-            authorizedValues?: Fields[Property][];
-         };
-      },
+      validatorFilterMap: FiltersValidators<Fields>,
       private readonly extended: {
          [Property in keyof Extended]: SimpleDomainRequestBuilder<any, any>;
       },

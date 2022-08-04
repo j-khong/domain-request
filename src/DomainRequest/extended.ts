@@ -2,16 +2,8 @@
 import { AddOnManager, IsExtended } from './addons.ts';
 import { SimpleDomainRequest, SimpleDomainRequestBuilder } from './simple.ts';
 import { isBoolean } from './type-checkers.ts';
-import {
-   DomainFields,
-   FilteringFields,
-   InputErrors,
-   NaturalKey,
-   Options,
-   RequestableFields,
-   Validator,
-} from './types.ts';
-
+import { DomainFields, FilteringFields, InputErrors, NaturalKey, Options, RequestableFields } from './types.ts';
+import { FiltersValidators } from './validators.ts';
 export class DomainWithExtendedRequestBuilder<
    Name extends string,
    Fields extends DomainFields,
@@ -21,13 +13,7 @@ export class DomainWithExtendedRequestBuilder<
    constructor(
       name: Name,
       naturalKey: NaturalKey<Extract<keyof Fields, string>>,
-      validatorFilterMap: {
-         [Property in keyof Fields]: {
-            validate: Validator;
-            defaultValue: Fields[Property];
-            authorizedValues?: Fields[Property][];
-         };
-      },
+      validatorFilterMap: FiltersValidators<Fields>,
       private readonly extended: {
          [Property in keyof Extended]: SimpleDomainRequestBuilder<any, any>;
       },
