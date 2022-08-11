@@ -9,12 +9,11 @@ export function isDate(o: unknown): o is Date {
 }
 
 export function isIsoDate(o: unknown): o is string {
-   try {
-      const _d = new Date(o as any);
-      return true;
-   } catch (_e) {
+   const d = new Date(o as any);
+   if (isNaN(d.getTime())) {
       return false;
    }
+   return true;
 }
 
 export function isNumber(o: unknown): o is number {
