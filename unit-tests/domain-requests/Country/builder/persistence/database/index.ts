@@ -1,26 +1,44 @@
 import {
-   buildSameTableMapping,
    SimpleDatabaseTable,
    SimpleTableConfig,
-   toString,
-   toTableId,
-} from '../../../../../../src/persistence/database/index.ts';
+   ToDbSqlNumberConverter,
+   ToDbSqlStringConverter,
+   buildMapping,
+   DomainToDbTableMapping,
+   createFieldMapping,
+} from '../../../../../mod.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 
-type Key = 'id';
-type TableFields = Key | 'name' | 'timezone';
-class Database extends SimpleDatabaseTable<DomainRequestName, Fields, TableFields> {
+interface Table {
+   id: number;
+   name: string;
+   timezone: string;
+}
+type MappedType<F1 extends keyof Fields, T1 extends keyof Table> = DomainToDbTableMapping<
+   Pick<Fields, F1>,
+   Pick<Table, T1>
+>;
+
+const c: DomainToDbTableMapping<Fields, Table> = {
+   ...(createFieldMapping('id', 'id', new ToDbSqlNumberConverter(), (o: any) => o.toString()) as MappedType<
+      'id',
+      'id'
+   >),
+   ...(createFieldMapping('name', 'name', new ToDbSqlStringConverter(), (o: any) => o) as MappedType<'name', 'name'>),
+   ...(createFieldMapping('timezone', 'timezone', new ToDbSqlStringConverter(), (o: any) => o) as MappedType<
+      'timezone',
+      'timezone'
+   >),
+};
+
+class Database extends SimpleDatabaseTable<DomainRequestName, Fields, keyof Table> {
    constructor() {
       super(
-         new SimpleTableConfig<Fields, TableFields>(
+         new SimpleTableConfig<Fields, keyof Table>(
             'countries', // tableName
             'id', // tablePrimaryKey
-            {
-               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
-               name: buildSameTableMapping('name', toString),
-               timezone: buildSameTableMapping('timezone', toString),
-            }, // domainFieldsToTableFieldsMap
+            buildMapping(c), // domainFieldsToTableFieldsMap
          ),
       );
    }

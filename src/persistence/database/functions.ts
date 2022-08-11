@@ -1,3 +1,4 @@
+import { Operator } from '../../DomainRequest/index.ts';
 import {
    AndArrayComparison,
    Comparison,
@@ -6,8 +7,15 @@ import {
    OrArrayComparison,
    SimpleDomainRequest,
 } from '../../index.ts';
-import { DbRecord, SameTableMapping, SelectMethod, SelectMethodResult, SimpleTableConfig } from './TableConfig.ts';
-import { ComparisonOperatorMap, DatabaseOperator, FieldsToSelect, Join } from './types.ts';
+import {
+   DbRecord,
+   SameTableMapping,
+   SelectMethod,
+   SelectMethodResult,
+   SimpleTableConfig,
+   ToDbSqlConverter,
+} from './TableConfig.ts';
+import { FieldsToSelect, Join } from './types.ts';
 
 export function getFieldsToSelect<DRN extends string, Fields, TableFields extends string>(
    tableConfig: SimpleTableConfig<Fields, TableFields>,
@@ -132,7 +140,8 @@ export function processFilters<DRN extends string, F, TF extends string>(
 
       const populateValue = (c: Comparison<F>, result: string[]): void => {
          const comparisonMapper = comparisonOperatorMap[c.operator];
-         result.push(comparisonMapper.format(fieldName, fieldMapper.convertToDb(c.value)));
+         fieldMapper.convertToDb.setValue(c.value);
+         result.push(comparisonMapper.format(fieldName, fieldMapper.convertToDb));
       };
       const populateFromArray = (arr: Array<Comparison<F>>, result: string[], link: 'AND' | 'OR'): void => {
          if (arr !== undefined && arr.length > 0) {
@@ -168,76 +177,67 @@ export function getDomainFieldsToTableFieldsMapping<Fields, TableFields extends 
    return mapping;
 }
 
-function commonFormat(field: string, operator: DatabaseOperator, value: number | string | number[] | string[]): string {
-   let val: number | string = '';
-   if (Array.isArray(value)) {
-      if (value.length > 0) {
-         val = value[0];
-      }
-   } else {
-      val = value;
-   }
-   return `${field} ${operator} ${val}`;
+type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
+
+function commonFormat(
+   field: string,
+   operator: DatabaseOperator,
+   converter: ToDbSqlConverter<unknown>,
+   deco?: string,
+): string {
+   const buildInstruction = (v: unknown) => `${field} ${operator} ${v}`;
+
+   return converter
+      .getValue()
+      .map((v) => buildInstruction(converter.prepare(v, deco)))
+      .join(' OR ');
 }
+
+type ComparisonOperatorMap = {
+   [key in Operator]: {
+      format: (field: string, converter: ToDbSqlConverter<unknown>) => string;
+   };
+};
 
 const comparisonOperatorMap: ComparisonOperatorMap = {
    equals: {
-      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '=', value),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '=', converter),
    },
    greaterThan: {
-      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '>', value),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '>', converter),
    },
    greaterThanOrEquals: {
-      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '>=', value),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '>=', converter),
    },
    lesserThan: {
-      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '<', value),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '<', converter),
    },
    lesserThanOrEquals: {
-      format: (field: string, value: number | string | number[] | string[]): string => commonFormat(field, '<=', value),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '<=', converter),
    },
    contains: {
-      format: (field: string, value: string | number | number[] | string[]): string =>
-         commonFormat(
-            field,
-            'LIKE',
-            ((value: string | number | number[] | string[]) => {
-               if (typeof value === 'string' && value.length > 2) {
-                  if (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'") {
-                     const rawData = value.slice(1, value.length - 1);
-                     value = `'%${rawData}%'`;
-                  }
-               }
-               return value;
-            })(value),
-         ),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, 'LIKE', converter, '%'),
    },
    isIn: {
-      format: (field: string, value: string | number | number[] | string[]): string => {
-         return commonFormat(
-            field,
-            'IN',
-            ((value: string | number | number[] | string[]) => {
-               if (Array.isArray(value)) {
-                  return `(${value.join(', ')})`;
-               }
-               return value;
-            })(value),
-         );
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => {
+         return commonFormat(field, 'IN', converter);
       },
    },
    between: {
-      format: (field: string, value: string | number | number[] | string[]): string =>
-         commonFormat(
-            field,
-            'BETWEEN',
-            ((value: string | number | number[] | string[]) => {
-               if (Array.isArray(value) && value.length >= 2) {
-                  value = `'${value[0]}' AND '${value[1]}'`;
-               }
-               return value;
-            })(value),
-         ),
+      format: (field: string, converter: ToDbSqlConverter<unknown>): string => {
+         const buildInstruction = (v: unknown) => `${field} BETWEEN ${v}`;
+
+         const values = converter.getValue();
+         if (values.length === 1) {
+            const v = converter.prepare(values[0]);
+            return buildInstruction(`${v} AND ${v}`);
+         } else if (values.length >= 2) {
+            return buildInstruction(`${converter.prepare(values[0])} AND ${converter.prepare(values[1])}`);
+         } else {
+            return buildInstruction('0 AND 0');
+         }
+      },
    },
 };
 

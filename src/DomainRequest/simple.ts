@@ -255,11 +255,8 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       if (!getOperators().includes(operator)) {
          return `invalid comparison operator [${comparison.operator as string}] for key [${field}]`;
       }
-
-      if (operator === 'isIn' && !this.naturalKey.includes(field)) {
-         return `you cannot use comparison operator [${
-            comparison.operator as string
-         }] with key [${field}] as it is not part of natural key`;
+      if (!this.validatorFilterMap[field].acceptedOperators.includes(operator)) {
+         return `you cannot use comparison operator [${operator}] with key [${field}]`;
       }
 
       const validator = this.validatorFilterMap[field];

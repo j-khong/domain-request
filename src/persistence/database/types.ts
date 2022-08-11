@@ -1,5 +1,3 @@
-import { Operator } from '../../DomainRequest/index.ts';
-
 export type FieldsToSelect<Fields> = Map<
    string,
    {
@@ -15,9 +13,3 @@ export type Join = Map<
       filters: string[];
    }
 >;
-export type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
-export type ComparisonOperatorMap = {
-   [key in Operator]: {
-      format: (field: string, value: number | string | number[] | string[]) => string;
-   };
-};

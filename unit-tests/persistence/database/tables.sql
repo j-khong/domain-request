@@ -37,6 +37,10 @@ CREATE TABLE `countries` (
 CREATE TABLE `courses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `published` date NOT NULL,
+  `is_multilanguage` boolean NOT NULL,
+  `status` enum('o','p','c','v') NOT NULL DEFAULT 'p',
+  `seats_max` smallint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `courses__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -52,7 +56,7 @@ CREATE TABLE `students` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firstname` varchar(255) NOT NULL,
   `lastname` varchar(255) NOT NULL,
-  `year_of_birth` smallint unsigned  NOT NULL,
+  `year_of_birth` smallint unsigned NOT NULL,
   `national_card_id` varchar(255) NOT NULL,
   `has_scholarship` boolean NOT NULL,
   `id_country` int(11) NOT NULL,
@@ -64,7 +68,6 @@ CREATE TABLE `students` (
   KEY `students__IDX_category_id` (`id_category`),
   CONSTRAINT `students__FK_category_id` FOREIGN KEY (`id_category`) REFERENCES `student_categories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 
 CREATE TABLE `course_applications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -122,8 +125,6 @@ CREATE TABLE `building_pictures` (
   CONSTRAINT `building_pictures__FK_picture_id` FOREIGN KEY (`id_picture`) REFERENCES `pictures` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
-
 INSERT INTO `sponsors` (`name`) VALUES
 ('Rockefeller'),
 ('Carnegie');
@@ -147,11 +148,11 @@ INSERT INTO `student_categories` (`name`) VALUES
 ('Arts'),
 ('Sports');
 
-INSERT INTO `courses` (`name`) VALUES
-('Math 101'),
-('Arts'),
-('History');
-
+INSERT INTO `courses` (`name`, `published`, `is_multilanguage`, `status`, `seats_max`) VALUES
+('Math 101', '2020-01-01', true, 'o', 200),
+('Arts', '2020-02-01', false, 'c', 400),
+('History', '2020-03-01', true, 'v', 500);
+ 
 INSERT INTO `students` (`firstname`, `lastname`, `year_of_birth`, `national_card_id`, `has_scholarship`, `id_country`, `id_category`) VALUES
 ('pierre', 'dupont', 1970, '12340', 1, (SELECT id FROM countries WHERE name = 'france'), (SELECT id FROM student_categories WHERE name = 'Sports')),
 ('jeanne', 'durant', 1971, '12345', 0, (SELECT id FROM countries WHERE name = 'france'), (SELECT id FROM student_categories WHERE name = 'Arts'));

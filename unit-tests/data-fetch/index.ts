@@ -22,7 +22,7 @@ export * from './simple.ts';
 
 selects
 - on simple
-- on extended (=autre table, donc aspect purement persistence et pas domain)
+- on extended (= autre table, donc aspect purement persistence et pas domain)
    - 1to1  
    - 1toN  
 - on expandables (= autre domain)

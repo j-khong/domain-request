@@ -1,4 +1,5 @@
 import { isBoolean, isDate, isNumber, isString, isIsoDate, TypeChecker } from './type-checkers.ts';
+import { Operator } from './types.ts';
 
 export function buildFilterValidator<Fields>(
    fieldMapping: FilteringConfig<Fields>,
@@ -40,9 +41,10 @@ export function buildFilterValidator<Fields>(
       }
 
       res[fieldName] = {
-         validate: validator,
+         validate: validator.validator,
          defaultValue: mapping.values.default,
          authorizedValues,
+         acceptedOperators: validator.acceptedOperators,
       };
    }
 
@@ -63,28 +65,25 @@ function buildCommonValidatorCreator<Fields>(): FilterValidatorCreator<Fields> {
    return v1;
 }
 
-// export type FilterValidator<Fields, Property extends keyof Fields> = {
-//    validate: Validator;
-//    defaultValue: Fields[Property];
-//    authorizedValues?: Fields[Property][];
-// };
 export type FiltersValidators<Fields> = {
    [Property in keyof Fields]: {
       validate: Validator;
       defaultValue: Fields[Property];
       authorizedValues?: Array<Fields[Property]>;
+      acceptedOperators: Operator[];
    };
 };
 
-export type Validator = (val: unknown) => { valid: boolean; reason: string };
+type Validator = (val: unknown) => { valid: boolean; reason: string };
 
 export type FilteringConfig<Fields> = {
    [Property in keyof Fields]: FilteringConf<Fields, Property>;
 };
+
 type FilteringConf<Fields, Property extends keyof Fields> = {
-   filtering: {
-      byRangeOfValue: boolean;
-      byListOfValue: boolean;
+   filtering?: {
+      byRangeOfValue?: boolean;
+      byListOfValue?: boolean;
    };
    values: {
       default: Fields[Property];
@@ -92,10 +91,14 @@ type FilteringConf<Fields, Property extends keyof Fields> = {
    };
 };
 
+interface FilterValidator {
+   validator: Validator;
+   acceptedOperators: Operator[];
+}
 // <-- chain of responsibility pattern
 export interface FilterValidatorCreator<Fields> {
    setNext: (fv: FilterValidatorCreator<Fields>) => void;
-   create: (conf: FilteringConf<Fields, keyof Fields>) => Validator | undefined;
+   create: (conf: FilteringConf<Fields, keyof Fields>) => FilterValidator | undefined;
 }
 
 export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> implements FilterValidatorCreator<Fields> {
@@ -108,7 +111,7 @@ export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> imp
       this.next = fv;
    }
 
-   create(conf: FilteringConf<Fields, keyof Fields>): Validator | undefined {
+   create(conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
       if (this.isTypeToManage(conf.values.default)) {
          return this.doCreate(conf);
       } else {
@@ -116,6 +119,38 @@ export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> imp
             return this.next.create(conf);
          }
       }
+   }
+
+   protected doCreate(conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
+      let validator: Validator = this.generateTypeValidator();
+      const allTime: Operator[] = [
+         'equals',
+         'greaterThan',
+         'greaterThanOrEquals',
+         'lesserThan',
+         'lesserThanOrEquals',
+         'contains',
+      ];
+      const range: Operator[] = ['between'];
+      const array: Operator[] = ['contains'];
+      let acceptedOperators: Operator[] = [...allTime];
+
+      const filter = conf.filtering;
+      if (filter !== undefined) {
+         const isByList = filter.byListOfValue !== undefined && filter.byListOfValue;
+         const isByRange = filter.byRangeOfValue !== undefined && filter.byRangeOfValue;
+         if (isByList && isByRange) {
+            validator = this.generateTypeOrArrayValidator();
+            acceptedOperators = [...allTime, ...range, ...array];
+         } else if (isByList) {
+            validator = this.generateTypeOrArrayValidator();
+            acceptedOperators = [...allTime, ...array];
+         } else if (isByRange) {
+            validator = this.generateTypeOrRangeValidator();
+            acceptedOperators = [...allTime, ...range];
+         }
+      }
+      return { validator, acceptedOperators };
    }
 
    protected generateTypeValidator(): Validator {
@@ -136,23 +171,13 @@ export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> imp
       };
    }
 
-   protected generateTypeORangeValidator(): Validator {
+   protected generateTypeOrRangeValidator(): Validator {
       const type = this.typeName;
       const typeChecker = this.isTypeToManage;
 
       return (val: unknown): { valid: boolean; reason: string } => {
          return validateTypeOrRange(val, typeChecker, type);
       };
-   }
-
-   protected doCreate(conf: FilteringConf<Fields, keyof Fields>): Validator | undefined {
-      let validator: Validator = this.generateTypeValidator();
-      if (conf.filtering.byListOfValue) {
-         validator = this.generateTypeOrArrayValidator();
-      } else if (conf.filtering.byRangeOfValue) {
-         validator = this.generateTypeORangeValidator();
-      }
-      return validator;
    }
 
    protected activateLog(): void {
@@ -180,8 +205,11 @@ class BooleanFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreat
       super(isBoolean, 'boolean');
    }
 
-   protected doCreate(_conf: FilteringConf<Fields, keyof Fields>): Validator | undefined {
-      return this.generateTypeValidator();
+   protected doCreate(_conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
+      return {
+         validator: this.generateTypeValidator(),
+         acceptedOperators: ['equals'],
+      };
       // not applicable
       // if (conf.filtering.byListOfValue) {
       // }
@@ -217,18 +245,24 @@ function validateTypeOrArray(
    reason: string;
 } {
    let valid = false;
+   let reason = `not a ${typeName}`;
    if (Array.isArray(o)) {
-      for (const v of o) {
-         valid = typeValidator(v);
-         if (!valid) {
-            break;
+      if (o.length < 2) {
+         reason = `not a list of ${typeName}, a list needs at least 2 values`;
+      } else {
+         for (let count = 0; count < o.length; count++) {
+            valid = typeValidator(o[count]);
+            if (!valid) {
+               reason = `not a list of ${typeName}, value [${count + 1}] is not a ${typeName}`;
+               break;
+            }
          }
       }
    } else {
       valid = typeValidator(o);
    }
 
-   return { valid, reason: `not a ${typeName}` };
+   return { valid, reason };
 }
 
 function validateTypeOrRange(
@@ -244,12 +278,13 @@ function validateTypeOrRange(
    if (Array.isArray(o)) {
       if (o.length !== 2) {
          reason = `not a range of ${typeName}, a range needs 2 values`;
-      }
-      for (let count = 0; count < 2; count++) {
-         valid = typeValidator(o[count]);
-         if (!valid) {
-            reason = `not a range of ${typeName}, value [${count + 1}] is not a date`;
-            break;
+      } else {
+         for (let count = 0; count < o.length; count++) {
+            valid = typeValidator(o[count]);
+            if (!valid) {
+               reason = `not a range of ${typeName}, value [${count + 1}] is not a ${typeName}`;
+               break;
+            }
          }
       }
    } else {
@@ -263,6 +298,8 @@ export function validateString(val: unknown): { valid: boolean; reason: string }
    const valid = isString(val);
    return { valid, reason: 'not a string' };
 }
+
+export const validateId = validateString;
 
 export function validateBoolean(val: unknown): { valid: boolean; reason: string } {
    const valid = isBoolean(val);

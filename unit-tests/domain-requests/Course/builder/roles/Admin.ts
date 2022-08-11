@@ -1,14 +1,22 @@
-import { DomainRequestName } from '../../../types';
-import { SimpleDomainRequestBuilder, validateId, validateString } from '../../../../../src/DomainRequest';
-import { domainRequestName, Fields as MainFields } from '../../types';
+import { SimpleDomainRequestBuilder, buildFilterValidator } from '../../../../mod.ts';
+import { DomainRequestName } from '../../../types.ts';
+import {
+   domainRequestName,
+   Fields as MainFields,
+   generateFilteringConfig,
+   StatusFilterValidatorCreator,
+} from '../../types.ts';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 
 export class RequestBuilder extends SimpleDomainRequestBuilder<DomainRequestName, Fields> {
    constructor() {
-      super(domainRequestName, ['id'], {
-         id: { validate: validateId, defaultValue: '' },
-         name: { validate: validateString, defaultValue: '' },
-      });
+      super(
+         domainRequestName,
+         ['id'],
+         buildFilterValidator<Fields>(generateFilteringConfig(), {
+            customValidatorCreator: new StatusFilterValidatorCreator(),
+         }),
+      );
    }
 }

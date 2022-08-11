@@ -7,9 +7,9 @@ type Fields = Pick<MainFields, keyof MainFields>;
 export class RequestBuilder extends SimpleDomainRequestBuilder<DomainRequestName, Fields> {
    constructor() {
       super(domainRequestName, ['id'], {
-         id: { validate: validateId, defaultValue: '' },
-         name: { validate: validateString, defaultValue: '' },
-         timezone: { validate: validateString, defaultValue: '' },
+         id: { validate: validateId, defaultValue: '', acceptedOperators: [] },
+         name: { validate: validateString, defaultValue: '', acceptedOperators: [] },
+         timezone: { validate: validateString, defaultValue: '', acceptedOperators: [] },
       });
    }
 }
