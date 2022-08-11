@@ -1,9 +1,8 @@
-// import 'mocha';
 import { DomainRequestName } from '../domain-requests/types.ts';
 import { test } from './test.ts';
 import { resetClient } from '../persistence/database/dbUtils.ts';
+import { afterEach, /* beforeEach, */ describe, it } from './mod.ts';
 
-import { afterEach, /* beforeEach, */ describe, it } from 'https://deno.land/std@0.149.0/testing/bdd.ts';
 describe('Data fetch for simple ', () => {
    afterEach(async () => {
       await resetClient();

@@ -23,7 +23,7 @@ export function buildFilterValidator<Fields>(
 
    for (const fn in fieldMapping) {
       const fieldName = fn as keyof Fields;
-      if (options?.authorizedFields !== undefined && options?.authorizedFields.length > 0) {
+      if (options?.authorizedFields !== undefined) {
          if (!options.authorizedFields.includes(fieldName)) {
             continue;
          }

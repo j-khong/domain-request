@@ -1,4 +1,9 @@
+// TODO
+// tester, regrouper les tests selon les features (filter, restrictions, etc...)
+// et non selon la structure des donneés (simple, extended, expandables etc...)
+
 export * from './simple.ts';
+export * from './user-role-access.ts';
 // export * from './extended';
 // export * from './expandables';
 // export * from './full';
@@ -42,6 +47,10 @@ test request
 
 introduce composed field? : sub domain object -> db fields
 
+
+Test forbidden resource (access by admin but not student)
+test direct access
+test access through expandable
 
 
 filters
