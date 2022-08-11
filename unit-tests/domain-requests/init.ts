@@ -1,9 +1,9 @@
 import * as Sponsor from './Sponsor/index.ts';
-// import * as Student from './Student/index.ts';
 import * as Country from './Country/index.ts';
-// import * as CourseApplication from './CourseApplication/index.ts';
 import * as Course from './Course/index.ts';
-// import * as StudentCategory from './StudentCategory/index.ts';
+import * as StudentCategory from './StudentCategory/index.ts';
+// import * as Student from './Student/index.ts';
+// import * as CourseApplication from './CourseApplication/index.ts';
 // import * as Building from './Building/index.ts';
 // import * as BuildingSponsor from './BuildingSponsor/index.ts';
 
@@ -27,7 +27,7 @@ const factories: {
    sponsor: Sponsor.getFactory(),
    country: Country.getFactory(),
    course: Course.getFactory(),
-   // studentCategory: StudentCategory.getFactory(),
+   studentCategory: StudentCategory.getFactory(),
    // building: Building.getFactory(),
    // buildingSponsor: BuildingSponsor.getFactory(),
    // student: Student.getFactory(),

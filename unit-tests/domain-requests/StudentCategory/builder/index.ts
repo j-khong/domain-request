@@ -1,8 +1,8 @@
-import { Factory, getFactoryForSimple } from '../../../../src';
-import { DomainRequestName, Role } from '../../types';
-import * as Admin from './roles/Admin';
-import * as Student from './roles/Student';
-import { dbTable } from './persistence/database';
+import { Factory, getFactoryForSimple } from '../../../mod.ts';
+import { DomainRequestName, Role } from '../../types.ts';
+import * as Admin from './roles/Admin.ts';
+import * as Student from './roles/Student.ts';
+import { dbTable } from './persistence/database/index.ts';
 
 export function getFactory(): Factory<Role, DomainRequestName> {
    return getFactoryForSimple(

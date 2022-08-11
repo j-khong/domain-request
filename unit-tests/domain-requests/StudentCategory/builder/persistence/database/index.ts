@@ -1,25 +1,40 @@
 import {
-   buildSameTableMapping,
-   SimpleDatabaseTable,
    SimpleTableConfig,
-   toString,
-   toTableId,
-} from '../../../../../../src/persistence/database';
-import { DomainRequestName } from '../../../../types';
-import { Fields } from '../../../types';
+   SimpleDatabaseTable,
+   createFieldMapping,
+   buildMapping,
+   DomainToDbTableMapping,
+   ToDbSqlNumberConverter,
+   ToDbSqlStringConverter,
+} from '../../../../../mod.ts';
+import { DomainRequestName } from '../../../../types.ts';
+import { Fields } from '../../../types.ts';
 
-type Key = 'id';
-type TableFields = Key | 'name';
-class Database extends SimpleDatabaseTable<DomainRequestName, Fields, TableFields> {
+interface Table {
+   id: number;
+   name: string;
+}
+
+type MappedType<F1 extends keyof Fields, T1 extends keyof Table> = DomainToDbTableMapping<
+   Pick<Fields, F1>,
+   Pick<Table, T1>
+>;
+
+const c: DomainToDbTableMapping<Fields, Table> = {
+   ...(createFieldMapping('id', 'id', new ToDbSqlNumberConverter(), (o: any) => o.toString()) as MappedType<
+      'id',
+      'id'
+   >),
+   ...(createFieldMapping('name', 'name', new ToDbSqlStringConverter(), (o: any) => o) as MappedType<'name', 'name'>),
+};
+
+class Database extends SimpleDatabaseTable<DomainRequestName, Fields, keyof Table> {
    constructor() {
       super(
-         new SimpleTableConfig<Fields, TableFields>(
+         new SimpleTableConfig<Fields, keyof Table>(
             'student_categories', // tableName
             'id', // tablePrimaryKey
-            {
-               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
-               name: buildSameTableMapping('name', toString),
-            }, // domainFieldsToTableFieldsMap
+            buildMapping(c), // domainFieldsToTableFieldsMap
          ),
       );
    }

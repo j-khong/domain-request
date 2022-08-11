@@ -1,5 +1,6 @@
-export type DomainRequestName = 'sponsor' | 'country' | 'course';
-// | 'studentCategory'
+export type DomainRequestName =
+   // simple domains
+   'sponsor' | 'country' | 'course' | 'studentCategory';
 // | 'building'
 // | 'buildingSponsor'
 // | 'courseApplication'
