@@ -243,20 +243,21 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
       field: Extract<keyof Fields, string>,
       comparison: any,
    ): string | Comparison<Fields> {
+      const inputFieldName = this.camelToInputStyle(field);
       if (comparison.operator === undefined) {
-         return `missing comparison operator for key [${field}]`;
+         return `missing comparison operator for key [${inputFieldName}]`;
       }
 
       if (comparison.value === undefined) {
-         return `missing comparison value for key [${field}]`;
+         return `missing comparison value for key [${inputFieldName}]`;
       }
 
       const operator: Operator = this.inputStyleToCamel(comparison.operator);
       if (!getOperators().includes(operator)) {
-         return `invalid comparison operator [${comparison.operator as string}] for key [${field}]`;
+         return `invalid comparison operator [${comparison.operator as string}] for key [${inputFieldName}]`;
       }
       if (!this.validatorFilterMap[field].acceptedOperators.includes(operator)) {
-         return `you cannot use comparison operator [${operator}] with key [${field}]`;
+         return `you cannot use comparison operator [${operator}] with key [${inputFieldName}]`;
       }
 
       const validator = this.validatorFilterMap[field];
@@ -272,7 +273,9 @@ export class SimpleDomainRequestBuilder<Name extends string, Fields extends Doma
          };
       }
 
-      return `invalid comparison value [${comparison.value as string}] for key [${field}]: ${validation.reason}`;
+      return `invalid comparison value [${comparison.value as string}] for key [${inputFieldName}]: ${
+         validation.reason
+      }`;
    }
 
    protected sanitizeOptions(inputOptions: { [key: string]: unknown }): {
