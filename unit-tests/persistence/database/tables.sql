@@ -21,7 +21,7 @@ CREATE TABLE `sponsors` (
 CREATE TABLE `buildings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
-  `status` varchar(255) NOT NULL,
+  `status` enum('o','wip','c') NOT NULL DEFAULT 'wip',
   PRIMARY KEY (`id`),
   UNIQUE KEY `buildings__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -130,10 +130,10 @@ INSERT INTO `sponsors` (`name`) VALUES
 ('Carnegie');
 
 INSERT INTO `buildings` (`name`, `status`) VALUES
-('A', 'opened'),
-('B', 'closed'),
-('C', 'opened'),
-('D', 'work in progress');
+('A', 'o'),
+('B', 'c'),
+('C', 'o'),
+('D', 'wip');
 
 INSERT INTO `building_sponsors` (`id_building`, `id_sponsor`, `contribution`) VALUES
 ((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Rockefeller'), 100),

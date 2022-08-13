@@ -1,10 +1,10 @@
 import {
    DomainWithExtendedRequestBuilder,
    SimpleDomainRequestBuilder,
-   validateNumber,
-   validateString,
-} from '../../../../../src';
-import { OpeningHours, TimeSlot } from '../../types';
+   FilteringConfig,
+   buildFilterValidator,
+} from '../../../../mod.ts';
+import { OpeningHours, TimeSlot, ExtendedFields } from '../../types.ts';
 
 type Modified = Pick<OpeningHours, 'day'>;
 export class OpeningHoursRequestBuilder extends DomainWithExtendedRequestBuilder<
@@ -13,23 +13,31 @@ export class OpeningHoursRequestBuilder extends DomainWithExtendedRequestBuilder
    { slots: TimeSlot }
 > {
    constructor() {
-      super(
-         'openingHours',
-         [],
-         {
-            day: { validate: validateNumber, defaultValue: 0 },
-         },
-         {
-            slots: new SlotsRequestBuilder(),
-         },
-      );
+      super('openingHours', [], buildFilterValidator<OpeningHours>(generateFilteringConfig().openingHours), {
+         slots: new SlotsRequestBuilder(),
+      });
    }
 }
 export class SlotsRequestBuilder extends SimpleDomainRequestBuilder<'slots', TimeSlot> {
    constructor() {
-      super('slots', [], {
-         start: { validate: validateString, defaultValue: '' },
-         end: { validate: validateString, defaultValue: '' },
-      });
+      super('slots', [], buildFilterValidator<TimeSlot>(generateFilteringConfig().openingHours.slots));
    }
+}
+
+function generateFilteringConfig(): FilteringConfig<Pick<ExtendedFields, 'openingHours'>> {
+   return {
+      openingHours: {
+         day: {
+            values: { default: 0 },
+         },
+         slots: {
+            start: {
+               values: { default: '' },
+            },
+            end: {
+               values: { default: '' },
+            },
+         },
+      },
+   };
 }

@@ -190,7 +190,7 @@ export function createFieldMapping<F, T>(
    return res;
 }
 
-function buildSameTableMapping<TableFields extends string>(
+export function buildSameTableMapping<TableFields extends string>(
    name: TableFields,
    convertToDb: ToDbSqlConverter<unknown>, //(o: any) => number | number[] | string | string[],
    convertToDomain: (o: any) => any = (o: any) => o,
@@ -534,18 +534,24 @@ export class ValueMapper<DbValues, DomainValues> {
       this.domainToDb = new Map<DomainValues, DbValues>(Array.from(dbToDomain, (a) => [a[1], a[0]]));
    }
 
-   toDbValue(o: DomainValues): DbValues {
+   toDbValue(o: DomainValues, defaultValue?: DbValues): DbValues {
       const res = this.domainToDb.get(o);
       if (undefined === res) {
+         if (defaultValue !== undefined) {
+            return defaultValue;
+         }
          throw new Error(`unmanaged value [${o}]`);
       }
 
       return res;
    }
 
-   toDomainValue(o: DbValues): DomainValues {
+   toDomainValue(o: DbValues, defaultValue?: DomainValues): DomainValues {
       const res = this.dbToDomain.get(o);
       if (undefined === res) {
+         if (defaultValue !== undefined) {
+            return defaultValue;
+         }
          throw new Error(`unmanaged db status [${o}]`);
       }
 

@@ -1,18 +1,16 @@
-import { DomainRequestName } from '../../../types';
-import {
-   DomainWithExtendedAndExpandablesRequestBuilder,
-   validateId,
-   validateString,
-} from '../../../../../src/DomainRequest';
+import { DomainWithExtendedAndExpandablesRequestBuilder, buildFilterValidator } from '../../../../mod.ts';
+import { DomainRequestName } from '../../../types.ts';
 import {
    domainRequestName,
    ExtendedFields,
    Fields as MainFields,
    ExpandableFields as MainExpandables,
-   validateStatus,
-} from '../../types';
-import { PictureRequestBuilder } from './PictureRequestBuilder';
-import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder';
+   generateFilteringConfig,
+   StatusFilterValidatorCreator,
+} from '../../types.ts';
+
+import { PictureRequestBuilder } from './PictureRequestBuilder.ts';
+import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder.ts';
 
 type Fields = Pick<MainFields, keyof MainFields>;
 type Expandables = Pick<MainExpandables, keyof MainExpandables>;
@@ -27,12 +25,9 @@ export class RequestBuilder extends DomainWithExtendedAndExpandablesRequestBuild
       super(
          domainRequestName,
          ['id'],
-         {
-            id: { validate: validateId, defaultValue: '' },
-            name: { validate: validateString, defaultValue: '' },
-            status: { validate: validateStatus, defaultValue: 'opened' },
-            privateField: { validate: validateString, defaultValue: '' },
-         },
+         buildFilterValidator<Fields>(generateFilteringConfig(), {
+            customValidatorCreator: new StatusFilterValidatorCreator(),
+         }),
          {
             openingHours: new OpeningHoursRequestBuilder(),
             pictures: new PictureRequestBuilder(),

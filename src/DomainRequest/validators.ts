@@ -29,6 +29,11 @@ export function buildFilterValidator<Fields>(
          }
       }
       const mapping = fieldMapping[fieldName];
+      if (!isFieldFilteringConfig(mapping)) {
+         // TODO MANAGE HERE CASE FOR EXTENDED / NESTED VALUES
+         continue;
+      }
+
       const validator = validatorCreator.create(mapping);
       if (validator === undefined) {
          throw new Error(
@@ -76,18 +81,28 @@ export type FiltersValidators<Fields> = {
 
 type Validator = (val: unknown) => { valid: boolean; reason: string };
 
-export type FilteringConfig<Fields> = {
-   [Property in keyof Fields]: FilteringConf<Fields, Property>;
+export type FilteringConfig<T> = {
+   [Property in keyof T]: FilteringConfChoice<T, Property>;
 };
 
-type FilteringConf<Fields, Property extends keyof Fields> = {
+type FilteringConfChoice<T, Property extends keyof T> = Unarray<T[Property]> extends string | number | boolean | Date
+   ? FieldFilteringConfig<T, Property>
+   : FilteringConfig<Unarray<T[Property]>>;
+
+type Unarray<T> = T extends Array<infer U> ? U : T;
+
+function isFieldFilteringConfig<T, P extends keyof T>(o: any): o is FieldFilteringConfig<T, P> {
+   return o.values !== undefined && o.values.default !== undefined;
+}
+
+type FieldFilteringConfig<Fields, Property extends keyof Fields> = {
    filtering?: {
       byRangeOfValue?: boolean;
       byListOfValue?: boolean;
    };
    values: {
-      default: Fields[Property];
-      authorized?: Array<Fields[Property]>;
+      default: Unarray<Fields[Property]>;
+      authorized?: Array<Unarray<Fields[Property]>>;
    };
 };
 
@@ -98,7 +113,7 @@ interface FilterValidator {
 // <-- chain of responsibility pattern
 export interface FilterValidatorCreator<Fields> {
    setNext: (fv: FilterValidatorCreator<Fields>) => void;
-   create: (conf: FilteringConf<Fields, keyof Fields>) => FilterValidator | undefined;
+   create: (conf: FieldFilteringConfig<Fields, keyof Fields>) => FilterValidator | undefined;
 }
 
 export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> implements FilterValidatorCreator<Fields> {
@@ -111,7 +126,7 @@ export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> imp
       this.next = fv;
    }
 
-   create(conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
+   create(conf: FieldFilteringConfig<Fields, keyof Fields>): FilterValidator | undefined {
       if (this.isTypeToManage(conf.values.default)) {
          return this.doCreate(conf);
       } else {
@@ -121,7 +136,7 @@ export abstract class ConcreteFilterValidatorCreator<Fields, TypeToValidate> imp
       }
    }
 
-   protected doCreate(conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
+   protected doCreate(conf: FieldFilteringConfig<Fields, keyof Fields>): FilterValidator | undefined {
       let validator: Validator = this.generateTypeValidator();
       const allTime: Operator[] = [
          'equals',
@@ -205,7 +220,7 @@ class BooleanFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreat
       super(isBoolean, 'boolean');
    }
 
-   protected doCreate(_conf: FilteringConf<Fields, keyof Fields>): FilterValidator | undefined {
+   protected doCreate(_conf: FieldFilteringConfig<Fields, keyof Fields>): FilterValidator | undefined {
       return {
          validator: this.generateTypeValidator(),
          acceptedOperators: ['equals'],

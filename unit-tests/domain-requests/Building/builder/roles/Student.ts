@@ -1,22 +1,24 @@
-import { DomainRequestName } from '../../../types';
-import {
-   DomainWithExtendedAndExpandablesRequestBuilder,
-   validateId,
-   validateString,
-} from '../../../../../src/DomainRequest';
+import { DomainWithExtendedAndExpandablesRequestBuilder, buildFilterValidator } from '../../../../mod.ts';
+import { DomainRequestName } from '../../../types.ts';
 import {
    domainRequestName,
    ExtendedFields,
    Fields as MainFields,
    ExpandableFields as MainExpandables,
-   validateStatus,
-} from '../../types';
+   generateFilteringConfig,
+   StatusFilterValidatorCreator,
+} from '../../types.ts';
 
-import { PictureRequestBuilder } from './PictureRequestBuilder';
-import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder';
+import { PictureRequestBuilder } from './PictureRequestBuilder.ts';
+import { OpeningHoursRequestBuilder } from './OpeningHoursRequestBuilder.ts';
 
-type Fields = Pick<MainFields, 'id' | 'name' | 'status'>;
+const selectedFields = ['id', 'name', 'status'] as const;
+type FieldsList = typeof selectedFields[number];
+type Fields = Pick<MainFields, FieldsList>;
 type Expandables = Pick<MainExpandables, keyof MainExpandables>;
+
+const fieldMapping = generateFilteringConfig();
+fieldMapping.status.values.authorized = ['opened', 'work in progress'];
 
 export class RequestBuilder extends DomainWithExtendedAndExpandablesRequestBuilder<
    DomainRequestName,
@@ -28,15 +30,10 @@ export class RequestBuilder extends DomainWithExtendedAndExpandablesRequestBuild
       super(
          domainRequestName,
          ['id'],
-         {
-            id: { validate: validateId, defaultValue: '' },
-            name: { validate: validateString, defaultValue: '' },
-            status: {
-               validate: validateStatus,
-               defaultValue: 'opened',
-               authorizedValues: ['opened', 'work in progress'],
-            },
-         },
+         buildFilterValidator(fieldMapping, {
+            customValidatorCreator: new StatusFilterValidatorCreator(),
+            authorizedFields: selectedFields.map((v) => v as keyof Fields),
+         }),
          {
             openingHours: new OpeningHoursRequestBuilder(),
             pictures: new PictureRequestBuilder(),

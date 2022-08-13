@@ -4,8 +4,8 @@ import * as Course from './Course/index.ts';
 import * as StudentCategory from './StudentCategory/index.ts';
 // import * as Student from './Student/index.ts';
 // import * as CourseApplication from './CourseApplication/index.ts';
-// import * as Building from './Building/index.ts';
-// import * as BuildingSponsor from './BuildingSponsor/index.ts';
+import * as Building from './Building/index.ts';
+import * as BuildingSponsor from './BuildingSponsor/index.ts';
 
 import { DomainRequestName, Role } from './types.ts';
 import { select } from '../persistence/database/dbUtils.ts';
@@ -28,8 +28,8 @@ const factories: {
    country: Country.getFactory(),
    course: Course.getFactory(),
    studentCategory: StudentCategory.getFactory(),
-   // building: Building.getFactory(),
-   // buildingSponsor: BuildingSponsor.getFactory(),
+   building: Building.getFactory(),
    // student: Student.getFactory(),
+   buildingSponsor: BuildingSponsor.getFactory(),
    // courseApplication: CourseApplication.getFactory(),
 };

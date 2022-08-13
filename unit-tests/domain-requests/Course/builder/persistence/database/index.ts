@@ -72,19 +72,11 @@ const dbToDomain = new Map<DbStatus, Status>([
 const statusValueMapper = new ValueMapper<DbStatus, Status>(dbToDomain);
 
 function toDbStatus(o: unknown): string {
-   try {
-      return statusValueMapper.toDbValue(o as any);
-   } catch (_e) {
-      return '';
-   }
+   return statusValueMapper.toDbValue(o as any, '' as DbStatus);
 }
 
 function toDomainStatus(o: any): Status {
-   try {
-      return statusValueMapper.toDomainValue(o);
-   } catch (_e) {
-      return 'closed';
-   }
+   return statusValueMapper.toDomainValue(o, 'closed');
 }
 
 class Database extends SimpleDatabaseTable<DomainRequestName, Fields, keyof Table> {

@@ -1,13 +1,6 @@
-import { isString } from '../../../src/DomainRequest/type-checkers';
-import { DomainRequestName } from '../types';
-import * as BuildingSponsor from '../BuildingSponsor';
-import { ExpandableName } from '../../../src';
-
-const status = ['opened', 'closed', 'work in progress'] as const;
-type Status = typeof status[number];
-export function validateStatus(o: any): { valid: boolean; reason: string } {
-   return { valid: isString(o) && status.includes(o as Status), reason: 'not a status' };
-}
+import { ExpandableName, isString, FilteringConfig, ConcreteFilterValidatorCreator } from '../../mod.ts';
+import { DomainRequestName } from '../types.ts';
+import * as BuildingSponsor from '../BuildingSponsor/index.ts';
 
 export const domainRequestName: DomainRequestName = 'building';
 
@@ -43,4 +36,56 @@ export interface OpeningHours {
 export interface TimeSlot {
    start: string;
    end: string;
+}
+
+const status = ['opened', 'closed', 'work in progress'] as const;
+export type Status = typeof status[number];
+
+export function generateFilteringConfig(): FilteringConfig<Fields> {
+   return {
+      id: {
+         filtering: {
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+      name: {
+         filtering: {
+            byRangeOfValue: true,
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+      status: {
+         filtering: {
+            byListOfValue: true,
+         },
+         values: {
+            default: 'opened',
+            authorized: [],
+         },
+      },
+      privateField: {
+         filtering: {
+            byRangeOfValue: true,
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+   };
+}
+export class StatusFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreator<Fields, Status> {
+   constructor() {
+      super(isStatus, 'Status');
+   }
+}
+
+function isStatus(o: any): o is Status {
+   return isString(o) && status.includes(o as Status);
 }

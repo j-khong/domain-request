@@ -1,7 +1,7 @@
-import { ExpandableName } from '../../../src';
-import * as Building from '../Building';
-import * as Sponsor from '../Sponsor';
-import { DomainRequestName } from '../types';
+import { ExpandableName, FilteringConfig } from '../../mod.ts';
+import { DomainRequestName } from '../types.ts';
+import * as Building from '../Building/index.ts';
+import * as Sponsor from '../Sponsor/index.ts';
 
 export const domainRequestName: DomainRequestName = 'buildingSponsor';
 
@@ -17,3 +17,32 @@ export interface ExpandableFields {
 }
 
 export const expandableNames: Array<ExpandableName<DomainRequestName, ExpandableFields>> = ['sponsor', 'building'];
+
+export function generateFilteringConfig(): FilteringConfig<Fields> {
+   return {
+      id: {
+         filtering: {
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+      buildingId: {
+         filtering: {
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+      sponsorId: {
+         filtering: {
+            byListOfValue: true,
+         },
+         values: {
+            default: '',
+         },
+      },
+   };
+}

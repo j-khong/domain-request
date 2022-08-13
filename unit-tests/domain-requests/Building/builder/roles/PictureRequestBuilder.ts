@@ -1,14 +1,28 @@
-import { SimpleDomainRequestBuilder, validateString } from '../../../../../src';
-import { Picture } from '../../types';
+import { SimpleDomainRequestBuilder, FilteringConfig, buildFilterValidator } from '../../../../mod.ts';
+import { Picture, ExtendedFields } from '../../types.ts';
 
 type Modified = Pick<Picture, keyof Picture>;
 export class PictureRequestBuilder extends SimpleDomainRequestBuilder<'pictures', Modified> {
    constructor() {
-      super('pictures', [], {
-         name: { validate: validateString, defaultValue: '' },
-         url: { validate: validateString, defaultValue: '' },
-         description: { validate: validateString, defaultValue: '' },
-         status: { validate: validateString, defaultValue: '' },
-      });
+      super('pictures', [], buildFilterValidator<Picture>(generateFilteringConfig().pictures));
    }
+}
+
+function generateFilteringConfig(): FilteringConfig<Pick<ExtendedFields, 'pictures'>> {
+   return {
+      pictures: {
+         url: {
+            values: { default: '' },
+         },
+         name: {
+            values: { default: '' },
+         },
+         description: {
+            values: { default: '' },
+         },
+         status: {
+            values: { default: '' },
+         },
+      },
+   };
 }

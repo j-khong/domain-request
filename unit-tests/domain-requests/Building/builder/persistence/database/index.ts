@@ -1,41 +1,79 @@
-import { NestedRequestableFields, NestedFilteringFields } from '../../../../../../src';
 import {
+   createFieldMapping,
+   ValueMapper,
+   ToDbSqlNumberConverter,
+   ToDbSqlStringConverter,
+   DomainToDbTableMapping,
    buildExpandablesToTableMapping,
-   buildSameTableMapping,
+   buildMapping,
    DatabaseTableWithExtendedAndExpandables,
    DomainExpandableFieldsToTableFieldsMap,
    ExtendableAndExpandablesTableConfig,
-   ExtendedTableConfig,
-   Level2ExtendedTableConfig,
    SelectMethod,
    SimpleDatabaseTable,
-   toNumber,
-   toString,
-   toTableId,
-} from '../../../../../../src/persistence/database';
-import { DomainRequestName } from '../../../../types';
-import { ExtendedFields, ExpandableFields, Fields, OpeningHours, Picture } from '../../../types';
+} from '../../../../../mod.ts';
+import { DomainRequestName } from '../../../../types.ts';
+import { Fields, Status, ExtendedFields, ExpandableFields } from '../../../types.ts';
+import { openingHoursTable } from './opening-hours.ts';
+import { picturesTable } from './pictures.ts';
 
-type Key = 'id';
-type TableFields = Key | 'name' | 'status';
+interface Table {
+   id: number;
+   name: string;
+   status: DbStatus;
+   field_private: string;
+}
+
+type DbStatus = 'o' | 'wip' | 'c';
+const dbToDomain = new Map<DbStatus, Status>([
+   ['o', 'opened'],
+   ['wip', 'work in progress'],
+   ['c', 'closed'],
+]);
+
+class ToDbSqlStatusConverter extends ToDbSqlStringConverter {
+   constructor() {
+      super(toDbStatus);
+   }
+}
+
+type MappedType<F1 extends keyof Fields, T1 extends keyof Table> = DomainToDbTableMapping<
+   Pick<Fields, F1>,
+   Pick<Table, T1>
+>;
+
+const c: DomainToDbTableMapping<Fields, Table> = {
+   ...(createFieldMapping('id', 'id', new ToDbSqlNumberConverter(), (o: any) => o.toString()) as MappedType<
+      'id',
+      'id'
+   >),
+   ...(createFieldMapping('name', 'name', new ToDbSqlStringConverter(), (o: any) => o.toString()) as MappedType<
+      'name',
+      'name'
+   >),
+   ...(createFieldMapping('privateField', 'field_private', new ToDbSqlStringConverter(), (o: any) => o) as MappedType<
+      'privateField',
+      'field_private'
+   >),
+   ...(createFieldMapping('status', 'status', new ToDbSqlStatusConverter(), toDomainStatus) as MappedType<
+      'status',
+      'status'
+   >),
+};
+
 class Database extends DatabaseTableWithExtendedAndExpandables<
    DomainRequestName,
    Fields,
    ExtendedFields,
    ExpandableFields,
-   TableFields
+   keyof Table
 > {
    constructor() {
       super(
-         new ExtendableAndExpandablesTableConfig<Fields, ExtendedFields, ExpandableFields, TableFields>(
+         new ExtendableAndExpandablesTableConfig<Fields, ExtendedFields, ExpandableFields, keyof Table>(
             'buildings', // tableName
             'id', // tablePrimaryKey
-            {
-               id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
-               name: buildSameTableMapping('name', toString),
-               status: buildSameTableMapping('status', toString),
-               privateField: buildSameTableMapping('status', toString),
-            }, // domainFieldsToTableFieldsMap
+            buildMapping(c), // domainFieldsToTableFieldsMap
             {
                openingHours: {
                   cardinality: { name: 'oneToMany' },
@@ -51,7 +89,7 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
    }
 
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
-      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
+      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, keyof Table>;
    }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, any> {
       return {
          sponsors: buildExpandablesToTableMapping({
@@ -76,112 +114,14 @@ class Database extends DatabaseTableWithExtendedAndExpandables<
    }
 }
 
-type TableFieldNames = 'id' | 'day' | 'start' | 'end' | 'id_building';
+const statusValueMapper = new ValueMapper<DbStatus, Status>(dbToDomain);
 
-const openingHoursTable = new ExtendedTableConfig<OpeningHours, TableFieldNames>(
-   'building_opening_hours', // tableName
-   'id', // tablePrimaryKey
-   {
-      id: buildSameTableMapping('id', toTableId, (o) => o.toString()),
-      day: buildSameTableMapping('day', toNumber),
-      start: buildSameTableMapping('start', toString),
-      end: buildSameTableMapping('end', toString),
-   }, // domainFieldsToTableFieldsMap
-   (
-      data: Array<{
-         day?: number;
-         start?: string;
-         end?: string;
-      }>,
-   ): Array<NestedFilteringFields<OpeningHours>> => {
-      const ohs: any[] = [];
-      for (const d of data) {
-         if (d.day === undefined) {
-            continue;
-         }
-         let oh = ohs.find((o) => o.day === d.day);
-         if (oh === undefined) {
-            oh = {
-               day: d.day,
-            };
-            ohs.push(oh);
-         }
-         if (d.start !== undefined || d.end != undefined) {
-            if (oh.slots === undefined) {
-               oh.slots = [];
-            }
-            const val: any = {};
+function toDbStatus(o: unknown): string {
+   return statusValueMapper.toDbValue(o as any, '' as DbStatus) as string;
+}
 
-            if (d.start !== undefined) val.start = d.start;
-            if (d.end !== undefined) val.end = d.end;
-
-            oh.slots.push(val);
-         }
-      }
-      return ohs;
-   },
-   (config: NestedRequestableFields<OpeningHours>, thekey: TableFieldNames): boolean => {
-      if (config[thekey as 'day'] !== undefined) {
-         return config[thekey as 'day'];
-      }
-
-      if (config.slots[thekey as 'start' | 'end'] === undefined) {
-         return false;
-      }
-
-      return config.slots[thekey as 'start' | 'end'];
-   },
-);
-
-type PictureTableFieldNames = 'id' | 'url' | 'name' | 'description' | 'status' | 'id_building';
-
-const picturesTable = new Level2ExtendedTableConfig<Picture, PictureTableFieldNames>(
-   { tableName: 'building_pictures', tablePrimaryKey: 'id', tableForeignKeyToLevel2: 'id_picture' },
-   { tableName: 'pictures', tablePrimaryKey: 'id' },
-   new Map<string, PictureTableFieldNames[]>([
-      ['pictures', ['id', 'url', 'name', 'description']],
-      ['building_pictures', ['status']],
-   ]),
-   {
-      url: buildSameTableMapping('url', toString),
-      name: buildSameTableMapping('name', toString),
-      description: buildSameTableMapping('description', toString),
-      status: buildSameTableMapping('status', toString),
-   },
-   (
-      data: Array<{
-         name?: string;
-         url?: string;
-         description?: string;
-         status?: string;
-      }>,
-   ): Array<NestedFilteringFields<Picture>> => {
-      const ret: any[] = [];
-      for (const d of data) {
-         const res: any = {};
-         if (d.name !== undefined) {
-            res.name = d.name;
-         }
-         if (d.url !== undefined) {
-            res.url = d.url;
-         }
-         if (d.description !== undefined) {
-            res.description = d.description;
-         }
-         if (d.status !== undefined) {
-            res.status = d.status;
-         }
-         ret.push(res);
-      }
-      return ret;
-   },
-   (config: NestedRequestableFields<Picture>, thekey: PictureTableFieldNames): boolean => {
-      if (config[thekey as 'url' | 'name' | 'description'] === undefined) {
-         return false;
-      }
-
-      return config[thekey as 'url' | 'name' | 'description'];
-   },
-);
+function toDomainStatus(o: any): Status {
+   return statusValueMapper.toDomainValue(o, 'closed');
+}
 
 export const dbTable = new Database();
