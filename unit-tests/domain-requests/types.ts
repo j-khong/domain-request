@@ -6,9 +6,9 @@ export type DomainRequestName =
    | 'studentCategory'
    // domains with expandables
    | 'building'
-   // | 'student';
+   | 'student'
    // pure joining Domains
-   | 'buildingSponsor'; // building - sponsor
-// | 'courseApplication' // course - student
+   | 'buildingSponsor' // building - sponsor
+   | 'courseApplication'; // course - student
 
 export type Role = 'admin' | 'student';

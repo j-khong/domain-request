@@ -18,10 +18,7 @@ interface Table {
    id_sponsor: number;
 }
 
-type Key = 'id';
-type TableFields = Key | 'id_building' | 'id_sponsor';
-
-type MappedType<F1 extends keyof Fields, T1 extends TableFields> = DomainToDbTableMapping<
+type MappedType<F1 extends keyof Fields, T1 extends keyof Table> = DomainToDbTableMapping<
    Pick<Fields, F1>,
    Pick<Table, T1>
 >;
@@ -38,10 +35,10 @@ const c: DomainToDbTableMapping<Fields, Table> = {
       o.toString(),
    ) as MappedType<'sponsorId', 'id_sponsor'>),
 };
-class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, TableFields> {
+class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, ExpandableFields, keyof Table> {
    constructor() {
       super(
-         new ExpandablesTableConfig<Fields, ExpandableFields, TableFields>(
+         new ExpandablesTableConfig<Fields, ExpandableFields, keyof Table>(
             'building_sponsors', // tableName
             'id', // tablePrimaryKey
             buildMapping(c), // domainFieldsToTableFieldsMap
@@ -50,8 +47,8 @@ class Database extends DatabaseTableWithExpandables<DomainRequestName, Fields, E
    }
 
    buildDomainExpandableFieldsToTableFieldsMap(allDbTables: {
-      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, TableFields>;
-   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields> {
+      [Property in DomainRequestName]: SimpleDatabaseTable<DomainRequestName, Fields, keyof Table>;
+   }): DomainExpandableFieldsToTableFieldsMap<ExpandableFields, keyof Table> {
       return {
          building: buildExpandablesToTableMapping({
             globalContextDomainName: 'building',

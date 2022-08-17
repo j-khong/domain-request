@@ -1,34 +1,20 @@
+import { DomainWithExpandablesRequestBuilder, buildFilterValidator } from '../../../../mod.ts';
+import { DomainRequestName } from '../../../types.ts';
 import {
-   DomainWithExpandablesRequestBuilder,
-   validateBoolean,
-   validateId,
-   validateNumber,
-   validateString,
-} from '../../../../../src/DomainRequest';
-import { DomainRequestName } from '../../../types';
-import {
-   Fields as MainFields,
-   ExpandableFields as MainExpandableFields,
    domainRequestName,
+   Fields as MainFields,
+   ExpandableFields as MainExpandables,
+   generateFilteringConfig,
    computedNames,
-} from '../../types';
+} from '../../types.ts';
 
 type Fields = Pick<MainFields, keyof MainFields>;
-export type ExpandableFields = Pick<MainExpandableFields, keyof MainExpandableFields>;
+type ExpandableFields = Pick<MainExpandables, keyof MainExpandables>;
 
 export class RequestBuilder extends DomainWithExpandablesRequestBuilder<DomainRequestName, Fields, ExpandableFields> {
    constructor() {
-      super(domainRequestName, ['id'], {
-         id: { validate: validateId, defaultValue: '' },
-         firstname: { validate: validateString, defaultValue: '' },
-         lastname: { validate: validateString, defaultValue: '' },
-         yearOfBirth: { validate: validateNumber, defaultValue: 1970 },
-         nationalCardId: { validate: validateString, defaultValue: '' },
-         countryId: { validate: validateString, defaultValue: '' },
-         hasScholarship: { validate: validateBoolean, defaultValue: false },
-         categoryId: { validate: validateString, defaultValue: '' },
-         distanceFrom: { validate: validateNumber, defaultValue: 0 },
-      });
+      super(domainRequestName, ['id'], buildFilterValidator<Fields>(generateFilteringConfig()));
+
       this.addToCompute(computedNames);
    }
 }
