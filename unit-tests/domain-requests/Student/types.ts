@@ -32,7 +32,7 @@ export function generateFilteringConfig(): FilteringConfig<Fields> {
       id: { filtering: { byListOfValue: true }, values: { default: '' } },
       firstname: { filtering: { byListOfValue: true }, values: { default: '' } },
       lastname: { filtering: { byListOfValue: true }, values: { default: '' } },
-      yearOfBirth: { filtering: { byListOfValue: true }, values: { default: 0 } },
+      yearOfBirth: { filtering: { byRangeOfValue: true, byListOfValue: true }, values: { default: 0 } },
       nationalCardId: { filtering: { byListOfValue: true }, values: { default: '' } },
       countryId: { filtering: { byListOfValue: true }, values: { default: '' } },
       categoryId: { filtering: { byListOfValue: true }, values: { default: '' } },

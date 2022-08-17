@@ -436,7 +436,7 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
    }
 }
 
-function getExpandableTableDetails<ExpandableFields extends DomainExpandables, TableFields extends string>(
+export function getExpandableTableDetails<ExpandableFields extends DomainExpandables, TableFields extends string>(
    domainExpandableFieldsToTable: DomainExpandableFieldsToTableFieldsMap<ExpandableFields, TableFields>,
    key: keyof ExpandableFields,
 ): DomainExpandableFieldsToTableFields<TableFields> {
