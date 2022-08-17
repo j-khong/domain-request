@@ -9,3 +9,5 @@ export class RequestBuilder extends SimpleDomainRequestBuilder<DomainRequestName
       super(domainRequestName, ['id'], buildFilterValidator<Fields>(generateFilteringConfig()));
    }
 }
+
+export const admin = new RequestBuilder();

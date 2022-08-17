@@ -12,8 +12,10 @@ export class RequestBuilder extends SimpleDomainRequestBuilder<DomainRequestName
          domainRequestName,
          ['id'],
          buildFilterValidator<Fields>(generateFilteringConfig(), {
-            authorizedFields: [],
+            authorizedFields: [], // STUDENT CANNOT GET ANY DATA FROM THIS DOMAIN
          }),
       );
    }
 }
+
+export const student = new RequestBuilder();
