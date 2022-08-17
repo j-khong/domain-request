@@ -162,7 +162,9 @@ function initAllRolesDomainRequestBuilders<
       >;
       if (reqBuilder.setExpandables === undefined) {
          throw new Error(
-            `Configuration error: for role ${keyRole} of domain request ${domainRequestToInit}, request builder must be of type DomainWithExpandablesRequestBuilder`,
+            `Configuration error: for role ${keyRole} of domain request ${domainRequestToInit}, request builder must be of type DomainWithExpandablesRequestBuilder
+            If your object is correctly configured, it may be a code copy paste error ^^
+            => check that name [${domainRequestToInit}] is not already used to create another Domain request object`,
          );
       }
       reqBuilder.setExpandables(ret);
