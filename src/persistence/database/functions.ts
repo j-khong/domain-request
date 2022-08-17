@@ -219,11 +219,6 @@ const comparisonOperatorMap: ComparisonOperatorMap = {
       format: (field: string, converter: ToDbSqlConverter<unknown>): string =>
          commonFormat(field, 'LIKE', converter, '%'),
    },
-   isIn: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => {
-         return commonFormat(field, 'IN', converter);
-      },
-   },
    between: {
       format: (field: string, converter: ToDbSqlConverter<unknown>): string => {
          const buildInstruction = (v: unknown) => `${field} BETWEEN ${v}`;

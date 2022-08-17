@@ -300,7 +300,7 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
 
          // add the filter
          expandable.setField(requestField, true);
-         expandable.setFilter({ key: requestField, operator: 'isIn', value: [...values].join(',') as any }); // TODO replace isIn with equals + OR
+         expandable.setFilter({ key: requestField, operator: 'equals', value: [...values] });
          expandable.dontSelectCount();
 
          // const res = await fetch(conf.tableConfig, expandable, false);
@@ -397,7 +397,7 @@ class ExpandablesDBAddOn<DRN extends string, F extends DomainFields, E extends D
 
          // add the filter
          expandable.setField(requestField, true);
-         expandable.setFilter({ key: requestField, operator: 'isIn', value: ids.join(',') }); // TODO replace isIn with equals + OR
+         expandable.setFilter({ key: requestField, operator: 'equals', value: ids });
          expandable.dontSelectCount();
 
          // const res = await fetch(conf.tableConfig, expandable, false);
