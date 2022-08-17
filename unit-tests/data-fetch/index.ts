@@ -2,7 +2,10 @@
 // tester, regrouper les tests selon les features (filter, restrictions, etc...)
 // et non selon la structure des donneés (simple, extended, expandables etc...)
 
-export * from './simple.ts';
+export * from './fields/simple.ts';
+export * from './fields/extended.ts';
+export * from './filters/simple.ts';
+export * from './options/simple.ts';
 export * from './user-role-access.ts';
 // export * from './extended';
 // export * from './expandables';
