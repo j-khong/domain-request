@@ -12,6 +12,7 @@ export type {
    AndArrayComparison,
    OrArrayComparison,
    Comparison,
+   InputErrors,
 } from './types.ts';
 export { isAndArrayComparison, isOrArrayComparison } from './types.ts';
 

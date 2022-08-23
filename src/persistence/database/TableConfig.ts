@@ -92,6 +92,7 @@ export type DomainToDbTableMapping<F, TB> = {
       tableFieldname: Extract<keyof TB, string>;
       convertToSqlInstructionPart: ToDbSqlConverter<unknown>;
       convertToDomain: (o: unknown) => F[Property];
+      convertToCompute: (o: any) => string;
    };
 };
 
@@ -167,6 +168,7 @@ export function buildMapping<F, T>(
          m[key].tableFieldname,
          m[key].convertToSqlInstructionPart,
          m[key].convertToDomain,
+         m[key].convertToCompute,
       );
    }
 
@@ -178,6 +180,7 @@ export function createFieldMapping<F, T>(
    tableField: Extract<keyof T, string>,
    toSql: ToDbSqlConverter<unknown>,
    toDomain: (o: unknown) => F[typeof domainField],
+   toCompute: (o: any) => string = (o: any) => o.toString(),
 ): DomainToDbTableMapping<Pick<F, typeof domainField>, Pick<T, typeof tableField>> {
    const res = {} as DomainToDbTableMapping<Pick<F, typeof domainField>, Pick<T, typeof tableField>>;
    // DomainToDbTableMapping<Pick<F, Extract<keyof F, string>>, Pick<T, Extract<keyof T, string>>> {
@@ -186,11 +189,12 @@ export function createFieldMapping<F, T>(
       tableFieldname: tableField,
       convertToSqlInstructionPart: toSql,
       convertToDomain: toDomain,
+      convertToCompute: toCompute,
    };
    return res;
 }
 
-export function buildSameTableMapping<TableFields extends string>(
+function buildSameTableMapping<TableFields extends string>(
    name: TableFields,
    convertToDb: ToDbSqlConverter<unknown>, //(o: any) => number | number[] | string | string[],
    convertToDomain: (o: any) => any = (o: any) => o,

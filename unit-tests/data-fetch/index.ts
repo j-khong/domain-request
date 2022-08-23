@@ -1,4 +1,3 @@
-// TODO
 // tester, regrouper les tests selon les features (filter, restrictions, etc...)
 // et non selon la structure des donneés (simple, extended, expandables etc...)
 
@@ -11,6 +10,9 @@ export * from './user-role-access.ts';
 // export * from './full';
 
 // TODO
+//
+// tester toCompute fields
+//   si toCompute utilisé comme un filtre => check qu'il est déclaré dans les fields avec une valeur utile au compute
 //
 // tester fetch field extendable only
 
