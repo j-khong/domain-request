@@ -194,7 +194,7 @@ export function createFieldMapping<F, T>(
    return res;
 }
 
-function buildSameTableMapping<TableFields extends string>(
+export function buildSameTableMapping<TableFields extends string>(
    name: TableFields,
    convertToDb: ToDbSqlConverter<unknown>, //(o: any) => number | number[] | string | string[],
    convertToDomain: (o: any) => any = (o: any) => o,

@@ -74,6 +74,6 @@ export class StatusFilterValidatorCreator<Fields> extends ConcreteFilterValidato
    }
 }
 
-function isStatus(o: any): o is Status {
+function isStatus(o: unknown): o is Status {
    return isString(o) && status.includes(o as Status);
 }

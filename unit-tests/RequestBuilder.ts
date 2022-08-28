@@ -1,3 +1,7 @@
+import {
+   assertEquals,
+   assertNotEquals /*, assertStrictEquals, assertThrows*/,
+} from 'https://deno.land/std@0.149.0/testing/asserts.ts';
 import { /*afterEach, beforeEach, */ describe, it } from 'https://deno.land/std@0.149.0/testing/bdd.ts';
 
 import { getDomainRequestHandler } from './domain-requests/init.ts';
@@ -720,12 +724,12 @@ function test(input: Tree, role: Role, expected: Expected) {
    const factory = getDomainRequestHandler('student');
    const res = factory.getRoleDomainRequestBuilder(role).build(input);
    // console.log('res:', JSON.stringify(res, null, 2));
-   const expReq = res.request as DomainWithExpandablesRequest<DomainRequestName, any, any>;
+   const expReq = res.request; //as DomainWithExpandablesRequest<DomainRequestName, any, any>;
    compareRequestBuilder('student', expReq, expected);
-   compareRequestBuilder('country', expReq.getExpandables().country, expected.expandables.country);
+   compareRequestBuilder('country', (expReq as any).getExpandables().country, expected.expandables.country);
    compareRequestBuilder(
       'courseApplication',
-      expReq.getExpandables().courseApplication,
+      (expReq as any).getExpandables().courseApplication,
       expected.expandables.courseApplication,
    );
 
@@ -733,11 +737,11 @@ function test(input: Tree, role: Role, expected: Expected) {
       // console.log('res.errors:', res.request);
       // console.log('res.errors:', res.errors);
    }
-   expect(res.errors.length, 'error').to.equals(expected.errors.length);
+   assertEquals(res.errors.length, expected.errors.length);
    for (const err of res.errors) {
       const expectedErr = expected.errors.find((e) => err.context === e.context && e.fieldName === err.fieldName);
-      expect(expectedErr).to.not.be.undefined;
-      expect(err.reason, err.reason).to.equals(expectedErr?.reason);
+      assertNotEquals(expectedErr, undefined);
+      assertEquals(err.reason, expectedErr?.reason);
    }
 }
 
@@ -747,52 +751,52 @@ function compareRequestBuilder<F, Exp>(
    expected: Expected,
 ): void {
    const actualFieldsKeys = Object.keys(request.getFields()) as Array<keyof F>;
-   expect(actualFieldsKeys.length, `${name} fields length`).to.equals(Object.keys(expected.fields).length);
+   assertEquals(actualFieldsKeys.length, Object.keys(expected.fields).length);
    for (const key of actualFieldsKeys) {
-      expect(request.getFields()[key], `${name} fields: ${key}`).to.equals(expected.fields[key]);
+      assertEquals(request.getFields()[key], (expected.fields as any)[key]);
    }
 
    const actualFiltersKeys = Object.keys(request.getFilters()) as Array<keyof F>;
-   expect(actualFiltersKeys.length, `${name} filters length`).to.equals(Object.keys(expected.filters).length);
+   assertEquals(actualFiltersKeys.length, Object.keys(expected.filters).length);
    for (const key of actualFiltersKeys) {
       const comp = request.getFilters()[key];
       const comp2 = expected.filters[key];
-      expect(comp).not.to.be.undefined;
-      expect(comp2).not.to.be.undefined;
+      assertNotEquals(comp, undefined);
+      assertNotEquals(comp2, undefined);
 
       const compareComparison = (c: Comparison<F>, c2: Comparison<F>): void => {
-         expect(c.operator).to.equals(c2.operator);
-         expect(c.value).to.equals(c2.value);
+         assertEquals(c.operator, c2.operator);
+         assertEquals(c.value, c2.value);
       };
       if (comp !== undefined && comp2 !== undefined) {
          if (isComparison<F>(comp) && isComparison<F>(comp2)) {
             compareComparison(comp, comp2);
          } else if (isAndArrayComparison<F>(comp) && isAndArrayComparison<F>(comp2)) {
-            expect(comp.and.length).to.equals(comp2.and.length);
+            assertEquals(comp.and.length, comp2.and.length);
             for (let i = 0; i < comp.and.length; i++) {
                compareComparison(comp.and[i], comp2.and[i]);
             }
          } else if (isOrArrayComparison<F>(comp) && isOrArrayComparison<F>(comp2)) {
-            expect(comp.or.length).to.equals(comp2.or.length);
+            assertEquals(comp.or.length, comp2.or.length);
             for (let i = 0; i < comp.or.length; i++) {
                compareComparison(comp.or[i], comp2.or[i]);
             }
          } else {
             console.log(JSON.stringify(comp, null, 2));
             console.log(JSON.stringify(comp2, null, 2));
-            expect(true, 'no comp to do').to.equals(false);
+            assertEquals(true, false);
          }
       }
-      // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
+      // assertEquals(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
    }
 
-   expect(request.getOptions().pagination.limit).to.equals(expected.options.pagination.limit);
-   expect(request.getOptions().pagination.offset).to.equals(expected.options.pagination.offset);
+   assertEquals(request.getOptions().pagination.limit, expected.options.pagination.limit);
+   assertEquals(request.getOptions().pagination.offset, expected.options.pagination.offset);
 
    const expReq = request as DomainWithExpandablesRequest<string, F, any>;
    if (expReq.getExpandables !== undefined) {
       const actualExpKeys = Object.keys(expReq.getExpandables()) as Array<keyof Exp>;
-      expect(actualExpKeys.length, `${name} expandables length`).to.equals(Object.keys(expected.expandables).length);
+      assertEquals(actualExpKeys.length, Object.keys(expected.expandables).length);
       for (const key of actualExpKeys) {
          compareRequestBuilder(`${name} > ${key}`, expReq.getExpandables()[key], expected.expandables[key]);
          // expect(request.getFilters()[key], `${name} filters: ${key}`).to.equals(expected.filters[key]);
