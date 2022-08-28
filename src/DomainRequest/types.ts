@@ -1,7 +1,12 @@
-type Leaf = string | number | Date | boolean;
+export type LeafType = string | number | Date | boolean;
+export type Leaf = LeafType | Array<LeafType>;
 // type Leaf= unknown
 export interface Tree {
    [key: string]: Leaf | Tree;
+}
+
+export interface BoolTree {
+   [key: string]: boolean | BoolTree;
 }
 
 export type NaturalKey<Type extends string> = Type[];
@@ -14,7 +19,7 @@ export interface DomainFields {
 // REQUESTABLE FIELDS
 //
 export type RequestableFields<Type> = {
-   [Property in keyof Type]: boolean | RequestableFields<any>;
+   [Property in keyof Type]: boolean | RequestableFields<unknown>;
 };
 type Unarray<T> = T extends Array<infer U> ? NestedRequestableFields<U> : NestedRequestableFields<T>;
 
