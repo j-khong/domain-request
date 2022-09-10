@@ -1,5 +1,5 @@
 import { isBoolean, isDate, isNumber, isString, isIsoDate, TypeChecker } from './type-checkers.ts';
-import { Operator } from './types.ts';
+import { Operator, IsoDate } from './types.ts';
 
 export function buildFilterValidator<Fields>(
    fieldMapping: FilteringConfig<Fields>,
@@ -237,7 +237,7 @@ class DateFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreator<
    }
 }
 
-class IsoDateFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreator<Fields, string> {
+class IsoDateFilterValidatorCreator<Fields> extends ConcreteFilterValidatorCreator<Fields, IsoDate> {
    constructor() {
       super(isIsoDate, 'Iso Date string');
    }

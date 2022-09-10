@@ -9,6 +9,7 @@ export interface BoolTree {
    [key: string]: boolean | BoolTree;
 }
 
+export type IsoDate = string;
 export type NaturalKey<Type extends string> = Type[];
 
 export interface DomainFields {

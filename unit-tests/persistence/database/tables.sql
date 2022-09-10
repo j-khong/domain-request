@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS `student_categories`;
 DROP TABLE IF EXISTS `students`;
 DROP TABLE IF EXISTS `countries`;
 DROP TABLE IF EXISTS `buildings`;
+DROP TABLE IF EXISTS `building_categories`;
 DROP TABLE IF EXISTS `sponsors`;
 DROP TABLE IF EXISTS `courses`;
 DROP TABLE IF EXISTS `pictures`;
@@ -18,12 +19,23 @@ CREATE TABLE `sponsors` (
   UNIQUE KEY `sponsors__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `building_categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `building_categories__NK` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `buildings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `status` enum('o','wip','c') NOT NULL DEFAULT 'wip',
+  `confidential` varchar(255) NOT NULL,
+  `id_category` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `buildings__NK` (`name`)
+  UNIQUE KEY `buildings__NK` (`name`),
+  KEY `buildings__IDX_category_id` (`id_category`),
+  CONSTRAINT `buildings__FK_category_id` FOREIGN KEY (`id_category`) REFERENCES `building_categories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `countries` (
@@ -48,6 +60,7 @@ CREATE TABLE `courses` (
 CREATE TABLE `student_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `other_data` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `student_categories__NK` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -129,11 +142,16 @@ INSERT INTO `sponsors` (`name`) VALUES
 ('Rockefeller'),
 ('Carnegie');
 
-INSERT INTO `buildings` (`name`, `status`) VALUES
-('A', 'o'),
-('B', 'c'),
-('C', 'o'),
-('D', 'wip');
+INSERT INTO `building_categories` (`name`) VALUES
+('Colonial'),
+('Rococco'),
+('New Age');
+
+INSERT INTO `buildings` (`name`, `status`, `id_category`, `confidential`) VALUES
+('A', 'o', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data"),
+('B', 'c', (SELECT id FROM building_categories WHERE `name`='Rococco'), "confidential data"),
+('C', 'o', (SELECT id FROM building_categories WHERE `name`='New Age'), "confidential data"),
+('D', 'wip', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data");
 
 INSERT INTO `building_sponsors` (`id_building`, `id_sponsor`, `contribution`) VALUES
 ((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Rockefeller'), 100),
@@ -144,9 +162,9 @@ INSERT INTO `countries` (`name`, `timezone`) VALUES
 ('france', 'Europe/Paris'),
 ('espagne', 'Europe/Madrid');
 
-INSERT INTO `student_categories` (`name`) VALUES
-('Arts'),
-('Sports');
+INSERT INTO `student_categories` (`name`, `other_data`) VALUES
+('Arts', 'other_data'),
+('Sports', 'other_data');
 
 INSERT INTO `courses` (`name`, `published`, `is_multilanguage`, `status`, `seats_max`) VALUES
 ('Math 101', '2020-01-01', true, 'o', 200),
@@ -180,4 +198,4 @@ INSERT INTO building_pictures (id_building, id_picture, status) VALUES
 ((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "A"), 'on' ),
 ((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "B"), 'on' ),
 ((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "C"), 'on' ),
-((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D"), 'on' )
+((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D"), 'on' );
