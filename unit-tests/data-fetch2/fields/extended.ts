@@ -8,7 +8,7 @@ describe('Data fetch with one to one fields', () => {
       await resetClient();
    });
 
-   it('requests with 1to1 field', async () => {
+   it('requests with 1 1to1 field (1 value)', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -43,6 +43,239 @@ describe('Data fetch with one to one fields', () => {
                   name: 'Rococco',
                },
                id: '2',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field (2 values)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            architect: {
+               id: true,
+               name: true,
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               architect: {
+                  id: '1',
+                  name: 'Roberto',
+               },
+               id: '1',
+            },
+            {
+               architect: {
+                  id: '2',
+                  name: 'Ricardo',
+               },
+               id: '2',
+            },
+            {
+               architect: {
+                  id: '3',
+                  name: 'Rodrigo',
+               },
+               id: '4',
+            },
+            {
+               architect: {
+                  id: '4',
+                  name: 'Armando',
+               },
+               id: '3',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 2 1to1 fields (1 & 2 values)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            type: { name: true },
+            architect: {
+               id: true,
+               name: true,
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               type: {
+                  name: 'Colonial',
+               },
+               architect: {
+                  id: '1',
+                  name: 'Roberto',
+               },
+               id: '1',
+            },
+            {
+               type: {
+                  name: 'Rococco',
+               },
+               architect: {
+                  id: '2',
+                  name: 'Ricardo',
+               },
+               id: '2',
+            },
+            {
+               type: {
+                  name: 'New Age',
+               },
+               architect: {
+                  id: '4',
+                  name: 'Armando',
+               },
+               id: '3',
+            },
+            {
+               type: {
+                  name: 'Colonial',
+               },
+               architect: {
+                  id: '3',
+                  name: 'Rodrigo',
+               },
+               id: '4',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field (2 levels)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            architect: {
+               name: true,
+               rating: { rate: true },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               architect: {
+                  name: 'Roberto',
+                  rating: {
+                     rate: 'A',
+                  },
+               },
+               id: '1',
+            },
+            {
+               architect: {
+                  name: 'Ricardo',
+                  rating: {
+                     rate: 'C',
+                  },
+               },
+               id: '2',
+            },
+            {
+               architect: {
+                  name: 'Rodrigo',
+                  rating: {
+                     rate: 'A',
+                  },
+               },
+               id: '4',
+            },
+            {
+               architect: {
+                  name: 'Armando',
+                  rating: {
+                     rate: 'B',
+                  },
+               },
+               id: '3',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field (3 levels)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            architect: {
+               name: true,
+               rating: { rate: true, rater: { name: true } },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               architect: {
+                  name: 'Roberto',
+                  rating: {
+                     rate: 'A',
+                     rater: {
+                        name: 'S&P',
+                     },
+                  },
+               },
+               id: '1',
+            },
+            {
+               architect: {
+                  name: 'Ricardo',
+                  rating: {
+                     rate: 'C',
+                     rater: {
+                        name: 'Fitch',
+                     },
+                  },
+               },
+               id: '2',
+            },
+            {
+               architect: {
+                  name: 'Rodrigo',
+                  rating: {
+                     rate: 'A',
+                     rater: {
+                        name: 'Fitch',
+                     },
+                  },
+               },
+               id: '4',
+            },
+            {
+               architect: {
+                  name: 'Armando',
+                  rating: {
+                     rate: 'B',
+                     rater: {
+                        name: 'Moodys',
+                     },
+                  },
+               },
+               id: '3',
             },
          ],
       };

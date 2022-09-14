@@ -12,6 +12,7 @@ import {
 import { DomainRequestName, Role } from '../types.ts';
 import * as Sponsor from '../Sponsor/index.ts';
 import * as Category from '../BuildingCategory/index.ts';
+import * as Architect from '../Architect/index.ts';
 export const domainRequestName: DomainRequestName = 'building';
 
 export interface Fields {
@@ -23,6 +24,7 @@ export interface Fields {
    openingHours: OpeningHours[];
    pictures: Picture[];
    sponsors: Sponsor.Fields[];
+   architect: Architect.Fields;
 }
 
 export interface Picture {
@@ -76,6 +78,7 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
          },
       }),
       sponsors: new ArrayOfLinkedDomainConfiguration<DomainRequestName, Sponsor.Fields>('building', 'sponsors'),
+      architect: new LinkedDomainConfiguration<DomainRequestName, Architect.Fields>('building', 'architect'),
       openingHours: new ObjectFieldConfiguration<OpeningHours>({
          day: new NumberFieldConfiguration({
             filtering: {
@@ -126,5 +129,8 @@ export function initDomainConfigWithDeps(dc: DomainConfig, role: Role): void {
    }
    if (c.type !== undefined) {
       c.type.init(Category.createDomainConfig(role));
+   }
+   if (c.architect !== undefined) {
+      c.architect.init(Architect.createDomainConfig(role));
    }
 }

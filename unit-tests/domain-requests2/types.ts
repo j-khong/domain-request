@@ -6,7 +6,9 @@ export type DomainRequestName =
    | 'studentCategory'
    // domains with expandables
    | 'building'
-   | 'buildingCategory';
+   | 'buildingCategory'
+   // wihth 1to1 chain
+   | 'architect';
 // | 'student'
 // pure joining Domains
 // | 'buildingSponsor' // building - sponsor

@@ -20,7 +20,10 @@ export * from './simple.ts';
 // - name mapping
 // - custom structure (agregation)
 // ✅ - 1to1
-// - chain of 1to1
+// ✅ - 1to1 (2 fields from the same table)
+// ✅ - 1to1 (2 fields from different tables)
+// ✅ - chain of 1to1 (2 levels)
+// ✅ - chain of 1to1 (3 levels)
 
 export * from './extended.ts';
 

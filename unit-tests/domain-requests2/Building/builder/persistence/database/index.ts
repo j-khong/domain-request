@@ -17,6 +17,7 @@ import { DomainRequestName } from '../../../../types.ts';
 import { Fields, Status, OpeningHours, Picture } from '../../../types.ts';
 import * as BuildingCategory from '../../../../BuildingCategory/builder/persistence/database/index.ts';
 import * as Sponsor from '../../../../Sponsor/builder/persistence/database/index.ts';
+import * as Architect from '../../../../Architect/builder/persistence/database/index.ts';
 
 // const openingHoursTable: OneToManyTableDef = {
 //    name: 'building_opening_hours',
@@ -57,6 +58,7 @@ type BuildingDomainFieldNames =
    | 'type'
    | 'status'
    | 'pictures' /*'sponsors' | 'openingHours' */
+   | 'architect'
    | 'privateField';
 
 class ToDbSqlStatusConverter extends ToDbSqlStringConverter {
@@ -72,6 +74,11 @@ const buildingMapping: TableMapping<BuildingDomainFieldNames> = {
       BuildingCategory.getTableDefinition(),
       BuildingCategory.getTableMapping(),
       `${buildingTable.name}.id_category`,
+   ),
+   architect: new OneToOneTableMapping(
+      Architect.getTableDefinition(),
+      Architect.getTableMapping(),
+      `${buildingTable.name}.id_architect`,
    ),
    privateField: new SameTableMapping(buildingTable, 'confidential', new ToDbSqlStringConverter(), unknownToString),
    status: new SameTableMapping(buildingTable, 'status', new ToDbSqlStatusConverter(), toDomainStatus),

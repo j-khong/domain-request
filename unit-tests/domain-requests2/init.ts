@@ -1,3 +1,5 @@
+import * as Architect from './Architect/index.ts';
+import * as ArchitectPersistence from './Architect/builder/persistence/database/index.ts';
 import * as Sponsor from './Sponsor/index.ts';
 import * as SponsorPersistence from './Sponsor/builder/persistence/database/index.ts';
 // import * as Country from './Country/index.ts';
@@ -30,6 +32,7 @@ export function getDomainRequestHandler<DF>(
 const factories: {
    [Property in DomainRequestName]: Factory<Role, DomainRequestName, any>;
 } = {
+   architect: Architect.getFactory(ArchitectPersistence.buildTableConnector(select)),
    sponsor: Sponsor.getFactory(SponsorPersistence.buildTableConnector(select)),
    // country: Country.getFactory(),
    course: Course.getFactory(CoursePersistence.buildTableConnector(select)),

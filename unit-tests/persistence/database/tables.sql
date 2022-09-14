@@ -7,6 +7,9 @@ DROP TABLE IF EXISTS `students`;
 DROP TABLE IF EXISTS `countries`;
 DROP TABLE IF EXISTS `buildings`;
 DROP TABLE IF EXISTS `building_categories`;
+DROP TABLE IF EXISTS `architects`;
+DROP TABLE IF EXISTS `ratings`;
+DROP TABLE IF EXISTS `raters`;
 DROP TABLE IF EXISTS `sponsors`;
 DROP TABLE IF EXISTS `courses`;
 DROP TABLE IF EXISTS `pictures`;
@@ -17,6 +20,34 @@ CREATE TABLE `sponsors` (
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `sponsors__NK` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `raters` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `raters__NK` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ratings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `rate` varchar(255) NOT NULL,
+  `id_rater` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ratings__NK` (`rate`, `id_rater`),
+  KEY `ratings__IDX_rater_id` (`id_rater`),
+  CONSTRAINT `ratings__FK_rater_id` FOREIGN KEY (`id_rater`) REFERENCES `raters` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `architects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `id_rating` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `architects__NK` (`name`),
+  KEY `architects__IDX_rating_id` (`id_rating`),
+  CONSTRAINT `architects__FK_rating_id` FOREIGN KEY (`id_rating`) REFERENCES `ratings` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `building_categories` (
@@ -32,10 +63,13 @@ CREATE TABLE `buildings` (
   `status` enum('o','wip','c') NOT NULL DEFAULT 'wip',
   `confidential` varchar(255) NOT NULL,
   `id_category` int(11) NOT NULL,
+  `id_architect` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `buildings__NK` (`name`),
   KEY `buildings__IDX_category_id` (`id_category`),
-  CONSTRAINT `buildings__FK_category_id` FOREIGN KEY (`id_category`) REFERENCES `building_categories` (`id`)
+  CONSTRAINT `buildings__FK_category_id` FOREIGN KEY (`id_category`) REFERENCES `building_categories` (`id`),
+  KEY `buildings__IDX_architect_id` (`id_architect`),
+  CONSTRAINT `buildings__FK_architect_id` FOREIGN KEY (`id_architect`) REFERENCES `architects` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `countries` (
@@ -147,11 +181,34 @@ INSERT INTO `building_categories` (`name`) VALUES
 ('Rococco'),
 ('New Age');
 
-INSERT INTO `buildings` (`name`, `status`, `id_category`, `confidential`) VALUES
-('A', 'o', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data"),
-('B', 'c', (SELECT id FROM building_categories WHERE `name`='Rococco'), "confidential data"),
-('C', 'o', (SELECT id FROM building_categories WHERE `name`='New Age'), "confidential data"),
-('D', 'wip', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data");
+INSERT INTO `raters` (`name`) VALUES
+('S&P'),
+('Moodys'),
+('Fitch');
+
+INSERT INTO `ratings` (`rate`, `id_rater`) VALUES
+('A', (SELECT id FROM raters WHERE `name`='S&P')),
+('A', (SELECT id FROM raters WHERE `name`='Moodys')),
+('A', (SELECT id FROM raters WHERE `name`='Fitch')),
+('B', (SELECT id FROM raters WHERE `name`='S&P')),
+('B', (SELECT id FROM raters WHERE `name`='Moodys')),
+('B', (SELECT id FROM raters WHERE `name`='Fitch')),
+('C', (SELECT id FROM raters WHERE `name`='S&P')),
+('C', (SELECT id FROM raters WHERE `name`='Moodys')),
+('C', (SELECT id FROM raters WHERE `name`='Fitch'));
+  
+INSERT INTO `architects` (`name`, `id_rating`) VALUES
+('Roberto', (SELECT id FROM ratings WHERE `rate`='A' AND `id_rater` = (SELECT id FROM raters WHERE `name`='S&P'))),
+('Ricardo', (SELECT id FROM ratings WHERE `rate`='C' AND `id_rater` = (SELECT id FROM raters WHERE `name`='Fitch'))),
+('Rodrigo', (SELECT id FROM ratings WHERE `rate`='A' AND `id_rater` = (SELECT id FROM raters WHERE `name`='Fitch'))),
+('Armando', (SELECT id FROM ratings WHERE `rate`='B' AND `id_rater` = (SELECT id FROM raters WHERE `name`='Moodys')));
+
+
+INSERT INTO `buildings` (`name`, `status`, `id_category`, `confidential`, `id_architect`) VALUES
+('A', 'o', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data", (SELECT id FROM architects WHERE `name`='Roberto')),
+('B', 'c', (SELECT id FROM building_categories WHERE `name`='Rococco'), "confidential data", (SELECT id FROM architects WHERE `name`='Ricardo')),
+('C', 'o', (SELECT id FROM building_categories WHERE `name`='New Age'), "confidential data", (SELECT id FROM architects WHERE `name`='Armando')),
+('D', 'wip', (SELECT id FROM building_categories WHERE `name`='Colonial'), "confidential data",(SELECT id FROM architects WHERE `name`='Rodrigo'));
 
 INSERT INTO `building_sponsors` (`id_building`, `id_sponsor`, `contribution`) VALUES
 ((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Rockefeller'), 100),

@@ -1,6 +1,6 @@
 import { RequestableFields } from '../../../DomainRequest/types.ts';
-import { isBoolean } from '../../../DomainRequest/type-checkers.ts';
-import { ToDbSqlConverter, ToDbSqlStringConverter } from './converters.ts';
+import { isBoolean, isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
+import { ToDbSqlConverter } from './converters.ts';
 
 export type TableMapping<DomainFieldNames extends string> = {
    [Property in DomainFieldNames]: FieldMapping;
@@ -30,8 +30,13 @@ export type ManyToManyTableDef = {
    foreignKey2: string;
 };
 
-type ProcessResult = {
-   fieldnames: { rootDomain: string; children: Array<{ domain: string; db: string }> };
+type Child = { domain: string; db: string; toDomainConvert: (o: unknown) => unknown | undefined };
+export function isChild(o: unknown): o is Child {
+   return isSomethingLike<Child>(o) && o.domain !== undefined && o.db !== undefined;
+}
+export type FieldNames = { rootDomain: string; children: Array<Child | ProcessResult> };
+export type ProcessResult = {
+   fieldnames: FieldNames;
    tablename: string;
    joins: string[];
 };
@@ -43,27 +48,15 @@ type ProcessOneToManyResult = {
 export abstract class FieldMapping {
    constructor(protected readonly tableDef: Readonly<TableDef>) {}
 
-   process(domainFieldname: string, value: boolean | RequestableFields<unknown>): ProcessResult | undefined {
+   process(_domainFieldname: string, _value: boolean | RequestableFields<unknown>): ProcessResult | undefined {
       return undefined;
    }
 
    processOneToMany(
-      domainFieldname: string,
-      value: boolean | RequestableFields<unknown>,
+      _domainFieldname: string,
+      _value: boolean | RequestableFields<unknown>,
    ): ProcessOneToManyResult | undefined {
       return undefined;
-   }
-
-   populate(
-      toPopulate: { [key: string]: unknown },
-      rootDomainFieldname: string,
-      domainFieldname: string,
-      dbValueToCovnertToDomain: unknown,
-   ): void {
-      console.log('toPopulate:', toPopulate);
-      console.log('rootDomainFieldname:', rootDomainFieldname);
-      console.log('domainFieldname:', domainFieldname);
-      console.log('dbValueToCovnertToDomain:', dbValueToCovnertToDomain);
    }
 }
 
@@ -78,23 +71,15 @@ export class SameTableMapping extends FieldMapping {
    }
 
    process(domainFieldname: string, _value: boolean): ProcessResult {
-      return {
-         fieldnames: { children: [{ db: this.fieldname, domain: domainFieldname }], rootDomain: domainFieldname },
+      const ret = {
+         fieldnames: {
+            children: [{ db: this.fieldname, domain: domainFieldname, toDomainConvert: this.toDomainConvert }],
+            rootDomain: domainFieldname,
+         },
          tablename: this.tableDef.name,
          joins: [],
       };
-   }
-
-   populate(
-      toPopulate: { [key: string]: unknown },
-      _rootDomainFieldname: string,
-      domainFieldname: string,
-      dbValueToConvertToDomain: unknown,
-   ): void {
-      // console.log('toPopulate:', toPopulate);
-      // console.log('domainFieldname:', domainFieldname);
-      // console.log('dbValueToCovnertToDomain:', dbValueToConvertToDomain);
-      toPopulate[domainFieldname] = this.toDomainConvert(dbValueToConvertToDomain) as any;
+      return ret;
    }
 }
 
@@ -117,36 +102,12 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       };
       for (const domFieldname in value) {
          const tmap = (this.mapping as any)[domFieldname] as FieldMapping;
-         if (tmap instanceof SameTableMapping) {
-            const res = tmap.process(domFieldname, (value as any)[domFieldname]);
-            ret.fieldnames.children.push(...res.fieldnames.children);
+         const res = tmap.process(domFieldname, (value as any)[domFieldname]);
+         if (res !== undefined) {
+            ret.fieldnames.children.push(res);
          }
-         // TODO check if there is 1to1 and 1toN
       }
       return ret;
-   }
-
-   populate(
-      toPopulate: { [key: string]: unknown },
-      rootDomainFieldname: string,
-      domainFieldname: string,
-      dbValueToConvertToDomain: unknown,
-   ): void {
-      if (toPopulate[rootDomainFieldname] === undefined) {
-         toPopulate[rootDomainFieldname] = {};
-      }
-      // console.log('toPopulate:', toPopulate);
-      // console.log('domainFieldname:', domainFieldname);
-      // console.log('dbValueToCovnertToDomain:', dbValueToConvertToDomain);
-      const tmap = (this.mapping as any)[domainFieldname] as FieldMapping;
-      if (tmap instanceof SameTableMapping) {
-         tmap.populate(
-            toPopulate[rootDomainFieldname] as { [key: string]: unknown },
-            domainFieldname,
-            domainFieldname,
-            dbValueToConvertToDomain,
-         );
-      }
    }
 }
 
@@ -177,7 +138,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
          const res = map.process(key, (value as any)[key]);
          if (res !== undefined) {
             console.log('res:', res);
-            fieldnames.children.push(...res.fieldnames.children);
+            // fieldnames.children.push(...res.fieldnames.children);
             // console.log('res.joins:', res.joins);
             res.joins.forEach((v) => joins.add(v));
             // console.log('joins:', joins);
@@ -224,15 +185,24 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    process(domainFieldname: string, value: RequestableFields<T>): ProcessResult {
       console.log('=======================');
       const ret = {
-         fieldnames: { rootDomain: domainFieldname, children: [{ db: this.field, domain: domainFieldname }] },
+         fieldnames: {
+            rootDomain: domainFieldname,
+            children: [
+               {
+                  db: this.field,
+                  domain: domainFieldname,
+                  toDomainConvert: (o: unknown) => {
+                     console.log('please implement');
+                     return o;
+                  },
+               },
+            ],
+         },
          tablename: this.tableDef.name,
          joins: [
             `JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.tableName}.${this.foreignKey}`,
          ],
       };
-      console.log('domFieldname:', this.tableDef, this.field, this.tableName, this.foreignKey);
-      console.log('value:', value);
-
       return ret;
    }
 }
