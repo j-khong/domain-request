@@ -61,9 +61,29 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       req: DomainRequest<DRN, T>,
    ): Promise<DomainResult> {
       const errors = [];
-      const fieldsToSelect = new Map<string, Set<TheMonster>>();
 
+      const fields: string[] = [];
       const joins: Set<string> = new Set();
+      const fieldsToMapResults: FieldsToSelect = [];
+
+      const processFN = (pr: ProcessResult, path: string[]) => {
+         path.push(pr.fieldnames.rootDomain);
+         for (const fieldname of pr.fieldnames.children) {
+            if (isChild(fieldname)) {
+               fieldsToMapResults.push({
+                  fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
+                  path,
+                  toDomainConvert: fieldname.toDomainConvert,
+               });
+
+               fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
+            } else {
+               pr.joins.forEach((v) => joins.add(v));
+               // other child at the same level, need to copy the path
+               processFN(fieldname, [...path]);
+            }
+         }
+      };
 
       const reqFields = { ...req.fields };
       if (reqFields[req.naturalKey[0]] === undefined) {
@@ -83,63 +103,12 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             continue;
          }
 
-         const tableName = res.tablename;
-         let tbFields = fieldsToSelect.get(tableName);
-         if (tbFields === undefined) {
-            tbFields = new Set();
-            fieldsToSelect.set(tableName, tbFields);
-         }
-         const processFN = (pr: ProcessResult, tbFields: Set<TheMonster>, path: string[]) => {
-            path.push(pr.fieldnames.rootDomain);
-            for (const fieldname of pr.fieldnames.children) {
-               if (isChild(fieldname)) {
-                  tbFields.add({
-                     rootDomainFieldname: pr.fieldnames.rootDomain,
-                     domainFieldname: fieldname.domain,
-                     fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
-                     fieldSelectInstruction: createRequestFullFieldName(pr.tablename, fieldname.db),
-                     fieldMapper: fieldMap,
-                     result: res,
-                     path,
-                     toDomainConvert: fieldname.toDomainConvert,
-                  });
-               } else {
-                  pr.joins.forEach((v) => joins.add(v));
-                  // other child at the same level, need to copy the path
-                  processFN(fieldname, tbFields, [...path]);
-               }
-            }
-         };
          const path: string[] = [];
-         processFN(res, tbFields, path);
+         processFN(res, path);
       }
 
-      const fieldsToMapResults = new Map<
-         string, // fieldnameAlias
-         {
-            domainFieldname: string;
-            rootDomainFieldname: string;
-            fieldMapper: FieldMapping;
-            result: ProcessResult;
-            path: string[];
-            toDomainConvert: (o: unknown) => unknown;
-         }
-      >();
-      const fields: string[] = [];
-      for (const [_key, value] of fieldsToSelect) {
-         Array.from(value).forEach((v) => {
-            fields.push(v.fieldSelectInstruction);
-
-            fieldsToMapResults.set(v.fieldnameAlias, {
-               rootDomainFieldname: v.rootDomainFieldname,
-               domainFieldname: v.domainFieldname,
-               fieldMapper: v.fieldMapper,
-               result: v.result,
-               path: v.path,
-               toDomainConvert: v.toDomainConvert,
-            });
-         });
-      }
+      // const filters = processFilters(this.tableConfig, req);
+      // const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
 
       const results: DomainResult = {
          domainName: req.name,
@@ -174,32 +143,16 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
    }
 }
 
-type TheMonster = {
-   rootDomainFieldname: string;
-   domainFieldname: string;
+type FieldsToSelect = Array<{
    fieldnameAlias: string;
-   fieldSelectInstruction: string;
-   fieldMapper: FieldMapping;
-   result: ProcessResult;
    path: string[];
    toDomainConvert: (o: unknown) => unknown;
-};
-type FieldsToSelect<Fields> = Map<
-   string,
-   {
-      domainFieldname: Extract<keyof Fields, string>;
-      rootDomainFieldname: Extract<keyof Fields, string>;
-      fieldMapper: FieldMapping;
-      result: ProcessResult;
-      path: string[];
-      toDomainConvert: (o: unknown) => unknown;
-   }
->;
+}>;
 
-function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect<F>): { [key: string]: unknown } {
+function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): { [key: string]: unknown } {
    const result: { [key: string]: unknown } = {};
-   for (const [key, value] of fieldsToSelect) {
-      createTree(result, value.path, value.toDomainConvert(dbRecord[key]));
+   for (const field of fieldsToSelect) {
+      createTree(result, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
    }
    return result;
 }
