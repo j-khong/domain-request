@@ -1,6 +1,6 @@
 import { RequestableFields, BoolTree, Tree, InputErrors } from '../../types.ts';
-import { isNumber, isString } from '../../type-checkers.ts';
-import { DomainFieldConfiguration, FieldsTree, Comparison } from './index.ts';
+import { isNumber } from '../../type-checkers.ts';
+import { DomainFieldConfiguration, FiltersTree } from './index.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';
 
@@ -94,6 +94,9 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
          const expectedSnake = this.camelToInputStyle(cameledFieldName);
          const val = this.conf[cameledFieldName as Extract<keyof Fields, string>];
          if (val === undefined) {
+            if (context === 'filtering field' && (snakedFieldname === 'or' || snakedFieldname === 'and')) {
+               continue;
+            }
             ret.errors.push({
                context,
                fieldName: snakedFieldname,
@@ -123,19 +126,42 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
    sanitizeFilters(inputFilters: { [key: string]: unknown }): {
       // filters: FilteringFields<DomainFields<FieldNames>>; //FilteringFields<Fields>;
-      filters: FieldsTree;
+      filters: FiltersTree<Fields>;
       errors: InputErrors;
    } {
-      const filters: FieldsTree = {};
+      const filters: FiltersTree<Fields> = { and: [], or: [] };
       const errors: InputErrors = [];
 
-      // console.log('inputFilters:', inputFilters);
+      // process fields in "and" and "or"
+      for (const arrayType in inputFilters) {
+         if (arrayType === 'or' || arrayType === 'and') {
+            const arr = inputFilters[arrayType];
+            if (!Array.isArray(arr)) {
+               errors.push({
+                  context: 'filtering field',
+                  fieldName: arrayType,
+                  reason: `${arrayType} must be an array`,
+               });
+               continue;
+            }
+            for (const obj of arr) {
+               for (const key in this.conf) {
+                  const res = this.conf[key].sanitizeFilter(obj, key, filters, arrayType);
+                  if (res !== undefined) {
+                     errors.push(...res.errors);
+                  }
+               }
+            }
+         }
+      }
+
       for (const key in this.conf) {
-         const res = this.conf[key].sanitizeFilter(inputFilters, key, filters as any);
+         const res = this.conf[key].sanitizeFilter(inputFilters, key, filters, 'and');
          if (res !== undefined) {
             errors.push(...res.errors);
          }
       }
+      // console.log('filters:', filters);
 
       // // for each field with restrictions in "and" and "or", check if it has values
       // /// if not, add default in "or"
@@ -182,8 +208,8 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
    sanitizeFilter(
       inputFilters: { [key: string]: unknown },
-      fieldName: string,
-      toSet: { [key: string]: Comparison<unknown> },
+      fieldName: string, // Extract<keyof Fields, string>
+      toSet: FiltersTree<unknown>,
    ):
       | {
            errors: InputErrors;
@@ -196,13 +222,13 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
       const errors: InputErrors = [];
 
-      toSet[fieldName] = {} as any;
-      for (const key in this.conf) {
-         const res = this.conf[key].sanitizeFilter(val as { [key: string]: unknown }, key, toSet[fieldName] as any);
-         if (res !== undefined) {
-            errors.push(...res.errors);
-         }
-      }
+      // toSet[fieldName] = {} as any;
+      // for (const key in this.conf) {
+      //    const res = this.conf[key].sanitizeFilter(val as { [key: string]: unknown }, key, toSet[fieldName] as any);
+      //    if (res !== undefined) {
+      //       errors.push(...res.errors);
+      //    }
+      // } TODO
 
       return {
          errors,

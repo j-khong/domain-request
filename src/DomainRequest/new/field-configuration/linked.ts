@@ -1,6 +1,6 @@
 import { BoolTree, Tree, InputErrors } from '../../types.ts';
-
-import { DomainFieldConfiguration, DomainConfig, Comparison } from './index.ts';
+import { FiltersTree, FilterArrayType } from './types.ts';
+import { DomainFieldConfiguration, DomainConfig } from './index.ts';
 
 class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainFieldConfiguration {
    constructor(private readonly mainDomain: string, private readonly linkedDomain: string) {
@@ -51,8 +51,8 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
 
    sanitizeFilter(
       inputFilters: { [key: string]: unknown },
-      fieldName: string,
-      toSet: { [key: string]: Comparison<unknown> },
+      fieldName: string, //Extract<keyof T, string>,
+      toSet: FiltersTree<unknown>,
    ):
       | {
            errors: InputErrors;
@@ -66,7 +66,9 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
       // console.log('CommonLinkedDomainConfiguration val:', val);
       const res = this.getDomain().fields.sanitizeFilters(val as Tree);
       if (Object.keys(res.filters).length > 0) {
-         (toSet[fieldName] as any) = res.filters as any as { [key: string]: Comparison<unknown> };
+         const toAdd: FilterArrayType<T> = {} as FilterArrayType<T>;
+         toAdd[fieldName as Extract<keyof T, string>] = res.filters;
+         toSet.and.push(toAdd);
       }
 
       return { errors: res.errors };

@@ -1,9 +1,9 @@
 import { camelToSnake, snakeToCamel } from '../../converters.ts';
-import { isString, isSomethingLike } from '../../type-checkers.ts';
 
-import { getOperators, Operator, RequestableFields, BoolTree, Tree, InputErrors } from '../../types.ts';
+import { BoolTree, Tree, InputErrors } from '../../types.ts';
 import { ObjectFieldConfiguration } from './object.ts';
-
+export * from './types.ts';
+import { FiltersTree } from './types.ts';
 export type FieldFilteringConfig<T> = {
    filtering?: {
       byRangeOfValue?: boolean;
@@ -19,8 +19,6 @@ export type FieldFilteringConfig<T> = {
 export type DefaultFieldValues<Type> = {
    [Property in keyof Type]: Type[Property] | DefaultFieldValues<unknown>;
 };
-
-export type FieldsTree = Tree;
 
 export abstract class DomainFieldConfiguration {
    init(_o: unknown): void {}
@@ -51,7 +49,8 @@ export abstract class DomainFieldConfiguration {
       // sanitizeFilter(
       inputFilters: { [key: string]: unknown },
       fieldName: string,
-      toSet: { [key: string]: Comparison<unknown> },
+      toSet: FiltersTree<unknown>,
+      arrayToPush: 'and' | 'or',
    ):
       | {
            errors: InputErrors;
@@ -74,8 +73,3 @@ export type DomainConfig<Name extends string, T> = {
    name: Name;
    fields: ObjectFieldConfiguration<T>;
 };
-
-export interface Comparison<T> {
-   operator: Operator;
-   value: T;
-}

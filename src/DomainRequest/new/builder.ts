@@ -1,6 +1,7 @@
+import { isSomethingLike } from '../type-checkers.ts';
 import { InputErrors, NaturalKey, Tree, BoolTree, RequestableFields } from '../types.ts';
 
-import { DomainConfig, FieldsTree } from './field-configuration/index.ts';
+import { DomainConfig, FiltersTree } from './field-configuration/index.ts';
 import { FieldsSetup, ObjectFieldConfiguration, Options } from './field-configuration/object.ts';
 
 export interface DomainResult {
@@ -8,6 +9,7 @@ export interface DomainResult {
    results: any[];
    report: Report;
    total: number;
+   errors: string[];
 }
 
 export interface Report {
@@ -24,7 +26,7 @@ export interface DomainRequest<Name extends string, T> {
    name: Name;
    naturalKey: NaturalKey<Extract<keyof T, string>>;
    fields: RequestableFields<T>;
-   filters: FieldsTree;
+   filters: FiltersTree<T>;
    // protected readonly filters: FilteringFields<Fields>,
    options: Options<Extract<keyof T, string>>;
 }
@@ -45,7 +47,7 @@ export class DomainRequestBuilder<Name extends string, T> {
       return this.name;
    }
 
-   build(input: Tree): {
+   build(input: unknown): {
       request: DomainRequest<Name, T>;
       errors: InputErrors;
    } {
@@ -67,23 +69,23 @@ export class DomainRequestBuilder<Name extends string, T> {
       };
    }
 
-   protected splitValues(input: Tree): {
+   protected splitValues(input: unknown): {
       fields: BoolTree;
       filters: Tree;
       options: Tree;
    } {
-      let fields = {};
-      let filters = {};
-      let options = {};
+      let fields: BoolTree = {};
+      let filters: Tree = {};
+      let options: Tree = {};
       if (input !== undefined) {
-         if (input.fields !== undefined) {
-            fields = input.fields;
+         if (isSomethingLike<{ fields: BoolTree }>(input) && input.fields !== undefined) {
+            fields = input.fields as BoolTree;
          }
-         if (input.filters !== undefined) {
-            filters = input.filters;
+         if (isSomethingLike<{ filters: Tree }>(input) && input.filters !== undefined) {
+            filters = input.filters as Tree;
          }
-         if (input.options !== undefined) {
-            options = input.options;
+         if (isSomethingLike<{ options: Tree }>(input) && input.options !== undefined) {
+            options = input.options as Tree;
          }
       }
       return {

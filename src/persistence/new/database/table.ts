@@ -1,6 +1,7 @@
 import { DomainRequest, DomainResult, RequestReport } from '../../../DomainRequest/new/builder.ts';
 import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
-import { TableDef, TableMapping, FieldMapping, isChild, ProcessResult } from './mapping.ts';
+import { FilterArrayType } from '../../../DomainRequest/new/field-configuration/types.ts';
+import { TableDef, TableMapping, isChild, ProcessResult } from './mapping.ts';
 import { Persistence } from '../index.ts';
 
 interface DbRecord {
@@ -9,7 +10,7 @@ interface DbRecord {
 type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
 
-export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, any> {
+export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, unknown> {
    private select: SelectMethod = (sql: string): Promise<SelectMethodResult> => {
       console.log(`SELECT METHOD is not SET for ${this.tableDef.name}`, sql);
       return Promise.resolve([]);
@@ -60,7 +61,13 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       select: SelectMethod,
       req: DomainRequest<DRN, T>,
    ): Promise<DomainResult> {
-      const errors = [];
+      const results: DomainResult = {
+         domainName: req.name,
+         results: [],
+         report: { requests: [] },
+         total: 0,
+         errors: [],
+      };
 
       const fields: string[] = [];
       const joins: Set<string> = new Set();
@@ -75,7 +82,6 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                   path,
                   toDomainConvert: fieldname.toDomainConvert,
                });
-
                fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
             } else {
                pr.joins.forEach((v) => joins.add(v));
@@ -85,16 +91,19 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          }
       };
 
+      // add pk if not already requested
       const reqFields = { ...req.fields };
       if (reqFields[req.naturalKey[0]] === undefined) {
          reqFields[req.naturalKey[0]] = true;
       }
 
+      //
+      // process fields
       for (const domFieldName in reqFields) {
          // find the mapping : table + field
          const fieldMap = mapping[domFieldName];
          if (fieldMap === undefined) {
-            errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
+            results.errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
             continue;
          }
 
@@ -107,20 +116,22 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          processFN(res, path);
       }
 
-      // const filters = processFilters(this.tableConfig, req);
-      // const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
+      //
+      // process filters
+      const andFiltersArr = processFilters(req.filters.and, mapping, results.errors);
+      const orFiltersArr = processFilters(req.filters.or, mapping, results.errors);
+      if (orFiltersArr.length > 0) {
+         andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
+      }
 
-      const results: DomainResult = {
-         domainName: req.name,
-         results: [],
-         report: { requests: [] },
-         total: 0,
-      };
+      const where = andFiltersArr.length === 0 ? '' : `WHERE ${andFiltersArr.join(' AND ')}`;
       const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
+
       // 1. COUNT SELECT
       const reqCountSql = `SELECT COUNT(${tableDef.name}.${tableDef.primaryKey}) AS total
  FROM ${tableDef.name}
- ${joinsSql}`;
+ ${joinsSql}
+ ${where}`;
       const { res: resCount, report: reportCount } = await executeRequest(select, reqCountSql);
       const total = resCount.length > 0 ? Number.parseInt(resCount[0].total as string) : 0;
       results.total = total;
@@ -130,6 +141,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const reqSql = `SELECT ${fields.join(', ')}
  FROM ${tableDef.name}
  ${joinsSql}
+ ${where}
  LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}`;
 
       const { res: dbResults, report } = await executeRequest(select, reqSql);
@@ -141,6 +153,30 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
       return Promise.resolve(results);
    }
+}
+
+function processFilters<T>(
+   filters: Array<FilterArrayType<T>>,
+   mapping: TableMapping<Extract<keyof T, string>>,
+   errors: string[],
+): string[] {
+   const filtersArr: string[] = [];
+   for (const theFilter of filters) {
+      // find the mapping : table + field
+      const domFieldName = Object.keys(theFilter)[0] as Extract<keyof T, string>;
+      const fieldMap = mapping[domFieldName];
+      if (fieldMap === undefined) {
+         errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
+         continue;
+      }
+
+      const res = fieldMap.processFilters(domFieldName, theFilter);
+      if (res === undefined) {
+         continue;
+      }
+      filtersArr.push(...res);
+   }
+   return filtersArr;
 }
 
 type FieldsToSelect = Array<{

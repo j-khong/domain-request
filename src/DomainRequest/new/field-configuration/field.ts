@@ -4,6 +4,7 @@ import { getOperators, Operator, BoolTree, InputErrors, IsoDate } from '../../ty
 
 import { FieldFilteringConfig, DomainFieldConfiguration, Comparison } from './index.ts';
 import { ValidatorCreator, FilterValidator } from '../validators.ts';
+import { FiltersTree } from './types.ts';
 
 type InputFieldFilteringConfig<T> = {
    filtering?: {
@@ -67,8 +68,9 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
 
    sanitizeFilter(
       inputFilters: { [key: string]: unknown },
-      fieldName: string,
-      toSet: { [key: string]: Comparison<T> },
+      fieldName: string, //Extract<keyof T, string>,
+      toSet: FiltersTree<unknown>,
+      arrayToPush: 'and' | 'or',
    ):
       | {
            errors: InputErrors;
@@ -80,6 +82,7 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
 
       const val = inputFilters[this.camelToInputStyle(fieldName)];
       if (val === undefined) {
+         this.applyDefaultRestricted(fieldName, toSet);
          return undefined;
       }
 
@@ -90,12 +93,60 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
             fieldName,
             reason: res,
          });
+         this.applyDefaultRestricted(fieldName, toSet);
          return ret;
       }
 
-      toSet[fieldName] = res;
+      const toAdd: { [Property in keyof T]?: Comparison<T> } = {};
+      toAdd[fieldName as Extract<keyof T, string>] = res;
+      toSet[arrayToPush].push(toAdd);
 
       return undefined;
+   }
+
+   private applyDefaultRestricted(fieldName: string, toSet: FiltersTree<unknown>): void {
+      // for each field with restrictions in "and" and "or", check if it has values
+      /// if not, add default in "or"
+
+      if (this.conf.values.authorized === undefined) {
+         // no restrictions
+         return undefined;
+      }
+
+      // this field has restrictions => check if it is present in filters
+      if ((toSet as FiltersTree<T>).and.find((v) => v[fieldName as Extract<keyof T, string>] !== undefined)) {
+         // this field has validated values, so next
+         return undefined;
+      }
+      if ((toSet as FiltersTree<T>).or.find((v) => v[fieldName as Extract<keyof T, string>] !== undefined)) {
+         // this field has validated values, so next
+         return undefined;
+      }
+
+      // default values to add
+      const allAuthorisedValues = this.conf.values.authorized.map(
+         (
+            value,
+         ): {
+            [Property in keyof T]: {
+               operator: Operator;
+               value: T;
+            };
+         } => {
+            return {
+               [fieldName]: {
+                  operator: 'equals',
+                  value,
+               },
+            } as {
+               [Property in keyof T]: {
+                  operator: Operator;
+                  value: T;
+               };
+            };
+         },
+      );
+      toSet.or.push(...allAuthorisedValues);
    }
 
    private processFilter(field: string, comparison: unknown): string | Comparison<T> {
@@ -134,7 +185,7 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
       if (validation.valid) {
          return {
             operator,
-            value: comparison.value as T,
+            value: comparison.value as any,
          };
       }
 
@@ -166,14 +217,6 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
          }
       }
       return undefined;
-   }
-
-   private hasRestrictedValues(): boolean {
-      return this.conf.values.authorized !== undefined;
-   }
-
-   private getAuthorizedValues(): ReadonlyArray<Readonly<T>> {
-      return this.conf.values.authorized ?? [];
    }
 
    private validate(o: unknown): { valid: boolean; reason: string } {
