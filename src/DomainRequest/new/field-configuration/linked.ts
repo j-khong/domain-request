@@ -53,6 +53,7 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
       inputFilters: { [key: string]: unknown },
       fieldName: string, //Extract<keyof T, string>,
       toSet: FiltersTree<unknown>,
+      _arrayToPush: 'and' | 'or',
    ):
       | {
            errors: InputErrors;
@@ -63,8 +64,8 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
          return undefined;
       }
 
-      // console.log('CommonLinkedDomainConfiguration val:', val);
       const res = this.getDomain().fields.sanitizeFilters(val as Tree);
+
       if (Object.keys(res.filters).length > 0) {
          const toAdd: FilterArrayType<T> = {} as FilterArrayType<T>;
          toAdd[fieldName as Extract<keyof T, string>] = res.filters;
@@ -73,42 +74,6 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
 
       return { errors: res.errors };
    }
-
-   // getDefaultValue(dontDoThese: string[]): unknown | undefined {
-   //    const ret: any = {};
-   //    const domain = this.getDomain();
-   //    if (dontDoThese.includes(domain.name)) {
-   //       return undefined;
-   //    }
-
-   //    const newArr = [...dontDoThese, domain.name];
-   //    // TODO FIX THAT
-   //    //   for (const k in domain.fields) {
-   //    //      const res = domain.fields[k].getDefaultValue(newArr);
-   //    //      if (res !== undefined) {
-   //    //         ret[k] = res;
-   //    //      }
-   //    //   }
-   //    return ret;
-   // }
-
-   // getDefaultRequestableValue(dontDoThese: string[]): RequestableFields<ObjectFieldConfiguration<T>> | undefined {
-   //    const ret: any = {};
-   //    const domain = this.getDomain();
-
-   //    if (dontDoThese.includes(domain.name)) {
-   //       return undefined;
-   //    }
-   //    const newArr = [...dontDoThese, domain.name];
-   //    // TODO FIX THAT
-   //    //   for (const k in domain.fields) {
-   //    //      const res = domain.fields[k].getDefaultRequestableValue(newArr);
-   //    //      if (res !== undefined) {
-   //    //         ret[k] = res;
-   //    //      }
-   //    //   }
-   //    return ret;
-   // }
 }
 
 export class LinkedDomainConfiguration<DRN extends string, T> extends CommonLinkedDomainConfiguration<DRN, T> {}

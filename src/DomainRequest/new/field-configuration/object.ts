@@ -161,7 +161,6 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
             errors.push(...res.errors);
          }
       }
-      // console.log('filters:', filters);
 
       // // for each field with restrictions in "and" and "or", check if it has values
       // /// if not, add default in "or"
@@ -210,6 +209,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       inputFilters: { [key: string]: unknown },
       fieldName: string, // Extract<keyof Fields, string>
       toSet: FiltersTree<unknown>,
+      arrayToPush: 'and' | 'or',
    ):
       | {
            errors: InputErrors;
@@ -222,13 +222,19 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
       const errors: InputErrors = [];
 
-      // toSet[fieldName] = {} as any;
-      // for (const key in this.conf) {
-      //    const res = this.conf[key].sanitizeFilter(val as { [key: string]: unknown }, key, toSet[fieldName] as any);
-      //    if (res !== undefined) {
-      //       errors.push(...res.errors);
-      //    }
-      // } TODO
+      const toPush = { [fieldName]: { or: [], and: [] } };
+      toSet[arrayToPush].push(toPush);
+      for (const key in this.conf) {
+         const res = this.conf[key].sanitizeFilter(
+            val as { [key: string]: unknown },
+            key,
+            toPush[fieldName],
+            arrayToPush,
+         );
+         if (res !== undefined) {
+            errors.push(...res.errors);
+         }
+      }
 
       return {
          errors,

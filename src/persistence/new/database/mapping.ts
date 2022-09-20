@@ -1,7 +1,12 @@
 import { RequestableFields } from '../../../DomainRequest/types.ts';
 
-import { FilterArrayType, isComparison, Operator } from '../../../DomainRequest/new/field-configuration/types.ts';
-
+import {
+   FilterArrayType,
+   isComparison,
+   isFilteringFields,
+   Operator,
+} from '../../../DomainRequest/new/field-configuration/types.ts';
+import { processAllFilters } from './functions.ts';
 import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
 import { ToDbSqlConverter } from './converters.ts';
 
@@ -62,6 +67,14 @@ export abstract class FieldMapping {
       return undefined;
    }
 
+   processAllFilters(
+      _domainFieldname: string,
+      _filters: FilterArrayType<unknown>,
+      _errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      return { or: [], and: [], joins: [] };
+   }
+
    processOneToMany(
       _domainFieldname: string,
       _value: boolean | RequestableFields<unknown>,
@@ -112,6 +125,26 @@ export class SameTableMapping extends FieldMapping {
       }
       return filters;
    }
+
+   processAllFilters<T>(
+      domainFieldname: Extract<keyof T, string>,
+      domainFilters: FilterArrayType<T>,
+      errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
+
+      if (domainFilters !== undefined) {
+         const comparison = domainFilters[domainFieldname];
+         if (comparison !== undefined && isComparison(comparison)) {
+            const comparisonMapper = comparisonOperatorMap[comparison.operator];
+            this.toDbConvert.setValue(comparison.value);
+            ret.and.push(comparisonMapper.format(`${this.tableDef.name}.${this.fieldname}`, this.toDbConvert));
+         } else {
+            errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+         }
+      }
+      return ret;
+   }
 }
 
 export class OneToOneTableMapping<T extends string> extends FieldMapping {
@@ -127,9 +160,7 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       const ret: ProcessResult = {
          fieldnames: { rootDomain: domainFieldname, children: [] },
          tablename: this.tableDef.name,
-         joins: [
-            `JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.linkedFieldname}`,
-         ],
+         joins: [this.buildJoin()],
       };
       for (const domFieldname in value) {
          const tmap = (this.mapping as any)[domFieldname] as FieldMapping;
@@ -141,28 +172,33 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       return ret;
    }
 
-   processFilters<Type>(
-      domainFieldname: Extract<keyof Type, string>,
-      domainFilters: FilterArrayType<Type>,
-   ): ProcessFiltersResult {
-      const filters: ProcessFiltersResult = [];
-      if (domainFilters === undefined) {
-         return filters;
-      }
-      // const sub = domainFilters.and.find((v) => v[domainFieldname] !== undefined);
-      // if (sub === undefined) {
-      //    return filters;
-      // }
-      // for (const domFieldname in sub) {
-      //    const tmap = this.mapping[domFieldname as unknown as T] as FieldMapping;
-      //    // TODO
-      //    //const res = tmap.processFilters(domFieldname, sub);
-      //    // if (res !== undefined) {
-      //    //    filters.push(...res);
-      //    // }
-      // }
+   private buildJoin(): string {
+      return `JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.linkedFieldname}`;
+   }
 
-      return filters;
+   processAllFilters<T>(
+      domainFieldname: Extract<keyof T, string>,
+      domainFilters: FilterArrayType<T>,
+      errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [this.buildJoin()] };
+      console.log('ret:', ret.joins);
+
+      if (domainFilters === undefined) {
+         return ret;
+      }
+      const filter = domainFilters[domainFieldname];
+      if (filter !== undefined && isFilteringFields(filter)) {
+         const { or, and, joins } = processAllFilters(filter, this.mapping, errors);
+
+         ret.or.push(...or);
+         ret.and.push(...and);
+         ret.joins.push(...joins);
+      } else {
+         errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+      }
+
+      return ret;
    }
 }
 

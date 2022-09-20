@@ -513,68 +513,6 @@ describe('Data fetch for simple', () => {
          };
          await test(input, role, domainRequestName, expected);
       });
-      // TODO reactivate
-      //
-      // it('requests existing fields with filter isIn on non natural key', async () => {
-      //    const domainRequestName: DomainRequestName = 'country';
-      //    const role = 'student';
-      //    const input = {
-      //       fields: {
-      //          name: true,
-      //          timezone: true,
-      //       },
-      //       filters: { name: { operator: 'is_in', value: '3,1' } },
-      //       options: {},
-      //    };
-
-      //    const expected = {
-      //       domainName: domainRequestName,
-      //       total: 2,
-      //       results: [
-      //          {
-      //             name: 'france',
-      //             timezone: 'Europe/Paris',
-      //             id: '1',
-      //          },
-      //          {
-      //             name: 'espagne',
-      //             timezone: 'Europe/Madrid',
-      //             id: '2',
-      //          },@
-      //       ],
-      //    };
-      //    await test(input, role, domainRequestName, expected);
-      // });
-
-      // it('requests existing fields with filter isIn with invalid values', async () => {
-      //    const domainRequestName: DomainRequestName = 'country';
-      //    const role = 'student';
-      //    const input = {
-      //       fields: {
-      //          name: true,
-      //          timezone: true,
-      //       },
-      //       filters: { id: { operator: 'is_in', value: '3   ,undefined, null  , ,  "   "  , 1,   "" ' } },
-      //       options: {},
-      //    };
-
-      //    const expected = {
-      //       domainName: domainRequestName,
-      //       total: 2,
-      //       results: [
-      //          {
-      //             name: 'france',
-      //             timezone: 'Europe/Paris',
-      //             id: '1',
-      //          },
-      //          {
-      //             name: 'espagne',
-      //             timezone: 'Europe/Madrid',
-      //             id: '2',
-      //          },
-      //       ],
-      //    };
-      //    await test(input, role, domainRequestName, expected);
-      // });
+      // TODO test building => fields{type:{/* no fields */}}
    });
 });

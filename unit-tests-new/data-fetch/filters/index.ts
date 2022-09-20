@@ -1,10 +1,3 @@
-export * from './simple.ts';
-// export * from './expandables.ts';
-
-// TODO add filter test on
-// - 1to1
-// - chains of 1to1
-
 // filters
 // - 'equals',
 //   - natural key
@@ -33,6 +26,12 @@ export * from './simple.ts';
 //   ✅ - string
 //   ✅ - number
 //   ✅ - iso date
+export * from './simple.ts';
+
+export * from './extended.ts';
+// TODO add filter test on
+// - 1to1
+// - chains of 1to1
 
 // - with unauthorized field value
 // - with unauthorized field

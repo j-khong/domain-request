@@ -34,6 +34,10 @@ export function isComparison<T>(o: any): o is Comparison<T> {
    return o.operator !== undefined && o.value !== undefined;
 }
 
+export function isFilteringFields<T>(o: any): o is FilteringFields<T> {
+   return o.and !== undefined && o.or !== undefined && Array.isArray(o.and) && Array.isArray(o.or);
+}
+
 // export interface Comparison<T> {
 //    operator: Operator;
 //    value: T;

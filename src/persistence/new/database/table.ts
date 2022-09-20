@@ -1,8 +1,8 @@
 import { DomainRequest, DomainResult, RequestReport } from '../../../DomainRequest/new/builder.ts';
 import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
-import { FilterArrayType } from '../../../DomainRequest/new/field-configuration/types.ts';
 import { TableDef, TableMapping, isChild, ProcessResult } from './mapping.ts';
 import { Persistence } from '../index.ts';
+import { processAllFilters, addSetToSet } from './functions.ts';
 
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
@@ -118,11 +118,17 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
 
       //
       // process filters
-      const andFiltersArr = processFilters(req.filters.and, mapping, results.errors);
-      const orFiltersArr = processFilters(req.filters.or, mapping, results.errors);
+      // const andFiltersArr = processFilters(req.filters.and, mapping, results.errors);
+      // const orFiltersArr = processFilters(req.filters.or, mapping, results.errors);
+      const {
+         and: andFiltersArr,
+         or: orFiltersArr,
+         joins: filtersJoins,
+      } = processAllFilters(req.filters, mapping, results.errors);
       if (orFiltersArr.length > 0) {
          andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
       }
+      addSetToSet(joins, filtersJoins);
 
       const where = andFiltersArr.length === 0 ? '' : `WHERE ${andFiltersArr.join(' AND ')}`;
       const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
@@ -153,30 +159,6 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
       return Promise.resolve(results);
    }
-}
-
-function processFilters<T>(
-   filters: Array<FilterArrayType<T>>,
-   mapping: TableMapping<Extract<keyof T, string>>,
-   errors: string[],
-): string[] {
-   const filtersArr: string[] = [];
-   for (const theFilter of filters) {
-      // find the mapping : table + field
-      const domFieldName = Object.keys(theFilter)[0] as Extract<keyof T, string>;
-      const fieldMap = mapping[domFieldName];
-      if (fieldMap === undefined) {
-         errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
-         continue;
-      }
-
-      const res = fieldMap.processFilters(domFieldName, theFilter);
-      if (res === undefined) {
-         continue;
-      }
-      filtersArr.push(...res);
-   }
-   return filtersArr;
 }
 
 type FieldsToSelect = Array<{

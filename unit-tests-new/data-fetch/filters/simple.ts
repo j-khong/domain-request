@@ -1033,4 +1033,9 @@ describe('Data fetch with filters for simple ', () => {
    //       await test(input, role, domainRequestName, expected);
    //    });
    // });
+
+   // TODO misuse
+   // => type: {name: { operator: 'contains', value: ['e'] }}, // array must have 2 values
+   // => typ: {name: { operator: 'contains', value: ['e'] }}, // unknown
+   // => type: {nam: { operator: 'contains', value: ['e'] }}, // unknown
 });
