@@ -1,6 +1,6 @@
 import { DomainRequest, DomainResult, RequestReport } from '../../../DomainRequest/new/builder.ts';
 import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
-import { TableDef, TableMapping, isChild, ProcessResult } from './mapping.ts';
+import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
 import { processAllFilters, addSetToSet } from './functions.ts';
 
@@ -39,20 +39,10 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const select = this.select;
 
       const res = await Table.fetchOneToOne(tableDef, mapping, select, req);
+
+      await Table.fetchOneToMany(tableDef, mapping, select, req, res);
+
       return res;
-
-      // // 3. SELECT 1toN
-
-      // for (const domFieldName in req.fields) {
-      //    // find the mapping : table + field
-      //    const fieldMap = mapping[domFieldName];
-      //    if (fieldMap === undefined) {
-      //       errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
-      //       continue;
-      //    }
-
-      //    const res = fieldMap.processOneToMany(domFieldName, req.fields[domFieldName]);
-      // }
    }
 
    private static async fetchOneToOne<DRN extends string, T>(
@@ -73,7 +63,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const joins: Set<string> = new Set();
       const fieldsToMapResults: FieldsToSelect = [];
 
-      const processFN = (pr: ProcessResult, path: string[]) => {
+      const processFN = (pr: ProcessResult, path: DomainPath[]) => {
          path.push(pr.fieldnames.rootDomain);
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
@@ -112,14 +102,12 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             continue;
          }
 
-         const path: string[] = [];
+         const path: DomainPath[] = [];
          processFN(res, path);
       }
 
       //
       // process filters
-      // const andFiltersArr = processFilters(req.filters.and, mapping, results.errors);
-      // const orFiltersArr = processFilters(req.filters.or, mapping, results.errors);
       const {
          and: andFiltersArr,
          or: orFiltersArr,
@@ -159,11 +147,118 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
       return Promise.resolve(results);
    }
+
+   private static async fetchOneToMany<DRN extends string, T>(
+      tableDef: TableDef,
+      mapping: TableMapping<Extract<keyof T, string>>,
+      select: SelectMethod,
+      req: DomainRequest<DRN, T>,
+      res: DomainResult,
+   ): Promise<void> {
+      const ids = [];
+      for (const v in res.results) {
+         ids.push(res.results[v].id);
+      }
+      if (ids.length === 0) {
+         return;
+      }
+
+      const fields: string[] = [];
+      const joins: Set<string> = new Set();
+      const fieldsToMapResults: FieldsToSelect = [];
+
+      const processFN = (pr: ProcessResult, path: DomainPath[]) => {
+         path.push(pr.fieldnames.rootDomain);
+         for (const fieldname of pr.fieldnames.children) {
+            if (isChild(fieldname)) {
+               fieldsToMapResults.push({
+                  fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
+                  path,
+                  toDomainConvert: fieldname.toDomainConvert,
+               });
+               fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
+            } else {
+               pr.joins.forEach((v) => joins.add(v));
+               // other child at the same level, need to copy the path
+               processFN(fieldname, [...path]);
+            }
+         }
+      };
+
+      for (const domFieldName in req.fields) {
+         // find the mapping : table + field
+         const fieldMap = mapping[domFieldName];
+         if (fieldMap === undefined) {
+            res.errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
+            continue;
+         }
+
+         const resp = fieldMap.processOneToMany(domFieldName, req.fields[domFieldName]);
+         if (resp === undefined) {
+            continue;
+         }
+
+         const path: DomainPath[] = [];
+         processFN(resp, path);
+      }
+      if (fieldsToMapResults.length === 0) {
+         return;
+      }
+
+      const pk = `${tableDef.name}.${tableDef.primaryKey}`;
+      const where = `WHERE ${pk} IN (${ids.join(', ')})`;
+      const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
+
+      // 1. SELECT fields + 1to1
+      const reqSql = `SELECT ${[createRequestFullFieldName(tableDef.name, tableDef.primaryKey), ...fields].join(', ')}
+ FROM ${tableDef.name}
+ ${joinsSql}
+ ${where}
+ `; // TODO put limit of the filter
+
+      const { res: dbResults, report } = await executeRequest(select, reqSql);
+      res.report.requests.push(report);
+
+      for (const dbRecord of dbResults) {
+         populateResultsWith1toN(
+            createSqlAlias(tableDef.name, tableDef.primaryKey),
+            res.results,
+            dbRecord,
+            fieldsToMapResults,
+         );
+      }
+   }
+}
+
+function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): void {
+   const keyValue = dbRecord[key];
+   if (keyValue === undefined) {
+      return;
+   }
+
+   const toPopulate = res.find((v) => v.id == keyValue); // weak comparison on id
+   if (toPopulate === undefined) {
+      return;
+   }
+
+   const obj: any = { domainname: '', v: {} };
+   for (const field of fieldsToSelect) {
+      const toPop = {};
+      createTree(toPop, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
+
+      const domainname = field.path[0].name;
+      if (toPopulate[domainname] === undefined) {
+         toPopulate[domainname] = [];
+      }
+      obj.domainname = domainname;
+      obj.v = { ...obj.v, ...(toPop as any)[domainname] };
+   }
+   toPopulate[obj.domainname].push(obj.v);
 }
 
 type FieldsToSelect = Array<{
    fieldnameAlias: string;
-   path: string[];
+   path: DomainPath[];
    toDomainConvert: (o: unknown) => unknown;
 }>;
 
@@ -175,19 +270,21 @@ function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsTo
    return result;
 }
 
-function createTree(struct: any, fieldnames: string[], value: any): void {
+function createTree(struct: any, fieldnames: DomainPath[], value: any): void {
    if (fieldnames.length === 0) {
       return;
    }
+
    const lastPos = fieldnames.length - 1;
    for (let i = 0; i < lastPos; i++) {
       const name = fieldnames[i];
-      if (struct[name] === undefined) {
-         struct[name] = {};
+      if (struct[name.name] === undefined) {
+         struct[name.name] = {};
       }
-      struct = struct[name];
+      struct = struct[name.name];
    }
-   struct[fieldnames[lastPos]] = value;
+
+   struct[fieldnames[lastPos].name] = value;
 }
 
 function createRequestFullFieldName(tableName: string, fieldName: string): string {

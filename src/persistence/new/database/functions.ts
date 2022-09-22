@@ -1,30 +1,6 @@
 import { TableMapping } from './mapping.ts';
 import { FilterArrayType, FilteringFields } from '../../../DomainRequest/new/field-configuration/types.ts';
 
-export function processFilters<T>(
-   filters: Array<FilterArrayType<T>>,
-   mapping: TableMapping<Extract<keyof T, string>>,
-   errors: string[],
-): string[] {
-   const filtersArr: string[] = [];
-   for (const theFilter of filters) {
-      // find the mapping : table + field
-      const domFieldName = Object.keys(theFilter)[0] as Extract<keyof T, string>;
-      const fieldMap = mapping[domFieldName];
-      if (fieldMap === undefined) {
-         errors.push(`cannot find db mapping for domain field name [${domFieldName}]`);
-         continue;
-      }
-
-      const res = fieldMap.processFilters(domFieldName, theFilter);
-      if (res === undefined) {
-         continue;
-      }
-      filtersArr.push(...res);
-   }
-   return filtersArr;
-}
-
 export function processAllFilters<T>(
    filters: FilteringFields<T>,
    mapping: TableMapping<Extract<keyof T, string>>,

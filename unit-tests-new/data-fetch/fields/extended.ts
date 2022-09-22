@@ -450,3 +450,209 @@ describe('Data fetch with one to one fields', () => {
    //    await test(input, role, domainRequestName, expected);
    // });
 });
+
+describe('Data fetch with one to many fields', () => {
+   afterEach(async () => {
+      await resetClient();
+   });
+
+   it('requests with 1 1toN field (1 value)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            pictures: {
+               url: true,
+               name: true,
+               status: true,
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               id: '1',
+               pictures: [
+                  {
+                     url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                     name: 'A',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     name: 'B',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               id: '4',
+               pictures: [
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               id: '2',
+               pictures: [
+                  {
+                     url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     name: 'B',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               id: '3',
+               pictures: [
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 field, 1 1to1 field, 1 1toN field (1 value)', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            name: true,
+            type: { name: true },
+            pictures: {
+               url: true,
+               name: true,
+               status: true,
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               name: 'A',
+               type: {
+                  name: 'Colonial',
+               },
+               id: '1',
+               pictures: [
+                  {
+                     url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                     name: 'A',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     name: 'B',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               name: 'B',
+               type: {
+                  name: 'Rococco',
+               },
+               id: '2',
+               pictures: [
+                  {
+                     url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                     name: 'B',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               name: 'C',
+               type: {
+                  name: 'New Age',
+               },
+               id: '3',
+               pictures: [
+                  {
+                     url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                     name: 'C',
+                     status: 'on',
+                  },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               name: 'D',
+               type: {
+                  name: 'Colonial',
+               },
+               id: '4',
+               pictures: [
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+});

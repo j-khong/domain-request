@@ -28,7 +28,10 @@ export type OneToOneTableDef = {
 export type OneToManyTableDef = {
    name: string;
    primaryKey: string;
-   foreignKey: string;
+   foreign: {
+      keyName: string;
+      otherTable: TableDef;
+   };
 };
 
 export type ManyToManyTableDef = {
@@ -42,7 +45,12 @@ type Child = { domain: string; db: string; toDomainConvert: (o: unknown) => unkn
 export function isChild(o: unknown): o is Child {
    return isSomethingLike<Child>(o) && o.domain !== undefined && o.db !== undefined;
 }
-export type FieldNames = { rootDomain: string; children: Array<Child | ProcessResult> };
+
+export type DomainPath = { name: string; type: 'array' | 'object' | 'value' };
+export type FieldNames = {
+   rootDomain: DomainPath;
+   children: Array<Child | ProcessResult>;
+};
 export type ProcessResult = {
    fieldnames: FieldNames;
    tablename: string;
@@ -51,11 +59,7 @@ export type ProcessResult = {
 
 export type ProcessFiltersResult = string[];
 
-type ProcessOneToManyResult = {
-   fieldnames: { rootDomain: string; children: Array<{ domain: string; db: string }> };
-   tablename: string;
-   joins: string[];
-};
+type ProcessOneToManyResult = ProcessResult;
 export abstract class FieldMapping {
    constructor(protected readonly tableDef: Readonly<TableDef>) {}
 
@@ -94,10 +98,10 @@ export class SameTableMapping extends FieldMapping {
    }
 
    process(domainFieldname: string, _value: boolean): ProcessResult {
-      const ret = {
+      const ret: ProcessResult = {
          fieldnames: {
             children: [{ db: this.fieldname, domain: domainFieldname, toDomainConvert: this.toDomainConvert }],
-            rootDomain: domainFieldname,
+            rootDomain: { name: domainFieldname, type: 'value' },
          },
          tablename: this.tableDef.name,
          joins: [],
@@ -110,9 +114,6 @@ export class SameTableMapping extends FieldMapping {
       domainFilters: FilterArrayType<T>,
    ): ProcessFiltersResult {
       const filters: ProcessFiltersResult = [];
-      // console.log('domainFieldname:', domainFieldname);
-      // console.log('domainFilters:', domainFilters);
-      // console.log('filters:', filters);
       if (domainFilters !== undefined) {
          const comparison = domainFilters[domainFieldname];
          if (comparison !== undefined && isComparison(comparison)) {
@@ -158,7 +159,7 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
 
    process(domainFieldname: string, value: RequestableFields<unknown>): ProcessResult {
       const ret: ProcessResult = {
-         fieldnames: { rootDomain: domainFieldname, children: [] },
+         fieldnames: { rootDomain: { name: domainFieldname, type: 'object' }, children: [] },
          tablename: this.tableDef.name,
          joins: [this.buildJoin()],
       };
@@ -182,7 +183,6 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       errors: string[],
    ): { or: string[]; and: string[]; joins: string[] } {
       const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [this.buildJoin()] };
-      console.log('ret:', ret.joins);
 
       if (domainFilters === undefined) {
          return ret;
@@ -207,61 +207,53 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       super(tableDef);
    }
 
-   // processOneToMany(
-   //    domainFieldname: string,
-   //    value: boolean | RequestableFields<unknown>,
-   // ): ProcessOneToManyResult | undefined {
-   //    if (isBoolean(value)) {
-   //       return undefined;
-   //    }
-
-   //    console.log('OneToManyTableMapping processOneToMany tableDef:', this.tableDef);
-   //    console.log('mapping:', this.mapping);
-   //    console.log('domainFieldname:', domainFieldname, value);
-
-   //    const joins: Set<string> = new Set();
-   //    const fieldnames: ProcessOneToManyResult['fieldnames'] = {
-   //       children: [],
-   //       rootDomain: domainFieldname,
-   //    };
-   //    for (const key in value) {
-   //       const map = (this.mapping as any)[key] as FieldMapping;
-   //       const res = map.process(key, (value as any)[key],(filters as any)[domFieldname]);
-   //       if (res !== undefined) {
-   //          console.log('res:', res);
-   //          // fieldnames.children.push(...res.fieldnames.children);
-   //          // console.log('res.joins:', res.joins);
-   //          res.joins.forEach((v) => joins.add(v));
-   //          // console.log('joins:', joins);
-   //       }
-   //    }
-
-   //    return {
-   //       fieldnames,
-   //       tablename: this.tableDef.name,
-   //       joins: [...joins],
-   //    };
-   // }
-}
-
-export class ManyToManyTableMapping<T extends string> extends FieldMapping {
-   constructor(tableDef: Readonly<ManyToManyTableDef>, protected readonly mapping: TableMapping<T>) {
-      super(tableDef);
+   private buildJoin(): string {
+      const td: OneToManyTableDef = this.tableDef as OneToManyTableDef;
+      return `JOIN ${td.name} ON ${td.name}.${td.foreign.keyName} = ${td.foreign.otherTable.name}.${td.foreign.otherTable.primaryKey}`;
    }
 
-   process(domainFieldname: string, value: RequestableFields<T>): ProcessResult {
-      const ret = {
-         fieldnames: { rootDomain: domainFieldname, children: [] },
-         tablename: this.tableDef.name,
-         joins: [],
+   processOneToMany(domainFieldname: string, value: RequestableFields<unknown>): ProcessOneToManyResult | undefined {
+      const joins: Set<string> = new Set();
+      joins.add(this.buildJoin());
+      const fieldnames: ProcessOneToManyResult['fieldnames'] = {
+         children: [],
+         rootDomain: { name: domainFieldname, type: 'array' },
       };
-      console.log('domFieldname:', this.mapping);
-      for (const domFieldname in value) {
-         console.log('domFieldname:', domFieldname);
+      for (const key in value) {
+         const map = (this.mapping as any)[key] as FieldMapping;
+         const res = map.process(key, (value as any)[key]);
+         if (res !== undefined) {
+            fieldnames.children.push(res);
+            res.joins.forEach((v) => joins.add(v));
+         }
       }
-      return ret;
+
+      return {
+         fieldnames,
+         tablename: this.tableDef.name,
+         joins: [...joins],
+      };
    }
 }
+
+// export class ManyToManyTableMapping<T extends string> extends FieldMapping {
+//    constructor(tableDef: Readonly<ManyToManyTableDef>, protected readonly mapping: TableMapping<T>) {
+//       super(tableDef);
+//    }
+
+//    process(domainFieldname: string, value: RequestableFields<T>): ProcessResult {
+//       const ret = {
+//          fieldnames: { rootDomain: domainFieldname, children: [] },
+//          tablename: this.tableDef.name,
+//          joins: [],
+//       };
+//       console.log('domFieldname:', this.mapping);
+//       for (const domFieldname in value) {
+//          console.log('domFieldname:', domFieldname);
+//       }
+//       return ret;
+//    }
+// }
 
 export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    constructor(
@@ -274,10 +266,9 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    }
 
    process(domainFieldname: string, value: RequestableFields<T>): ProcessResult {
-      console.log('=======================');
-      const ret = {
+      const ret: ProcessResult = {
          fieldnames: {
-            rootDomain: domainFieldname,
+            rootDomain: { name: domainFieldname, type: 'value' },
             children: [
                {
                   db: this.field,

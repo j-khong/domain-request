@@ -3,71 +3,90 @@ import { DomainRequestName, Role } from './domain-requests/types.ts';
 import { resetClient } from './persistence/database/dbUtils.ts';
 
 init();
-let domain: DomainRequestName = 'course';
-let role: Role = 'student';
+let domain: DomainRequestName = 'building';
+let role: Role = 'admin';
 
 const req = {
-   fields: {
-      // name: true,
-      max_seats: true,
-      // status: true,
-   },
+   // fields: {
+   //    // name: true,
+   //    max_seats: true,
+   //    // status: true,
+   // },
    // filters: { name: { operator: 'equals', value: 'Arts' } },
    // filters: { status: { operator: 'equals', value: 'closed' } },
-   filters: {
-      // or: [{ name: { operator: 'equals', value: 'Arts' } }, { name: { operator: 'equals', value: 'History' } }],
-   },
+   // filters: {
+   // or: [{ name: { operator: 'equals', value: 'Arts' } }, { name: { operator: 'equals', value: 'History' } }],
+   // },
    //
    // building
    //
-   // fields: {
-   //    // id: true,
-   //    name: true,
-   //    // type: {
-   //    //    name: true,
-   //    // },
-   //    // architect: {
-   //    //    name: true,
-   //    //    rating: { rate: true, rater: { name: true } },
-   //    // },
-   //    // status: true,
-   //    // sponsors: {
-   //    //    id: true,
-   //    //    name: true,
-   //    //    // x: true,ù
-   //    // },
-   //    // opening_hours: {
-   //    //    day: true,
-   //    //    // other2: true,
-   //    //    slots: {
-   //    //       // ee: true,
-   //    //       start: true,
-   //    //       end: true,
-   //    //    },
-   //    // },
-   //    // other: true,
-   //    // pictures: {
-   //    //    url: true,
-   //    //    name: true,
-   //    //    // eee: true,
-   //    // },
-   // },
-   // filters: {
-   //    // id: { operator: 'equals', value: 'e' },
-   //    id: { operator: 'equals', value: ['e', 'z'] },
-   //    // sponsors: {
-   //    //    operator: 'contains',
-   //    //    value: ['e', 'z'],
-   //    // }, // this one does not work
-   //    // sponsors: { name: { operator: 'contains', value: ['e', 'z'] } },
-   //    opening_hours: {
-   //       // dkd: { operator: 'equals', value: ['e', 'z'] },
-   //       slots: {
-   //          start: { operator: 'equals', value: ['e', 'z'] },
-   //       },
-   //    },
-   // },
-   // options: { limit: 1 },
+   fields: {
+      // id: true,
+      // name: true,
+      // type: {
+      //    name: true,
+      // },
+      // architect: {
+      //    name: true,
+      //    rating: { rate: true, rater: { name: true } },
+      // },
+      // status: true,
+      // sponsors: {
+      //    id: true,
+      //    name: true,
+      //    // x: true,ù
+      // },
+      // opening_hours: {
+      //    day: true,
+      //    // other2: true,
+      //    slots: {
+      //       // ee: true,
+      //       start: true,
+      //       end: true,
+      //    },
+      // },
+      // other: true,
+      pictures: {
+         url: true,
+         name: true,
+         status: true,
+         // eee: true,
+      },
+   },
+   filters: {
+      // id: { operator: 'equals', value: 'e' },
+      // id: { operator: 'equals', value: ['e', 'z'] },
+      // sponsors: {
+      //    operator: 'contains',
+      //    value: ['e', 'z'],
+      // }, // this one does not work
+      // sponsors: { name: { operator: 'contains', value: ['e', 'z'] } },
+      // opening_hours: {
+      // dkd: { operator: 'equals', value: ['e', 'z'] },
+      // slots: {
+      //    start: { operator: 'equals', value: ['e', 'z'] },
+      // },
+      // },
+      // type: {
+      //    name: { operator: 'contains', value: 'e' },
+      // },
+      // architect: {
+      //    or: [
+      //       {
+      //          name: { operator: 'equals', value: 'roberto' },
+      //       },
+      //       { rating: { rate: { operator: 'equals', value: 'B' } } },
+      //       { rating: { rater: { name: { operator: 'equals', value: 'S&P' } } } },
+      //    ],
+      // },
+      // type: {
+      //    name: { operator: 'contains', value: 'e' },
+      // },
+      // architect: {
+      //    name: { operator: 'equals', value: 'armand' },
+      // },
+   },
+   // options: { limit: 2 },
 };
 
 const domainHandler = getDomainRequestHandler(domain);

@@ -29,6 +29,12 @@ import * as Architect from '../../../../Architect/builder/persistence/database/i
 //    day: new SameTableMapping(openingHoursTable, 'day', new ToDbSqlNumberConverter(), unknownToNumber),
 //    slots: new ObjectFieldConfiguration()
 // };
+
+const buildingTable: TableDef = {
+   name: 'buildings',
+   primaryKey: 'id',
+};
+
 const picturesTable: TableDef = {
    name: 'pictures',
    primaryKey: 'id',
@@ -36,7 +42,7 @@ const picturesTable: TableDef = {
 const buildingPicturesTable: OneToManyTableDef = {
    name: 'building_pictures',
    primaryKey: 'id',
-   foreignKey: 'id_building',
+   foreign: { keyName: 'id_building', otherTable: buildingTable },
 };
 
 const buildingPicturesMapping: TableMapping<keyof Picture> = {
@@ -44,11 +50,6 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
    url: new OneToOneFieldMapping(picturesTable, 'url', buildingPicturesTable.name, 'id_picture'),
    name: new OneToOneFieldMapping(picturesTable, 'name', buildingPicturesTable.name, 'id_picture'),
    description: new OneToOneFieldMapping(picturesTable, 'description', buildingPicturesTable.name, 'id_picture'),
-};
-
-const buildingTable: TableDef = {
-   name: 'buildings',
-   primaryKey: 'id',
 };
 
 // type BuildingDomainFieldNames = Fields;

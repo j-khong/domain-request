@@ -251,8 +251,15 @@ INSERT INTO `pictures` (`name`, `description`, `url`) VALUES
 ('C', 'bla', 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg'),
 ('D', 'bla', 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg');
 
+
 INSERT INTO building_pictures (id_building, id_picture, status) VALUES
 ((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "A"), 'on' ),
+((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "B"), 'on' ),
+((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "C"), 'on' ),
+((SELECT id FROM buildings WHERE name = "A"), (SELECT id FROM pictures WHERE name = "D"), 'on' ),
 ((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "B"), 'on' ),
+((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "C"), 'on' ),
+((SELECT id FROM buildings WHERE name = "B"), (SELECT id FROM pictures WHERE name = "D"), 'on' ),
 ((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "C"), 'on' ),
+((SELECT id FROM buildings WHERE name = "C"), (SELECT id FROM pictures WHERE name = "D"), 'on' ),
 ((SELECT id FROM buildings WHERE name = "D"), (SELECT id FROM pictures WHERE name = "D"), 'on' );
