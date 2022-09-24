@@ -221,6 +221,12 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       };
       for (const key in value) {
          const map = (this.mapping as any)[key] as FieldMapping;
+         if (map === undefined) {
+            console.log(
+               `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
+            );
+            continue;
+         }
          const res = map.process(key, (value as any)[key]);
          if (res !== undefined) {
             fieldnames.children.push(res);
@@ -236,29 +242,12 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
    }
 }
 
-// export class ManyToManyTableMapping<T extends string> extends FieldMapping {
-//    constructor(tableDef: Readonly<ManyToManyTableDef>, protected readonly mapping: TableMapping<T>) {
-//       super(tableDef);
-//    }
-
-//    process(domainFieldname: string, value: RequestableFields<T>): ProcessResult {
-//       const ret = {
-//          fieldnames: { rootDomain: domainFieldname, children: [] },
-//          tablename: this.tableDef.name,
-//          joins: [],
-//       };
-//       console.log('domFieldname:', this.mapping);
-//       for (const domFieldname in value) {
-//          console.log('domFieldname:', domFieldname);
-//       }
-//       return ret;
-//    }
-// }
-
 export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    constructor(
       tableDef: Readonly<TableDef>,
       private readonly field: string,
+      private readonly toDbConvert: ToDbSqlConverter<unknown>,
+      private readonly toDomainConvert: (o: unknown) => unknown | undefined,
       private readonly tableName: string,
       private readonly foreignKey: string,
    ) {
@@ -273,10 +262,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
                {
                   db: this.field,
                   domain: domainFieldname,
-                  toDomainConvert: (o: unknown) => {
-                     console.log('please implement');
-                     return o;
-                  },
+                  toDomainConvert: this.toDomainConvert,
                },
             ],
          },

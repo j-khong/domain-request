@@ -5,16 +5,16 @@ import {
    FieldConfiguration,
    StringFieldConfiguration,
    NumberFieldConfiguration,
-   ArrayOfLinkedDomainConfiguration,
    LinkedDomainConfiguration,
    FieldsSetup,
 } from '../../mod.ts';
 import { DomainRequestName, Role } from '../types.ts';
-import * as Sponsor from '../Sponsor/index.ts';
+import * as SponsorO from '../Sponsor/index.ts';
 import * as Category from '../BuildingCategory/index.ts';
 import * as Architect from '../Architect/index.ts';
 export const domainRequestName: DomainRequestName = 'building';
 
+export type Sponsor = SponsorO.Fields & { contribution: number };
 export interface Fields {
    id: string;
    name: string;
@@ -23,7 +23,7 @@ export interface Fields {
    privateField: string;
    openingHours: OpeningHours[];
    pictures: Picture[];
-   sponsors: Sponsor.Fields[];
+   sponsors: Sponsor[];
    architect: Architect.Fields;
 }
 
@@ -77,7 +77,17 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
             byListOfValue: true,
          },
       }),
-      sponsors: new ArrayOfLinkedDomainConfiguration<DomainRequestName, Sponsor.Fields>('building', 'sponsors'),
+      sponsors: new ObjectFieldConfiguration<Sponsor>({
+         id: new StringFieldConfiguration({
+            filtering: { byListOfValue: true },
+         }),
+         name: new StringFieldConfiguration({
+            filtering: { byListOfValue: true },
+         }),
+         contribution: new NumberFieldConfiguration({
+            filtering: { byListOfValue: true },
+         }),
+      }),
       architect: new LinkedDomainConfiguration<DomainRequestName, Architect.Fields>('building', 'architect'),
       openingHours: new ObjectFieldConfiguration<OpeningHours>({
          day: new NumberFieldConfiguration({
@@ -124,9 +134,6 @@ function isStatus(o: any): o is Status {
 
 export function initDomainConfigWithDeps(dc: DomainConfig, role: Role): void {
    const c = dc.fields.getConf();
-   if (c.sponsors !== undefined) {
-      c.sponsors.init(Sponsor.createDomainConfig(role));
-   }
    if (c.type !== undefined) {
       c.type.init(Category.createDomainConfig(role));
    }

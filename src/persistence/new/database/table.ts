@@ -163,22 +163,39 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          return;
       }
 
-      const fields: string[] = [];
-      const joins: Set<string> = new Set();
-      const fieldsToMapResults: FieldsToSelect = [];
+      const dataByArray: Map<
+         string,
+         {
+            fields: string[];
+            joins: Set<string>;
+            fieldsToMapResults: FieldsToSelect;
+         }
+      > = new Map();
+      // const fields: string[] = [];
+      // const joins: Set<string> = new Set();
+      // const fieldsToMapResults: FieldsToSelect = [];
 
       const processFN = (pr: ProcessResult, path: DomainPath[]) => {
          path.push(pr.fieldnames.rootDomain);
+         let data = dataByArray.get(path[0].name);
+         if (data === undefined) {
+            data = {
+               fields: [],
+               joins: new Set(),
+               fieldsToMapResults: [],
+            };
+            dataByArray.set(path[0].name, data);
+         }
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
-               fieldsToMapResults.push({
+               data.fieldsToMapResults.push({
                   fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
                   path,
                   toDomainConvert: fieldname.toDomainConvert,
                });
-               fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
+               data.fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
             } else {
-               pr.joins.forEach((v) => joins.add(v));
+               pr.joins.forEach((v) => data?.joins.add(v));
                // other child at the same level, need to copy the path
                processFN(fieldname, [...path]);
             }
@@ -201,31 +218,37 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          const path: DomainPath[] = [];
          processFN(resp, path);
       }
-      if (fieldsToMapResults.length === 0) {
+
+      if (dataByArray.size === 0) {
          return;
       }
 
       const pk = `${tableDef.name}.${tableDef.primaryKey}`;
       const where = `WHERE ${pk} IN (${ids.join(', ')})`;
-      const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
 
-      // 1. SELECT fields + 1to1
-      const reqSql = `SELECT ${[createRequestFullFieldName(tableDef.name, tableDef.primaryKey), ...fields].join(', ')}
+      for (const [key, value] of dataByArray) {
+         const joinsSql = value.joins.size > 0 ? [...value.joins].join('\n') : '';
+
+         const reqSql = `SELECT ${[
+            createRequestFullFieldName(tableDef.name, tableDef.primaryKey),
+            ...value.fields,
+         ].join(', ')}
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
  `; // TODO put limit of the filter
 
-      const { res: dbResults, report } = await executeRequest(select, reqSql);
-      res.report.requests.push(report);
+         const { res: dbResults, report } = await executeRequest(select, reqSql);
+         res.report.requests.push(report);
 
-      for (const dbRecord of dbResults) {
-         populateResultsWith1toN(
-            createSqlAlias(tableDef.name, tableDef.primaryKey),
-            res.results,
-            dbRecord,
-            fieldsToMapResults,
-         );
+         for (const dbRecord of dbResults) {
+            populateResultsWith1toN(
+               createSqlAlias(tableDef.name, tableDef.primaryKey),
+               res.results,
+               dbRecord,
+               value.fieldsToMapResults,
+            );
+         }
       }
    }
 }

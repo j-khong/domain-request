@@ -9,14 +9,15 @@ import {
    ToDbSqlNumberConverter,
    ToDbSqlStringConverter,
    unknownToString,
+   unknownToNumber,
    ValueMapper,
    OneToManyTableDef,
    OneToOneFieldMapping,
 } from '../../../../../mod.ts';
 import { DomainRequestName } from '../../../../types.ts';
-import { Fields, Status, OpeningHours, Picture } from '../../../types.ts';
+import { Fields, Status, OpeningHours, Picture, Sponsor } from '../../../types.ts';
 import * as BuildingCategory from '../../../../BuildingCategory/builder/persistence/database/index.ts';
-import * as Sponsor from '../../../../Sponsor/builder/persistence/database/index.ts';
+import * as Sponsoro from '../../../../Sponsor/builder/persistence/database/index.ts';
 import * as Architect from '../../../../Architect/builder/persistence/database/index.ts';
 
 // const openingHoursTable: OneToManyTableDef = {
@@ -39,6 +40,38 @@ const picturesTable: TableDef = {
    name: 'pictures',
    primaryKey: 'id',
 };
+
+const buildingSponsorsTable: OneToManyTableDef = {
+   name: 'building_sponsors',
+   primaryKey: 'id',
+   foreign: { keyName: 'id_building', otherTable: buildingTable },
+};
+
+const buildingSponsorsMapping: TableMapping<keyof Sponsor> = {
+   contribution: new SameTableMapping(
+      buildingSponsorsTable,
+      'contribution',
+      new ToDbSqlNumberConverter(),
+      unknownToNumber,
+   ),
+   id: new OneToOneFieldMapping(
+      Sponsoro.getTableDefinition(),
+      'id',
+      new ToDbSqlNumberConverter(),
+      unknownToString,
+      buildingSponsorsTable.name,
+      'id_sponsor',
+   ),
+   name: new OneToOneFieldMapping(
+      Sponsoro.getTableDefinition(),
+      'name',
+      new ToDbSqlStringConverter(),
+      unknownToString,
+      buildingSponsorsTable.name,
+      'id_sponsor',
+   ),
+};
+
 const buildingPicturesTable: OneToManyTableDef = {
    name: 'building_pictures',
    primaryKey: 'id',
@@ -47,9 +80,30 @@ const buildingPicturesTable: OneToManyTableDef = {
 
 const buildingPicturesMapping: TableMapping<keyof Picture> = {
    status: new SameTableMapping(buildingPicturesTable, 'status', new ToDbSqlStringConverter(), unknownToString),
-   url: new OneToOneFieldMapping(picturesTable, 'url', buildingPicturesTable.name, 'id_picture'),
-   name: new OneToOneFieldMapping(picturesTable, 'name', buildingPicturesTable.name, 'id_picture'),
-   description: new OneToOneFieldMapping(picturesTable, 'description', buildingPicturesTable.name, 'id_picture'),
+   url: new OneToOneFieldMapping(
+      picturesTable,
+      'url',
+      new ToDbSqlStringConverter(),
+      unknownToString,
+      buildingPicturesTable.name,
+      'id_picture',
+   ),
+   name: new OneToOneFieldMapping(
+      picturesTable,
+      'name',
+      new ToDbSqlStringConverter(),
+      unknownToString,
+      buildingPicturesTable.name,
+      'id_picture',
+   ),
+   description: new OneToOneFieldMapping(
+      picturesTable,
+      'description',
+      new ToDbSqlStringConverter(),
+      unknownToString,
+      buildingPicturesTable.name,
+      'id_picture',
+   ),
 };
 
 // type BuildingDomainFieldNames = Fields;
@@ -58,7 +112,8 @@ type BuildingDomainFieldNames =
    | 'name'
    | 'type'
    | 'status'
-   | 'pictures' /*'sponsors' | 'openingHours' */
+   | 'pictures'
+   | 'sponsors' /*| 'openingHours' */
    | 'architect'
    | 'privateField';
 
@@ -83,7 +138,8 @@ const buildingMapping: TableMapping<BuildingDomainFieldNames> = {
    ),
    privateField: new SameTableMapping(buildingTable, 'confidential', new ToDbSqlStringConverter(), unknownToString),
    status: new SameTableMapping(buildingTable, 'status', new ToDbSqlStatusConverter(), toDomainStatus),
-   // sponsors: new ManyToManyTableMapping(Sponsor.getTableDefinition(), Sponsor.getTableMapping()),
+   sponsors: new OneToManyTableMapping(buildingSponsorsTable, buildingSponsorsMapping),
+
    // openingHours: new OneToManyTableMapping(openingHoursTable, openingHoursMapping),
    pictures: new OneToManyTableMapping(buildingPicturesTable, buildingPicturesMapping),
 };

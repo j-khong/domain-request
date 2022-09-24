@@ -3,7 +3,7 @@ import { DomainRequestName } from '../../../types.ts';
 import * as Type from '../../types.ts';
 
 const role = 'student';
-const selectedFields = ['id', 'name', 'status'] as const;
+const selectedFields = ['id', 'name', 'status', 'pictures', 'sponsors', 'architect'] as const;
 type FieldsList = typeof selectedFields[number];
 type Fields = Pick<Type.Fields, FieldsList>;
 const authorizedFields = selectedFields.map((v) => v as keyof Fields);
