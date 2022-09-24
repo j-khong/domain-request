@@ -1,14 +1,6 @@
-export interface DomainResult {
-   domainName: string;
-   results: any[];
-   report: Report;
-   total: number;
-}
+import { DomainRequest, DomainResult } from '../domain-request/builder.ts';
 
-export class Report {
-   public readonly requests: Array<{
-      sql: string;
-      timeInMs: number;
-      error?: string;
-   }> = [];
+export interface Persistence<Name extends string, T> {
+   init: (settings: unknown) => void;
+   fetch: (req: DomainRequest<Name, T>) => Promise<DomainResult>;
 }

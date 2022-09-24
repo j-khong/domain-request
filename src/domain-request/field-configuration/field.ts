@@ -1,6 +1,5 @@
-import { isString, isNumber, isDate, isIsoDate, isBoolean, isSomethingLike } from '../../type-checkers.ts';
-
-import { getOperators, Operator, BoolTree, InputErrors, IsoDate } from '../../types.ts';
+import { isString, isNumber, isDate, isIsoDate, isBoolean, isSomethingLike } from '../type-checkers.ts';
+import { getOperators, Operator, BoolTree, InputErrors, IsoDate } from '../types.ts';
 
 import { FieldFilteringConfig, DomainFieldConfiguration, Comparison } from './index.ts';
 import { ValidatorCreator, FilterValidator } from '../validators.ts';

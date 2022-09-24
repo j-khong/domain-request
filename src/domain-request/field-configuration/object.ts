@@ -1,5 +1,5 @@
-import { RequestableFields, BoolTree, Tree, InputErrors } from '../../types.ts';
-import { isNumber } from '../../type-checkers.ts';
+import { RequestableFields, BoolTree, Tree, InputErrors } from '../types.ts';
+import { isNumber } from '../type-checkers.ts';
 import { DomainFieldConfiguration, FiltersTree } from './index.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';

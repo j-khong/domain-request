@@ -1,6 +1,5 @@
-import { camelToSnake, snakeToCamel } from '../../converters.ts';
-
-import { BoolTree, Tree, InputErrors } from '../../types.ts';
+import { camelToSnake, snakeToCamel } from '../converters.ts';
+import { BoolTree, Tree, InputErrors } from '../types.ts';
 import { ObjectFieldConfiguration } from './object.ts';
 export * from './types.ts';
 import { FiltersTree } from './types.ts';

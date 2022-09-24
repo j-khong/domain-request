@@ -1,5 +1,5 @@
 import { DomainResult, DomainRequestBuilder, DomainRequest } from './builder.ts';
-import { Persistence } from '../../persistence/new/index.ts';
+import { Persistence } from '../persistence/index.ts';
 
 export function initFactories<DRN extends string, Role extends string, DF>(
    // select: SelectMethod,

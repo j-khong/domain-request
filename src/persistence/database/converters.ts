@@ -1,5 +1,5 @@
-import { IsoDate } from '../../../DomainRequest/types.ts';
-import { isIsoDate, isDate } from '../../../DomainRequest/type-checkers.ts';
+import { IsoDate } from '../../domain-request/types.ts';
+import { isIsoDate, isDate } from '../../domain-request/type-checkers.ts';
 
 export abstract class ToDbSqlConverter<OriginalType> {
    constructor(private readonly typeConverter: (o: unknown) => OriginalType) {}

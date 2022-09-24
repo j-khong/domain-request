@@ -1,4 +1,4 @@
-import { BoolTree, Tree, InputErrors } from '../../types.ts';
+import { BoolTree, Tree, InputErrors } from '../types.ts';
 import { FiltersTree, FilterArrayType } from './types.ts';
 import { DomainFieldConfiguration, DomainConfig } from './index.ts';
 

@@ -1,5 +1,5 @@
-import { DomainRequest, DomainResult, RequestReport } from '../../../DomainRequest/new/builder.ts';
-import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
+import { DomainRequest, DomainResult, RequestReport } from '../../domain-request/builder.ts';
+import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
 import { processAllFilters, addSetToSet } from './functions.ts';

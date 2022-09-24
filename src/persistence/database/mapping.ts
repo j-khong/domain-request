@@ -1,13 +1,12 @@
-import { RequestableFields } from '../../../DomainRequest/types.ts';
-
+import { RequestableFields } from '../../domain-request/types.ts';
+import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import {
    FilterArrayType,
    isComparison,
    isFilteringFields,
    Operator,
-} from '../../../DomainRequest/new/field-configuration/types.ts';
+} from '../../domain-request/field-configuration/types.ts';
 import { processAllFilters } from './functions.ts';
-import { isSomethingLike } from '../../../DomainRequest/type-checkers.ts';
 import { ToDbSqlConverter } from './converters.ts';
 
 export type TableMapping<DomainFieldNames extends string> = {

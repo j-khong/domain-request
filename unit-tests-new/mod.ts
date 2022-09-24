@@ -1,14 +1,14 @@
-// import { isString, ConcreteFilterValidatorCreator } from '../src/index.ts';
+// export * from '../src/domain-request/factory.ts';
+// export * from '../src/domain-request/builder.ts';
+// export * from '../src/domain-request/field-configuration/object.ts';
+// export * from '../src/domain-request/field-configuration/field.ts';
+// export * from '../src/domain-request/field-configuration/linked.ts';
+// export * from '../src/domain-request/field-configuration/index.ts';
 
-export * from '../src/DomainRequest/new/factory.ts';
-export * from '../src/DomainRequest/new/builder.ts';
-export * from '../src/DomainRequest/new/field-configuration/object.ts';
-export * from '../src/DomainRequest/new/field-configuration/field.ts';
-export * from '../src/DomainRequest/new/field-configuration/linked.ts';
-export * from '../src/DomainRequest/new/field-configuration/index.ts';
+// export * from '../src/persistence/index.ts';
+// export * from '../src/persistence/database/index.ts';
 
-export * from '../src/persistence/new/index.ts';
-export * from '../src/persistence/new/database/index.ts';
+// export { isString, isSomethingLike } from '../src/domain-request/type-checkers.ts';
+// export type { RequestableFields, IsoDate } from '../src/domain-request/types.ts';
 
-export { isString, isSomethingLike, ConcreteFilterValidatorCreator } from '../src/index.ts';
-export type { RequestableFields, IsoDate } from '../src/index.ts';
+export * from '../src/index.ts';
