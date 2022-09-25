@@ -1,5 +1,5 @@
 import { RequestableFields, BoolTree, Tree, InputErrors } from '../types.ts';
-import { isNumber } from '../type-checkers.ts';
+import { isNumber, isString } from '../type-checkers.ts';
 import { DomainFieldConfiguration, FiltersTree } from './index.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';
@@ -291,7 +291,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
                errors.push({ context: 'option', fieldName: 'offset', reason: 'not a number' });
             }
          }
-         // this.sanitizeOrderBy(inputOptions, options, errors);
+         this.sanitizeOrderBy(inputOptions, options, errors);
       }
       return {
          options,
@@ -299,43 +299,43 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       };
    }
 
-   // private sanitizeOrderBy(
-   //    inputOptions: { [key: string]: unknown },
-   //    options: Options<Extract<keyof Fields, string>>,
-   //    errors: InputErrors,
-   // ): void {
-   //    if (inputOptions.orderby === undefined) {
-   //       return;
-   //    }
-   //    if (!isString(inputOptions.orderby)) {
-   //       errors.push({ context: 'option', fieldName: 'orderby', reason: 'not a string' });
-   //       return;
-   //    }
-   //    const [fieldname, sort] = (inputOptions.orderby as string).split(' ');
-   //    if (fieldname === undefined) {
-   //       errors.push({
-   //          context: 'option',
-   //          fieldName: 'orderby',
-   //          reason: `bad format: it should be "field_name ${getOrderbySort().join('|')}"`,
-   //       });
-   //       return;
-   //    }
+   private sanitizeOrderBy(
+      inputOptions: { [key: string]: unknown },
+      options: Options<Extract<keyof Fields, string>>,
+      errors: InputErrors,
+   ): void {
+      if (inputOptions.orderby === undefined) {
+         return;
+      }
+      if (!isString(inputOptions.orderby)) {
+         errors.push({ context: 'option', fieldName: 'orderby', reason: 'not a string' });
+         return;
+      }
+      const [fieldname, sort] = (inputOptions.orderby as string).split(' ');
+      if (fieldname === undefined) {
+         errors.push({
+            context: 'option',
+            fieldName: 'orderby',
+            reason: `bad format: it should be "field_name ${getOrderbySort().join('|')}"`,
+         });
+         return;
+      }
 
-   //    const cameledFieldName = this.inputStyleToCamel<string, Extract<keyof Fields, string>>(fieldname);
-   //    if (this.validatorFilterMap.fields[cameledFieldName] === undefined) {
-   //       errors.push({ context: 'option', fieldName: 'orderby', reason: `unknown field name ${fieldname}` });
-   //       return;
-   //    }
-   //    if (!isOrderbySort(sort)) {
-   //       errors.push({
-   //          context: 'option',
-   //          fieldName: 'orderby',
-   //          reason: `incorrect sort ${sort}, available values: ${getOrderbySort().join('|')}`,
-   //       });
-   //       return;
-   //    }
-   //    options.orderby = { fieldname: cameledFieldName, sort };
-   // }
+      const cameledFieldName = this.inputStyleToCamel<string, Extract<keyof Fields, string>>(fieldname);
+      if (this.conf[cameledFieldName] === undefined) {
+         errors.push({ context: 'option', fieldName: 'orderby', reason: `unknown field name ${fieldname}` });
+         return;
+      }
+      if (!isOrderbySort(sort)) {
+         errors.push({
+            context: 'option',
+            fieldName: 'orderby',
+            reason: `incorrect sort ${sort}, available values: ${getOrderbySort().join('|')}`,
+         });
+         return;
+      }
+      options.orderby = { fieldname: cameledFieldName, sort };
+   }
 }
 
 export interface Options<FieldNames extends string> {

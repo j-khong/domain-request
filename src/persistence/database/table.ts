@@ -7,7 +7,7 @@ import { processAllFilters, addSetToSet } from './functions.ts';
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
 }
-type SelectMethodResult = DbRecord[];
+export type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
 
 export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, unknown> {
@@ -131,11 +131,17 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       results.total = total;
       results.report.requests.push(reportCount);
 
+      const orderby =
+         req.options.orderby !== undefined
+            ? `ORDER BY ${req.options.orderby.fieldname} ${req.options.orderby.sort}`
+            : '';
+
       // 2. SELECT fields + 1to1
       const reqSql = `SELECT ${fields.join(', ')}
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
+ ${orderby}
  LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}`;
 
       const { res: dbResults, report } = await executeRequest(select, reqSql);

@@ -26,19 +26,43 @@ export function init(): void {
 export function getDomainRequestHandler<DF>(
    name: DomainRequestName,
 ): DomainRequestHandler<Role, DomainRequestName, DF> {
-   return factories[name]; //as DomainRequestHandler<Role, DomainRequestName, DF>;
+   return factories[name] as DomainRequestHandler<Role, DomainRequestName, DF>;
 }
 
 const factories: {
-   [Property in DomainRequestName]: Factory<Role, DomainRequestName, any>;
+   [Property in DomainRequestName]: Factory<Role, DomainRequestName, unknown>;
 } = {
-   architect: Architect.getFactory(ArchitectPersistence.buildTableConnector(select)),
-   sponsor: Sponsor.getFactory(SponsorPersistence.buildTableConnector(select)),
+   architect: Architect.getFactory(ArchitectPersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
+   sponsor: Sponsor.getFactory(SponsorPersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
    // country: Country.getFactory(),
-   course: Course.getFactory(CoursePersistence.buildTableConnector(select)),
-   studentCategory: StudentCategory.getFactory(StudentCategoryPersistence.buildTableConnector(select)),
-   building: Building.getFactory(BuildingPersistence.buildTableConnector(select)),
-   buildingCategory: BuildingCategory.getFactory(BuildingCategoryPersistence.buildTableConnector(select)),
+   course: Course.getFactory(CoursePersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
+   studentCategory: StudentCategory.getFactory(StudentCategoryPersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
+   building: Building.getFactory(BuildingPersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
+   buildingCategory: BuildingCategory.getFactory(BuildingCategoryPersistence.buildTableConnector(select)) as Factory<
+      Role,
+      DomainRequestName,
+      unknown
+   >,
    // student: Student.getFactory(),
    // buildingSponsor: BuildingSponsor.getFactory(),
    // courseApplication: CourseApplication.getFactory(),
