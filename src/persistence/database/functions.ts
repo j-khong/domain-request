@@ -14,19 +14,19 @@ export function processAllFilters<T>(
 
    console.log('filters:', filters);
    // console.log('mapping:', mapping);
-   const and = processFilters2(filters.and, mapping, errors);
+   const and = processFilters(filters.and, mapping, errors);
    console.log('and:', and);
    filtersArr.and.push(...and.filters);
    addSetToSet(filtersArr.joins, and.joins);
 
-   const or = processFilters2(filters.or, mapping, errors);
+   const or = processFilters(filters.or, mapping, errors);
    filtersArr.or.push(...or.filters);
    addSetToSet(filtersArr.joins, or.joins);
 
    return filtersArr;
 }
 
-function processFilters2<T>(
+function processFilters<T>(
    filters: Array<FilterArrayType<T>>,
    mapping: TableMapping<Extract<keyof T, string>>,
    errors: string[],
@@ -64,4 +64,14 @@ export function addSetToSet(setToPopulate: Set<string>, setToAdd: Set<string>): 
    for (const v of setToAdd) {
       setToPopulate.add(v);
    }
+}
+
+export function createRequestFullFieldName(tableName: string, fieldName: string): string {
+   return `${tableName}.${fieldName} AS ${createSqlAlias(tableName, fieldName)}`;
+}
+
+const aliasSep = '$';
+
+export function createSqlAlias(tableName: string, fieldName: string): string {
+   return `${tableName}${aliasSep}${fieldName}`;
 }

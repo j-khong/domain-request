@@ -1,9 +1,7 @@
 import { isString, isNumber, isDate, isIsoDate, isBoolean, isSomethingLike } from '../type-checkers.ts';
 import { getOperators, Operator, BoolTree, InputErrors, IsoDate } from '../types.ts';
-
-import { FieldFilteringConfig, DomainFieldConfiguration, Comparison } from './index.ts';
 import { ValidatorCreator, FilterValidator } from '../validators.ts';
-import { FiltersTree } from './types.ts';
+import { FieldFilteringConfig, DomainFieldConfiguration, Comparison, FiltersTree } from './types.ts';
 
 type InputFieldFilteringConfig<T> = {
    filtering?: {
@@ -21,16 +19,12 @@ type InputFieldFilteringConfig<T> = {
 export class FieldConfiguration<T extends string | number | boolean | Date> extends DomainFieldConfiguration {
    private readonly conf: FieldFilteringConfig<T>;
    private readonly typeValidator: (o: unknown) => o is T;
-   private readonly typeName: string;
    private readonly fv: FilterValidator;
 
-   // constructor(inconf: InputFieldFilteringConfig<T>) {
    constructor(inconf: InputFieldFilteringConfig<T>) {
       super();
 
       this.typeValidator = inconf.values.typeValidator;
-      this.typeName = inconf.values.typeName;
-
       this.conf = inconf;
       const vc = new ValidatorCreator<T>(inconf.values.typeValidator, inconf.values.typeName);
       this.fv = vc.create(this.conf.filtering);
@@ -50,7 +44,8 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
          errors: InputErrors;
       } = { errors: [] };
 
-      const val = inputFieldsToSelect[this.camelToInputStyle(fieldName)];
+      const inputFieldName = this.camelToInputStyle(fieldName);
+      const val = inputFieldsToSelect[inputFieldName];
       if (val === undefined) {
          return undefined;
       }
@@ -60,7 +55,7 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
             toSet[fieldName] = true;
          }
       } else {
-         ret.errors.push({ context: 'selected field', fieldName, reason: 'not a boolean' });
+         ret.errors.push({ context: 'selected field', fieldName: inputFieldName, reason: 'not a boolean' });
       }
       return ret;
    }

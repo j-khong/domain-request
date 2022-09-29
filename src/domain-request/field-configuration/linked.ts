@@ -1,6 +1,5 @@
 import { BoolTree, Tree, InputErrors } from '../types.ts';
-import { FiltersTree, FilterArrayType } from './types.ts';
-import { DomainFieldConfiguration, DomainConfig } from './index.ts';
+import { DomainFieldConfiguration, DomainConfig, FiltersTree, FilterArrayType } from './types.ts';
 
 class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainFieldConfiguration {
    constructor(private readonly mainDomain: DRN, private readonly linkedDomain: DRN) {

@@ -1,3 +1,75 @@
+import { camelToSnake, snakeToCamel } from '../converters.ts';
+import { BoolTree, Tree, InputErrors } from '../types.ts';
+import { ObjectFieldConfiguration } from './object.ts';
+export type FieldFilteringConfig<T> = {
+   filtering?: {
+      byRangeOfValue?: boolean;
+      byListOfValue?: boolean;
+   };
+   values: {
+      default: T;
+      authorized?: Array<T>;
+   };
+};
+
+export type DefaultFieldValues<Type> = {
+   [Property in keyof Type]: Type[Property] | DefaultFieldValues<unknown>;
+};
+
+export abstract class DomainFieldConfiguration {
+   init(_o: unknown): void {}
+
+   abstract sanitizeField(
+      inputFieldsToSelect: BoolTree,
+      fieldName: string,
+      toSet: BoolTree,
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined;
+
+   findErrors(
+      _context: 'selected field' | 'filtering field' | 'option',
+      _inputFieldsToSelect: Tree,
+      _previous = '',
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined {
+      return undefined;
+   }
+
+   abstract sanitizeFilter(
+      // sanitizeFilter(
+      inputFilters: { [key: string]: unknown },
+      fieldName: string,
+      toSet: FiltersTree<unknown>,
+      arrayToPush: 'and' | 'or',
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined;
+   //     {
+   //    return undefined;
+   // }
+
+   protected camelToInputStyle<IN extends string, OUT extends string>(str: IN): OUT {
+      return camelToSnake(str);
+   }
+
+   protected inputStyleToCamel<IN extends string, OUT extends string>(str: IN): OUT {
+      return snakeToCamel(str);
+   }
+}
+
+export type DomainConfig<Name extends string, T> = {
+   name: Name;
+   fields: ObjectFieldConfiguration<T>;
+};
+
 export type FilteringFields<Type> = {
    and: Array<FilterArrayType<Type>>;
    or: Array<FilterArrayType<Type>>;
@@ -34,6 +106,10 @@ export function isComparison<T>(o: any): o is Comparison<T> {
    return o.operator !== undefined && o.value !== undefined;
 }
 
+export function isComputedComparison<T>(o: any): o is ComputedComparison<T> {
+   return o.data !== undefined && isComparison(o);
+}
+
 export function isFilteringFields<T>(o: any): o is FilteringFields<T> {
    return o.and !== undefined && o.or !== undefined && Array.isArray(o.and) && Array.isArray(o.or);
 }
@@ -47,12 +123,15 @@ export interface Comparison<Type> {
    operator: Operator;
    value: Type[Extract<keyof Type, string>];
 }
-function isAndArrayComparison<T>(o: any): o is AndArrayComparison<T> {
-   return o.and !== undefined;
+export interface ComputedComparison<Type> extends Comparison<Type> {
+   data: unknown;
 }
-function isOrArrayComparison<T>(o: any): o is OrArrayComparison<T> {
-   return o.or !== undefined;
-}
+// function isAndArrayComparison<T>(o: any): o is AndArrayComparison<T> {
+//    return o.and !== undefined;
+// }
+// function isOrArrayComparison<T>(o: any): o is OrArrayComparison<T> {
+//    return o.or !== undefined;
+// }
 
 export interface AndArrayComparison<Type> {
    and: Array<Comparison<Type>>;

@@ -2,7 +2,7 @@ import { DomainRequest, DomainResult, RequestReport } from '../../domain-request
 import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
-import { processAllFilters, addSetToSet } from './functions.ts';
+import { processAllFilters, addSetToSet, createRequestFullFieldName, createSqlAlias } from './functions.ts';
 
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
@@ -68,11 +68,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
                fieldsToMapResults.push({
-                  fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
+                  fieldnameAlias: fieldname.dbAlias,
                   path,
                   toDomainConvert: fieldname.toDomainConvert,
                });
-               fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
+               fields.push(fieldname.dbFullFieldName);
             } else {
                pr.joins.forEach((v) => joins.add(v));
                // other child at the same level, need to copy the path
@@ -97,7 +97,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             continue;
          }
 
-         const res = fieldMap.process(domFieldName, reqFields[domFieldName]);
+         const res = fieldMap.processField(domFieldName, reqFields[domFieldName]);
          if (res === undefined) {
             continue;
          }
@@ -195,11 +195,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
                data.fieldsToMapResults.push({
-                  fieldnameAlias: createSqlAlias(pr.tablename, fieldname.db),
+                  fieldnameAlias: fieldname.dbAlias,
                   path,
                   toDomainConvert: fieldname.toDomainConvert,
                });
-               data.fields.push(createRequestFullFieldName(pr.tablename, fieldname.db));
+               data.fields.push(fieldname.dbFullFieldName);
             } else {
                pr.joins.forEach((v) => data?.joins.add(v));
                // other child at the same level, need to copy the path
@@ -314,16 +314,6 @@ function createTree(struct: any, fieldnames: DomainPath[], value: any): void {
    }
 
    struct[fieldnames[lastPos].name] = value;
-}
-
-function createRequestFullFieldName(tableName: string, fieldName: string): string {
-   return `${tableName}.${fieldName} AS ${createSqlAlias(tableName, fieldName)}`;
-}
-
-const aliasSep = '$';
-
-function createSqlAlias(tableName: string, fieldName: string): string {
-   return `${tableName}${aliasSep}${fieldName}`;
 }
 
 export async function executeRequest(
