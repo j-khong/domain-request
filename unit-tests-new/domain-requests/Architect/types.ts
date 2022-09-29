@@ -1,9 +1,4 @@
-import {
-   DomainConfig as GenericDomain,
-   StringFieldConfiguration,
-   FieldsSetup,
-   ObjectFieldConfiguration,
-} from '../../mod.ts';
+import { StringFieldConfiguration, FieldsSetup, ObjectFieldConfiguration } from '../../mod.ts';
 import { DomainRequestName } from '../types.ts';
 
 export const domainRequestName: DomainRequestName = 'architect';
@@ -22,8 +17,6 @@ export interface Rating {
 export interface Rater {
    name: string;
 }
-
-export type DomainConfig = GenericDomain<DomainRequestName, Fields>;
 
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {

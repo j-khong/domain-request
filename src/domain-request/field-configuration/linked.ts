@@ -3,7 +3,7 @@ import { FiltersTree, FilterArrayType } from './types.ts';
 import { DomainFieldConfiguration, DomainConfig } from './index.ts';
 
 class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainFieldConfiguration {
-   constructor(private readonly mainDomain: string, private readonly linkedDomain: string) {
+   constructor(private readonly mainDomain: DRN, private readonly linkedDomain: DRN) {
       super();
    }
 

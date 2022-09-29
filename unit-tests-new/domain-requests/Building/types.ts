@@ -1,6 +1,6 @@
 import {
    isString,
-   DomainConfig as GenericDomain,
+   DomainConfig,
    ObjectFieldConfiguration,
    FieldConfiguration,
    StringFieldConfiguration,
@@ -46,7 +46,6 @@ export interface TimeSlot {
 const status = ['opened', 'closed', 'work in progress'] as const;
 export type Status = typeof status[number];
 
-export type DomainConfig = GenericDomain<DomainRequestName, Fields>;
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {
       id: new StringFieldConfiguration({
@@ -60,7 +59,7 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
             byListOfValue: true,
          },
       }),
-      type: new LinkedDomainConfiguration<DomainRequestName, Category.Fields>('e', 'r'),
+      type: new LinkedDomainConfiguration<DomainRequestName, Category.Fields>('building', Category.domainRequestName),
       status: new FieldConfiguration<Status>({
          filtering: {
             byListOfValue: true,
@@ -132,7 +131,7 @@ function isStatus(o: any): o is Status {
    return isString(o) && status.includes(o as Status);
 }
 
-export function initDomainConfigWithDeps(dc: DomainConfig, role: Role): void {
+export function initDomainConfigWithDeps(dc: DomainConfig<DomainRequestName, Fields>, role: Role): void {
    const c = dc.fields.getConf();
    if (c.type !== undefined) {
       c.type.init(Category.createDomainConfig(role));

@@ -4,10 +4,12 @@ import * as Type from '../../types.ts';
 
 const role = 'admin';
 
-export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Type.Fields> {
-   constructor() {
-      super(Type.domainRequestName, ['id'], createDomainConfig());
-   }
+export function buildRequestBuilder(): DomainRequestBuilder<DomainRequestName, Type.Fields> {
+   return new DomainRequestBuilder<DomainRequestName, Type.Fields>(
+      Type.domainRequestName,
+      ['id'],
+      createDomainConfig(),
+   );
 }
 
 export function createDomainConfig() {

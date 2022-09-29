@@ -1,5 +1,4 @@
 import {
-   DomainConfig as GenericDomain,
    StringFieldConfiguration,
    FieldsSetup,
    IsoDateFieldConfiguration,
@@ -24,8 +23,6 @@ export interface Fields {
 
 const status = ['opened', 'pending', 'closed', 'validating'] as const;
 export type Status = typeof status[number];
-
-export type DomainConfig = GenericDomain<DomainRequestName, Fields>;
 
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {

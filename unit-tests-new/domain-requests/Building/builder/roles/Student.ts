@@ -8,10 +8,12 @@ type FieldsList = typeof selectedFields[number];
 type Fields = Pick<Type.Fields, FieldsList>;
 const authorizedFields = selectedFields.map((v) => v as keyof Fields);
 
-export class RequestBuilder extends DomainRequestBuilder<DomainRequestName, Type.Fields> {
-   constructor() {
-      super(Type.domainRequestName, ['id'], createDomainConfig());
-   }
+export function buildRequestBuilder(): DomainRequestBuilder<DomainRequestName, Type.Fields> {
+   return new DomainRequestBuilder<DomainRequestName, Type.Fields>(
+      Type.domainRequestName,
+      ['id'],
+      createDomainConfig(),
+   );
 }
 
 export function createDomainConfig() {

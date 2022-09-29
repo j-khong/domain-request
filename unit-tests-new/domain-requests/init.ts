@@ -29,41 +29,20 @@ export function getDomainRequestHandler<DF>(
    return factories[name] as DomainRequestHandler<Role, DomainRequestName, DF>;
 }
 
+type GenericType = Factory<Role, DomainRequestName, unknown>;
 const factories: {
    [Property in DomainRequestName]: Factory<Role, DomainRequestName, unknown>;
 } = {
-   architect: Architect.getFactory(ArchitectPersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   sponsor: Sponsor.getFactory(SponsorPersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   // country: Country.getFactory(),
-   course: Course.getFactory(CoursePersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   studentCategory: StudentCategory.getFactory(StudentCategoryPersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   building: Building.getFactory(BuildingPersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   buildingCategory: BuildingCategory.getFactory(BuildingCategoryPersistence.buildTableConnector(select)) as Factory<
-      Role,
-      DomainRequestName,
-      unknown
-   >,
-   // student: Student.getFactory(),
-   // buildingSponsor: BuildingSponsor.getFactory(),
-   // courseApplication: CourseApplication.getFactory(),
+   architect: Architect.buildFactory(ArchitectPersistence.buildTableConnector(select)) as GenericType,
+   sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
+   // country: Country.buildFactory(),
+   course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,
+   studentCategory: StudentCategory.buildFactory(StudentCategoryPersistence.buildTableConnector(select)) as GenericType,
+   building: Building.buildFactory(BuildingPersistence.buildTableConnector(select)) as GenericType,
+   buildingCategory: BuildingCategory.buildFactory(
+      BuildingCategoryPersistence.buildTableConnector(select),
+   ) as GenericType,
+   // student: Student.buildFactory(),
+   // buildingSponsor: BuildingSponsor.buildFactory(),
+   // courseApplication: CourseApplication.buildFactory(),
 };

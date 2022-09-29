@@ -1,4 +1,4 @@
-import { DomainConfig as GenericDomain, StringFieldConfiguration, FieldsSetup } from '../../mod.ts';
+import { StringFieldConfiguration, FieldsSetup } from '../../mod.ts';
 import { DomainRequestName } from '../types.ts';
 
 export const domainRequestName: DomainRequestName = 'studentCategory';
@@ -8,7 +8,6 @@ export interface Fields {
    name: string;
    otherData: string;
 }
-export type DomainConfig = GenericDomain<DomainRequestName, Fields>;
 
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {
