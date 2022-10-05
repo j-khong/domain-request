@@ -1,11 +1,6 @@
-// tester, regrouper les tests selon les features (filter, restrictions, etc...)
-// et non selon la structure des donneés (simple, extended, expandables etc...)
-
 export * from './fields/index.ts';
 export * from './filters/index.ts';
-
-// export * from './options/simple.ts';
-// export * from './user-role-access.ts';
+export * from './options/index.ts';
 
 // TODO
 //

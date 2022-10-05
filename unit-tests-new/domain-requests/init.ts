@@ -2,7 +2,8 @@ import * as Architect from './Architect/index.ts';
 import * as ArchitectPersistence from './Architect/builder/persistence/database/index.ts';
 import * as Sponsor from './Sponsor/index.ts';
 import * as SponsorPersistence from './Sponsor/builder/persistence/database/index.ts';
-// import * as Country from './Country/index.ts';
+import * as Country from './Country/index.ts';
+import * as CountryPersistence from './Country/builder/persistence/database/index.ts';
 import * as Course from './Course/index.ts';
 import * as CoursePersistence from './Course/builder/persistence/database/index.ts';
 import * as StudentCategory from './StudentCategory/index.ts';
@@ -35,7 +36,7 @@ const factories: {
 } = {
    architect: Architect.buildFactory(ArchitectPersistence.buildTableConnector(select)) as GenericType,
    sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
-   // country: Country.buildFactory(),
+   country: Country.buildFactory(CountryPersistence.buildTableConnector(select)) as GenericType,
    course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,
    studentCategory: StudentCategory.buildFactory(StudentCategoryPersistence.buildTableConnector(select)) as GenericType,
    building: Building.buildFactory(BuildingPersistence.buildTableConnector(select)) as GenericType,

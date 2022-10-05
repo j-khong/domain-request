@@ -1,5 +1,6 @@
 import { RequestableFields } from '../../domain-request/types.ts';
 import { isSomethingLike } from '../../domain-request/type-checkers.ts';
+import { Options } from '../../domain-request/field-configuration/object.ts';
 import {
    FilterArrayType,
    isComputedComparison,
@@ -93,6 +94,10 @@ export abstract class FieldMapping {
    ): ProcessOneToManyResult | undefined {
       return undefined;
    }
+
+   getOrderBy(_o: Options<string>): string[] {
+      return [];
+   }
 }
 
 export class SameTableMapping extends FieldMapping {
@@ -162,6 +167,11 @@ export class SameTableMapping extends FieldMapping {
       }
       return ret;
    }
+
+   getOrderBy(o: Options<string>): string[] {
+      const defSort: 'asc' | 'desc' = 'asc';
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
+   }
 }
 
 export class SameTableComputedFieldMapping extends FieldMapping {
@@ -215,6 +225,11 @@ export class SameTableComputedFieldMapping extends FieldMapping {
       }
       return ret;
    }
+
+   getOrderBy(o: Options<string>): string[] {
+      const defSort: 'asc' | 'desc' = 'asc';
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
+   }
 }
 
 export class OneToOneTableMapping<T extends string> extends FieldMapping {
@@ -265,6 +280,23 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
          ret.joins.push(...joins);
       } else {
          errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+      }
+
+      return ret;
+   }
+
+   getOrderBy(o: Options<T>): string[] {
+      console.log('OneToOneTableMapping getOrderBy:', o);
+      const ret: string[] = [];
+
+      if (o.orderby !== undefined) {
+         const fieldMap = this.mapping[o.orderby.fieldname];
+         if (fieldMap === undefined) {
+            // errors.push(`cannot find db mapping for domain field name [${o.orderby.fieldname}]`);
+         } else {
+            const orderbys = fieldMap.getOrderBy(o);
+            ret.push(...orderbys);
+         }
       }
 
       return ret;

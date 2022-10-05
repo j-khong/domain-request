@@ -24,6 +24,10 @@ export function isNumber(o: unknown): o is number {
    return typeof o === 'number';
 }
 
+export function isPositiveNumber(o: unknown): o is number {
+   return isNumber(o) && o >= 0;
+}
+
 export function isBoolean(o: unknown): o is boolean {
    return typeof o === 'boolean';
 }

@@ -1,5 +1,5 @@
 import { RequestableFields, BoolTree, Tree, InputErrors } from '../types.ts';
-import { isNumber, isString } from '../type-checkers.ts';
+import { isPositiveNumber, isString } from '../type-checkers.ts';
 import { DomainFieldConfiguration, FiltersTree } from './types.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';
@@ -77,7 +77,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
    }
 
    findErrors(
-      context: 'selected field' | 'filtering field' | 'option',
+      context: 'selected field' | 'filtering field',
       inputFieldsToSelect: Tree,
       previous: string,
    ):
@@ -241,33 +241,88 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       };
    }
 
-   // processFilter(field: Extract<keyof FilteringConfig<Fields>, string>, comparison: unknown): string | Comparison<any> {
-   //    if (!isSomethingLike<FilteringConfig<Fields>>(comparison)) {
-   //       return 'comparison object is not correct';
-   //    }
-
-   //    for (const key in this.conf) {
-   //       const inputStyleKey = this.camelToInputStyle(key) as Extract<keyof Fields, string>;
-   //       if (comparison[inputStyleKey] === undefined) {
-   //          continue;
-   //       }
-   //       const res = this.conf[key].processFilter(key as any, comparison[inputStyleKey]);
-   //    }
-   //    // const fieldConf = this.validatorFilterMap.fields[field];
-   //    //      const inputFieldName = this.camelToInputStyle(field);
-   //    //      const comparison = inputFilters[inputFieldName];
-   //    //      console.log('comparison:', comparison);
-   //    //      if (comparison === undefined) {
-   //    //         continue;
-   //    //      }
-   //    //      fieldConf.processFilter(field, comparison);
-
-   //    return 'object cofn';
-   //    //     for(const )
-   //    //         this.conf[field].processFilter()
-   // }
-
    sanitizeOptions(
+      inputOptions: { [key: string]: unknown },
+      MAX_LIMIT: number,
+   ): {
+      options: any; // Options<Extract<keyof Fields, string>>; // this type makes compile rror
+      errors: InputErrors;
+   } {
+      // search offset, limit orderby
+      // build a new object and pass it
+      const toPass = {
+         limit: inputOptions.limit ?? undefined,
+         offset: inputOptions.offset ?? undefined,
+         orderby: inputOptions.orderby ?? undefined,
+      };
+      const { options, errors } = this.sanitizeOption2(toPass, MAX_LIMIT);
+      // search for field name and pass object
+      for (const key in this.conf) {
+         const res = this.conf[key].sanitizeOption(
+            inputOptions,
+            key,
+            options,
+            MAX_LIMIT,
+            (fieldName: string): boolean => this.conf[fieldName as Extract<keyof Fields, string>] === undefined,
+         );
+         if (res !== undefined) {
+            errors.push(...res.errors);
+         }
+      }
+
+      // const options = ret as Options<Extract<keyof Fields, string>>;
+      //{ pagination: { offset: 0, limit: 100 } };
+
+      //
+      // find unknown fields
+      // TODO find unknown fields
+      // const res = this.findErrors('option', inputOptions as Tree, '');
+      // if (res !== undefined) {
+      //    errors.push(...res.errors);
+      // }
+
+      return {
+         options,
+         errors,
+      };
+   }
+
+   sanitizeOption(
+      inputOptions: { [key: string]: unknown },
+      fieldName: string,
+      toSet: Tree,
+      MAX_LIMIT: number,
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined {
+      const val = inputOptions[this.camelToInputStyle(fieldName)];
+      if (val === undefined) {
+         return undefined;
+      }
+
+      const errors: InputErrors = [];
+
+      toSet[fieldName] = {};
+      for (const key in this.conf) {
+         const res = this.conf[key].sanitizeOption(
+            val as Tree,
+            key,
+            toSet[fieldName] as Tree,
+            MAX_LIMIT,
+            (fieldName: string): boolean => this.conf[fieldName as Extract<keyof Fields, string>] === undefined,
+         );
+         if (res !== undefined) {
+            errors.push(...res.errors);
+         }
+      }
+      return {
+         errors,
+      };
+   }
+
+   sanitizeOption2(
       inputOptions: { [key: string]: unknown },
       MAX_LIMIT: number,
    ): {
@@ -278,17 +333,17 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       const options: Options<Extract<keyof Fields, string>> = { pagination: { offset: 0, limit: 100 } };
       if (inputOptions !== undefined) {
          if (inputOptions.limit !== undefined) {
-            if (isNumber(inputOptions.limit)) {
+            if (isPositiveNumber(inputOptions.limit)) {
                options.pagination.limit = Math.min(inputOptions.limit as number, MAX_LIMIT);
             } else {
-               errors.push({ context: 'option', fieldName: 'limit', reason: 'not a number' });
+               errors.push({ context: 'option', fieldName: 'limit', reason: 'not a positive number' });
             }
          }
          if (inputOptions.offset !== undefined) {
-            if (isNumber(inputOptions.offset)) {
+            if (isPositiveNumber(inputOptions.offset)) {
                options.pagination.offset = inputOptions.offset;
             } else {
-               errors.push({ context: 'option', fieldName: 'offset', reason: 'not a number' });
+               errors.push({ context: 'option', fieldName: 'offset', reason: 'not a positive number' });
             }
          }
          this.sanitizeOrderBy(inputOptions, options, errors);
@@ -348,6 +403,9 @@ export interface Options<FieldNames extends string> {
       sort: OrderbySort;
    };
 }
+// {
+//    [Property in FieldNames]:Options<string>;
+// }
 const orderbySort = ['asc', 'desc'] as const;
 type OrderbySort = typeof orderbySort[number];
 function isOrderbySort(o: any): o is OrderbySort {

@@ -131,10 +131,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       results.total = total;
       results.report.requests.push(reportCount);
 
-      const orderby =
-         req.options.orderby !== undefined
-            ? `ORDER BY ${req.options.orderby.fieldname} ${req.options.orderby.sort}`
-            : '';
+      const orderby = Table.buildOrderby(req, mapping, results.errors);
 
       // 2. SELECT fields + 1to1
       const reqSql = `SELECT ${fields.join(', ')}
@@ -152,6 +149,38 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          results.results.push(result);
       }
       return Promise.resolve(results);
+   }
+
+   private static buildOrderby<DRN extends string, T>(
+      req: DomainRequest<DRN, T>,
+      mapping: TableMapping<Extract<keyof T, string>>,
+      errors: string[],
+   ): string {
+      const fields = [];
+
+      if (req.options.orderby !== undefined) {
+         const fieldMap = mapping[req.options.orderby.fieldname];
+         if (fieldMap === undefined) {
+            errors.push(`cannot find db mapping for domain field name [${req.options.orderby.fieldname}]`);
+         } else {
+            const orderbys = fieldMap.getOrderBy(req.options);
+            fields.push(...orderbys);
+         }
+      }
+
+      for (const key in req.options) {
+         if (key !== 'pagination' && key !== 'orderby') {
+            const fieldMap = mapping[key as Extract<keyof T, string>];
+            if (fieldMap === undefined) {
+               errors.push(`cannot find db mapping for domain field name [${key}]`);
+            } else {
+               const orderbys = fieldMap.getOrderBy((req.options as any)[key]);
+               fields.push(...orderbys);
+            }
+         }
+      }
+
+      return fields.length > 0 ? `ORDER BY ${fields.join(', ')}` : '';
    }
 
    private static async fetchOneToMany<DRN extends string, T>(
@@ -242,7 +271,8 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
- `; // TODO put limit of the filter
+ `; // TODO put orderby and limit of the filter
+         //  LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}
 
          const { res: dbResults, report } = await executeRequest(select, reqSql);
          res.report.requests.push(report);

@@ -1,4 +1,4 @@
-export * from './domain-request/factory.ts';
+export * from './domain-request/Factory.ts';
 export * from './domain-request/builder.ts';
 export * from './domain-request/converters.ts';
 export * from './domain-request/type-checkers.ts';

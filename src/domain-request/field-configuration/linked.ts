@@ -73,6 +73,30 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
 
       return { errors: res.errors };
    }
+
+   sanitizeOption(
+      inputOptions: { [key: string]: unknown },
+      fieldName: string,
+      toSet: Tree,
+      MAX_LIMIT: number,
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined {
+      const val = inputOptions[this.camelToInputStyle(fieldName)];
+      if (val === undefined) {
+         return undefined;
+      }
+
+      const res = this.getDomain().fields.sanitizeOptions(val as { [key: string]: unknown }, MAX_LIMIT);
+      toSet[fieldName as Extract<keyof T, string>] = res.options;
+
+      // // as this is a 1to1 relation, 1 order by applies
+      // toSet.orderby = res.options.orderby;
+
+      return { errors: res.errors };
+   }
 }
 
 export class LinkedDomainConfiguration<DRN extends string, T> extends CommonLinkedDomainConfiguration<DRN, T> {}

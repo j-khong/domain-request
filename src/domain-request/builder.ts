@@ -1,8 +1,13 @@
 import { isSomethingLike } from './type-checkers.ts';
 import { InputErrors, NaturalKey, Tree, BoolTree, RequestableFields } from './types.ts';
 
-import { DomainConfig, FiltersTree } from './field-configuration/index.ts';
-import { FieldsSetup, ObjectFieldConfiguration, Options } from './field-configuration/object.ts';
+import {
+   DomainConfig,
+   FiltersTree,
+   FieldsSetup,
+   ObjectFieldConfiguration,
+   Options,
+} from './field-configuration/index.ts';
 
 export interface DomainResult {
    domainName: string;

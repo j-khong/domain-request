@@ -1,7 +1,7 @@
 export type DomainRequestName =
    // simple domains
    | 'sponsor'
-   // | 'country'
+   | 'country'
    | 'course'
    | 'studentCategory'
    // domains with expandables

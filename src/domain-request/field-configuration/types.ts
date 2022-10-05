@@ -30,7 +30,7 @@ export abstract class DomainFieldConfiguration {
       | undefined;
 
    findErrors(
-      _context: 'selected field' | 'filtering field' | 'option',
+      _context: 'selected field' | 'filtering field',
       _inputFieldsToSelect: Tree,
       _previous = '',
    ):
@@ -42,7 +42,6 @@ export abstract class DomainFieldConfiguration {
    }
 
    abstract sanitizeFilter(
-      // sanitizeFilter(
       inputFilters: { [key: string]: unknown },
       fieldName: string,
       toSet: FiltersTree<unknown>,
@@ -52,9 +51,21 @@ export abstract class DomainFieldConfiguration {
            errors: InputErrors;
         }
       | undefined;
-   //     {
-   //    return undefined;
-   // }
+
+   // // abstract
+   sanitizeOption(
+      _inputOptions: { [key: string]: unknown },
+      _fieldName: string,
+      _toSet: Tree,
+      _MAX_LIMIT: number,
+      _isUnknown: (fieldName: string) => boolean,
+   ):
+      | {
+           errors: InputErrors;
+        }
+      | undefined {
+      return undefined;
+   }
 
    protected camelToInputStyle<IN extends string, OUT extends string>(str: IN): OUT {
       return camelToSnake(str);
