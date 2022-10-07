@@ -1,9 +1,6 @@
 import { init } from './domain-requests/init.ts';
+import { select } from './persistence/database/dbUtils.ts';
 
 console.log = () => {};
-init();
+init(select);
 export * from './data-fetch/index.ts';
-
-//
-// export * from './data-fetch/fields/extended.ts';
-// export * from './data-fetch/filters/expandables.ts';

@@ -17,33 +17,43 @@ import * as BuildingCategoryPersistence from './BuildingCategory/builder/persist
 // import * as BuildingSponsor from './BuildingSponsor/index.ts';
 
 import { DomainRequestName, Role } from './types.ts';
-import { select } from '../persistence/database/dbUtils.ts';
+import { DomainRequestHandler, Factory, SelectMethodResult } from '../mod.ts';
 
-import { DomainRequestHandler, initFactories, Factory } from '../mod.ts';
-export function init(): void {
-   initFactories(factories);
+export function init(select: (query: string) => Promise<SelectMethodResult>): void {
+   createFactories(select);
 }
 
 export function getDomainRequestHandler<DF>(
    name: DomainRequestName,
 ): DomainRequestHandler<Role, DomainRequestName, DF> {
-   return factories[name] as DomainRequestHandler<Role, DomainRequestName, DF>;
+   return getFactories()[name] as DomainRequestHandler<Role, DomainRequestName, DF>;
 }
 
 type GenericType = Factory<Role, DomainRequestName, unknown>;
-const factories: {
+function createFactories(select: (query: string) => Promise<SelectMethodResult>): void {
+   factories = {
+      architect: Architect.buildFactory(ArchitectPersistence.buildTableConnector(select)) as GenericType,
+      sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
+      country: Country.buildFactory(CountryPersistence.buildTableConnector(select)) as GenericType,
+      course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,
+      studentCategory: StudentCategory.buildFactory(
+         StudentCategoryPersistence.buildTableConnector(select),
+      ) as GenericType,
+      building: Building.buildFactory(BuildingPersistence.buildTableConnector(select)) as GenericType,
+      buildingCategory: BuildingCategory.buildFactory(
+         BuildingCategoryPersistence.buildTableConnector(select),
+      ) as GenericType,
+      // student: Student.buildFactory(),
+      // buildingSponsor: BuildingSponsor.buildFactory(),
+      // courseApplication: CourseApplication.buildFactory(),
+   };
+}
+type Factories = {
    [Property in DomainRequestName]: Factory<Role, DomainRequestName, unknown>;
-} = {
-   architect: Architect.buildFactory(ArchitectPersistence.buildTableConnector(select)) as GenericType,
-   sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
-   country: Country.buildFactory(CountryPersistence.buildTableConnector(select)) as GenericType,
-   course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,
-   studentCategory: StudentCategory.buildFactory(StudentCategoryPersistence.buildTableConnector(select)) as GenericType,
-   building: Building.buildFactory(BuildingPersistence.buildTableConnector(select)) as GenericType,
-   buildingCategory: BuildingCategory.buildFactory(
-      BuildingCategoryPersistence.buildTableConnector(select),
-   ) as GenericType,
-   // student: Student.buildFactory(),
-   // buildingSponsor: BuildingSponsor.buildFactory(),
-   // courseApplication: CourseApplication.buildFactory(),
 };
+function getFactories(): Factories {
+   if (factories === undefined) throw new Error('please init domains requests ');
+   return factories;
+}
+
+let factories: Factories | undefined;
