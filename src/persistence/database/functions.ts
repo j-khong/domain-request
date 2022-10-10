@@ -12,10 +12,7 @@ export function processAllFilters<T>(
       joins: new Set<string>(),
    };
 
-   console.log('filters:', filters);
-   // console.log('mapping:', mapping);
    const and = processFilters(filters.and, mapping, errors);
-   console.log('and:', and);
    filtersArr.and.push(...and.filters);
    addSetToSet(filtersArr.joins, and.joins);
 

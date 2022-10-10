@@ -1,0 +1,14 @@
+{
+   "$schema": "https://deno.land/x/denon/schema.json",
+   "watcher": {
+      "exts": [
+         "ts"
+      ],
+      "match": [
+         "./src/**/*.*"
+      ],
+      "skip": [
+         "*/.git/*"
+      ]
+   }
+}

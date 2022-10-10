@@ -1,0 +1,26 @@
+{
+   "importMap": "import_map.json",
+   "lint": {
+      "files": {
+         "include": [
+            "src/"
+         ],
+         "exclude": [
+            "src/deps/"
+         ]
+      }
+   },
+   "fmt": {
+      "files": {
+         "exclude": [
+            "src/deps/"
+         ]
+      },
+      "options": {
+         "useTabs": false,
+         "lineWidth": 120,
+         "indentWidth": 3,
+         "singleQuote": true
+      }
+   }
+}
