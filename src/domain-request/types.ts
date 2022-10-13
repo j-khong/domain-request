@@ -31,10 +31,6 @@ export type NestedRequestableFields<Type> = {
 //
 // FILTERING FIELDS
 //
-export type FilteringFields<Type extends DomainFields> = {
-   [Property in keyof Type]?: AndArrayComparison<Type> | OrArrayComparison<Type>; // | Comparison<Type>;
-};
-
 const filtersArrays = ['or', 'and'] as const;
 export type FiltersArrays = typeof filtersArrays[number];
 export function getFiltersArrays(): FiltersArrays[] {
@@ -61,26 +57,6 @@ const operators = [
 export type Operator = typeof operators[number];
 export function getOperators(): Operator[] {
    return operators.map((o) => o);
-}
-
-export function isComparison<T>(o: any): o is Comparison<T> {
-   return o.operator !== undefined && o.value !== undefined;
-}
-export interface Comparison<Type extends DomainFields> {
-   operator: Operator;
-   value: Type[Extract<keyof Type, string>];
-}
-export function isAndArrayComparison<T>(o: any): o is AndArrayComparison<T> {
-   return o.and !== undefined;
-}
-export function isOrArrayComparison<T>(o: any): o is OrArrayComparison<T> {
-   return o.or !== undefined;
-}
-export interface AndArrayComparison<Type extends DomainFields> {
-   and: Array<Comparison<Type>>;
-}
-export interface OrArrayComparison<Type extends DomainFields> {
-   or: Array<Comparison<Type>>;
 }
 
 //

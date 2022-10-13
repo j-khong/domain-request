@@ -95,9 +95,6 @@ export function getFiltersArrays(): FiltersArrays[] {
 }
 
 export type FiltersTree<Type> = FilteringFields<Type>;
-// export type FiltersTree<Type> = {
-//    [Property in keyof Type]: Type[Property] | FiltersTree<unknown>;
-// };
 
 const operators = [
    'equals',
@@ -109,9 +106,6 @@ const operators = [
    'contains', // for strings
 ] as const;
 export type Operator = typeof operators[number];
-function getOperators(): Operator[] {
-   return operators.map((o) => o);
-}
 
 export function isComparison<T>(o: any): o is Comparison<T> {
    return o.operator !== undefined && o.value !== undefined;

@@ -125,7 +125,6 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
    }
 
    sanitizeFilters(inputFilters: { [key: string]: unknown }): {
-      // filters: FilteringFields<DomainFields<FieldNames>>; //FilteringFields<Fields>;
       filters: FiltersTree<Fields>;
       errors: InputErrors;
    } {

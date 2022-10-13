@@ -32,6 +32,7 @@ export * from './extended.ts';
 // TODO add filter test on
 // - 1to1
 // - chains of 1to1
+// - test filter on 1toN of 1to1 of a domain
 
 // - with unauthorized field value
 // - with unauthorized field
