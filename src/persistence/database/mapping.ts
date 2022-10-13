@@ -338,11 +338,13 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
       private readonly toDomainConvert: (o: unknown) => unknown | undefined,
       private readonly tableName: string,
       private readonly foreignKey: string,
+      private readonly nullable: boolean,
    ) {
       super(tableDef);
    }
 
    processField(domainFieldname: string, _value: RequestableFields<T>): ProcessResult {
+      const join=`${this.nullable?'LEFT ':''}JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.tableName}.${this.foreignKey}`
       const ret: ProcessResult = {
          fieldnames: {
             rootDomain: { name: domainFieldname, type: 'value' },
@@ -357,9 +359,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
             ],
          },
          tablename: this.tableDef.name,
-         joins: [
-            `JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.tableName}.${this.foreignKey}`,
-         ],
+         joins: [join ],
       };
       return ret;
    }

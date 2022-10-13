@@ -61,6 +61,7 @@ const buildingSponsorsMapping: TableMapping<keyof Sponsor> = {
       unknownToString,
       buildingSponsorsTable.name,
       'id_sponsor',
+      false,
    ),
    name: new OneToOneFieldMapping(
       Sponsoro.getTableDefinition(),
@@ -69,6 +70,7 @@ const buildingSponsorsMapping: TableMapping<keyof Sponsor> = {
       unknownToString,
       buildingSponsorsTable.name,
       'id_sponsor',
+      false,
    ),
 };
 
@@ -87,6 +89,7 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
       unknownToString,
       buildingPicturesTable.name,
       'id_picture',
+      false,
    ),
    name: new OneToOneFieldMapping(
       picturesTable,
@@ -95,6 +98,7 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
       unknownToString,
       buildingPicturesTable.name,
       'id_picture',
+      false,
    ),
    description: new OneToOneFieldMapping(
       picturesTable,
@@ -103,6 +107,7 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
       unknownToString,
       buildingPicturesTable.name,
       'id_picture',
+      false,
    ),
 };
 
@@ -139,6 +144,7 @@ const buildingMapping: TableMapping<BuildingDomainFieldNames> = {
       unknownToString,
       buildingTable.name,
       'id_category',
+      false,
    ),
    architect: new OneToOneTableMapping(
       Architect.getTableDefinition(),
