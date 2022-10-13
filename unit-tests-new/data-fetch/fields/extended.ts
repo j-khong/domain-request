@@ -656,6 +656,44 @@ describe('Data fetch with one to many fields', () => {
       await test(input, role, domainRequestName, expected);
    });
 
+   it('requests with 1 1to1 field as same object', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            name: true,
+            category: true,
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 4,
+         results: [
+            {
+               name: 'A',
+               category: 'Colonial',
+               id: '1',
+            },
+            {
+               name: 'B',
+               category: 'Rococco',
+               id: '2',
+            },
+            {
+               name: 'C',
+               category: 'New Age',
+               id: '3',
+            },
+            {
+               name: 'D',
+               category: 'Colonial',
+               id: '4',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
    it('requests with 1 field, 2 1to1 fields, 2toN field (1 value)', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';

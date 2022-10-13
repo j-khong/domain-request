@@ -4,6 +4,7 @@ import {
    SameTableMapping,
    OneToOneTableMapping,
    OneToManyTableMapping,
+   OneToOneFieldMapping,
    SelectMethod,
    Table,
    ToDbSqlNumberConverter,
@@ -12,7 +13,6 @@ import {
    unknownToNumber,
    ValueMapper,
    OneToManyTableDef,
-   OneToOneFieldMapping,
 } from '../../../../../mod.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields, Status, OpeningHours, Picture, Sponsor } from '../../../types.ts';
@@ -111,6 +111,7 @@ type BuildingDomainFieldNames =
    | 'id'
    | 'name'
    | 'type'
+   | 'category'
    | 'status'
    | 'pictures'
    | 'sponsors' /*| 'openingHours' */
@@ -130,6 +131,14 @@ const buildingMapping: TableMapping<BuildingDomainFieldNames> = {
       BuildingCategory.getTableDefinition(),
       BuildingCategory.getTableMapping(),
       `${buildingTable.name}.id_category`,
+   ),
+   category: new OneToOneFieldMapping(
+      BuildingCategory.getTableDefinition(),
+      'name',
+      new ToDbSqlStringConverter(),
+      unknownToString,
+      buildingTable.name,
+      'id_category',
    ),
    architect: new OneToOneTableMapping(
       Architect.getTableDefinition(),

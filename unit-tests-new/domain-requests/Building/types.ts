@@ -19,6 +19,7 @@ export interface Fields {
    id: string;
    name: string;
    type: Category.Fields;
+   category: string;
    status: Status;
    privateField: string;
    openingHours: OpeningHours[];
@@ -59,6 +60,7 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
             byListOfValue: true,
          },
       }),
+      category: new StringFieldConfiguration({}),
       type: new LinkedDomainConfiguration<DomainRequestName, Category.Fields>('building', Category.domainRequestName),
       status: new FieldConfiguration<Status>({
          filtering: {

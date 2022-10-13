@@ -66,6 +66,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const processFN = (pr: ProcessResult, path: DomainPath[]) => {
          path.push(pr.fieldnames.rootDomain);
          for (const fieldname of pr.fieldnames.children) {
+            pr.joins.forEach((v) => joins.add(v));
             if (isChild(fieldname)) {
                fieldsToMapResults.push({
                   fieldnameAlias: fieldname.dbAlias,
@@ -74,7 +75,6 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                });
                fields.push(fieldname.dbFullFieldName);
             } else {
-               pr.joins.forEach((v) => joins.add(v));
                // other child at the same level, need to copy the path
                processFN(fieldname, [...path]);
             }
@@ -364,7 +364,7 @@ export async function executeRequest(
    }
    const end = new Date();
    const report: RequestReport = {
-      request: sql,
+      request: sql.replaceAll('\n', ' '),
       timeInMs: end.getTime() - start.getTime(),
       error,
    };
