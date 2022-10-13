@@ -44,7 +44,6 @@ export type ManyToManyTableDef = {
 
 type Child = {
    domain: string;
-   // db: string;
    toDomainConvert: (o: unknown) => unknown | undefined;
    dbAlias: string;
    dbFullFieldName: string;
@@ -75,10 +74,6 @@ export abstract class FieldMapping {
    processField(_domainFieldname: string, _value: boolean | RequestableFields<unknown>): ProcessResult | undefined {
       return undefined;
    }
-
-   // processFilters(_domainFieldname: string, _filters: FilterArrayType<unknown>): ProcessFiltersResult | undefined {
-   //    return undefined;
-   // }
 
    processAllFilters(
       _domainFieldname: string,
@@ -115,7 +110,6 @@ export class SameTableMapping extends FieldMapping {
          fieldnames: {
             children: [
                {
-                  // db: this.fieldname,
                   domain: domainFieldname,
                   toDomainConvert: this.toDomainConvert,
                   dbAlias: createSqlAlias(this.tableDef.name, this.fieldname),
@@ -130,42 +124,18 @@ export class SameTableMapping extends FieldMapping {
       return ret;
    }
 
-   // processFilters<T>(
-   //    domainFieldname: Extract<keyof T, string>,
-   //    domainFilters: FilterArrayType<T>,
-   // ): ProcessFiltersResult {
-   //    const filters: ProcessFiltersResult = [];
-   //    if (domainFilters !== undefined) {
-   //       const comparison = domainFilters[domainFieldname];
-   //       if (comparison !== undefined && isComparison(comparison)) {
-   //          const comparisonMapper = comparisonOperatorMap[comparison.operator];
-   //          this.toDbConvert.setValue(comparison.value);
-   //          filters.push(comparisonMapper.format(`${this.tableDef.name}.${this.fieldname}`, this.toDbConvert));
-   //       } else {
-   //          console.log('should not be the case');
-   //       }
-   //    }
-   //    return filters;
-   // }
-
    processAllFilters<T>(
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
    ): { or: string[]; and: string[]; joins: string[] } {
-      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
-
-      if (domainFilters !== undefined) {
-         const comparison = domainFilters[domainFieldname];
-         if (comparison !== undefined && isComparison(comparison)) {
-            const comparisonMapper = comparisonOperatorMap[comparison.operator];
-            this.toDbConvert.setValue(comparison.value);
-            ret.and.push(comparisonMapper.format(`${this.tableDef.name}.${this.fieldname}`, this.toDbConvert));
-         } else {
-            errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
-         }
-      }
-      return ret;
+      return sameTableProcessAllFilters(
+         domainFieldname,
+         domainFilters,
+         `${this.tableDef.name}.${this.fieldname}`,
+         this.toDbConvert,
+         errors,
+      );
    }
 
    getOrderBy(o: Options<string>): string[] {
@@ -191,7 +161,6 @@ export class SameTableComputedFieldMapping extends FieldMapping {
          fieldnames: {
             children: [
                {
-                  // db: this.fieldname,
                   domain: domainFieldname,
                   toDomainConvert: this.toDomainConvert,
                   dbAlias,
@@ -266,23 +235,7 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       domainFilters: FilterArrayType<T>,
       errors: string[],
    ): { or: string[]; and: string[]; joins: string[] } {
-      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [this.buildJoin()] };
-
-      if (domainFilters === undefined) {
-         return ret;
-      }
-      const filter = domainFilters[domainFieldname];
-      if (filter !== undefined && isFilteringFields(filter)) {
-         const { or, and, joins } = processAllFilters(filter, this.mapping, errors);
-
-         ret.or.push(...or);
-         ret.and.push(...and);
-         ret.joins.push(...joins);
-      } else {
-         errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
-      }
-
-      return ret;
+      return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
    }
 
    getOrderBy(o: Options<T>): string[] {
@@ -341,6 +294,40 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
          joins: [...joins],
       };
    }
+
+   processAllFilters<T>(
+      domainFieldname: Extract<keyof T, string>,
+      domainFilters: FilterArrayType<T>,
+      errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
+   }
+}
+
+function otherTableProcessAllFilters<T>(
+   domainFieldname: Extract<keyof T, string>,
+   domainFilters: FilterArrayType<T>,
+   mapping: TableMapping<string>,
+   join: string,
+   errors: string[],
+): { or: string[]; and: string[]; joins: string[] } {
+   const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [join] };
+
+   if (domainFilters === undefined) {
+      return ret;
+   }
+   const filter = domainFilters[domainFieldname];
+   if (filter !== undefined && isFilteringFields(filter)) {
+      const { or, and, joins } = processAllFilters(filter, mapping, errors);
+
+      ret.or.push(...or);
+      ret.and.push(...and);
+      ret.joins.push(...joins);
+   } else {
+      errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+   }
+
+   return ret;
 }
 
 export class OneToOneFieldMapping<T extends string> extends FieldMapping {
@@ -376,6 +363,42 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
       };
       return ret;
    }
+
+   processAllFilters<T>(
+      domainFieldname: Extract<keyof T, string>,
+      domainFilters: FilterArrayType<T>,
+      errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      return sameTableProcessAllFilters(
+         domainFieldname,
+         domainFilters,
+         `${this.tableName}.${this.foreignKey}`,
+         this.toDbConvert,
+         errors,
+      );
+   }
+}
+
+function sameTableProcessAllFilters<T>(
+   domainFieldname: Extract<keyof T, string>,
+   domainFilters: FilterArrayType<T>,
+   fullFieldName: string,
+   toDbConvert: ToDbSqlConverter<unknown>,
+   errors: string[],
+): { or: string[]; and: string[]; joins: string[] } {
+   const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
+
+   if (domainFilters !== undefined) {
+      const comparison = domainFilters[domainFieldname];
+      if (comparison !== undefined && isComparison(comparison)) {
+         const comparisonMapper = comparisonOperatorMap[comparison.operator];
+         toDbConvert.setValue(comparison.value);
+         ret.and.push(comparisonMapper.format(fullFieldName, toDbConvert));
+      } else {
+         errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+      }
+   }
+   return ret;
 }
 
 type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
