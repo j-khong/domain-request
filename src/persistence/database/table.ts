@@ -291,7 +291,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
 
 function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): void {
    const keyValue = dbRecord[key];
-   if (keyValue === undefined) {
+   if (keyValue === undefined || fieldsToSelect.length === 0) {
       return;
    }
 
@@ -300,19 +300,38 @@ function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fi
       return;
    }
 
-   const obj: any = { domainname: '', v: {} };
+   const structuredValue = {};
    for (const field of fieldsToSelect) {
-      const toPop = {};
-      createTree(toPop, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
+      let tmpStruct = toPopulate;
+      for (const pathEl of field.path) {
+         if (pathEl.type === 'value') {
+            continue;
+         }
 
-      const domainname = field.path[0].name;
-      if (toPopulate[domainname] === undefined) {
-         toPopulate[domainname] = [];
+         if (tmpStruct[pathEl.name] === undefined) {
+            if (pathEl.type === 'array') {
+               tmpStruct[pathEl.name] = [];
+            } else if (pathEl.type === 'object') {
+               tmpStruct[pathEl.name] = {};
+            }
+         }
+         tmpStruct = tmpStruct[pathEl.name];
       }
-      obj.domainname = domainname;
-      obj.v = { ...obj.v, ...(toPop as any)[domainname] };
+      populateValueTree(structuredValue, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
    }
-   toPopulate[obj.domainname].push(obj.v);
+   goThrough(structuredValue, toPopulate);
+}
+
+function goThrough(data: any, toPopulate: any): void {
+   for (const key in data as any) {
+      if (Array.isArray(toPopulate[key])) {
+         toPopulate[key].push((data as any)[key]);
+      } else if (typeof toPopulate[key] === 'object') {
+         goThrough(data[key], toPopulate[key]);
+      } else {
+         toPopulate[key] = (data as any)[key];
+      }
+   }
 }
 
 type FieldsToSelect = Array<{
@@ -324,12 +343,12 @@ type FieldsToSelect = Array<{
 function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): { [key: string]: unknown } {
    const result: { [key: string]: unknown } = {};
    for (const field of fieldsToSelect) {
-      createTree(result, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
+      populateValueTree(result, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
    }
    return result;
 }
 
-function createTree(struct: any, fieldnames: DomainPath[], value: any): void {
+function populateValueTree(struct: any, fieldnames: DomainPath[], value: any): void {
    if (fieldnames.length === 0) {
       return;
    }

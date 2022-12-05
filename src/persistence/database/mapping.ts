@@ -35,12 +35,12 @@ export type OneToManyTableDef = {
    };
 };
 
-export type ManyToManyTableDef = {
-   name: string;
-   primaryKey: string;
-   foreignKey1: string;
-   foreignKey2: string;
-};
+// export type ManyToManyTableDef = {
+//    name: string;
+//    primaryKey: string;
+//    foreignKey1: string;
+//    foreignKey2: string;
+// };
 
 type Child = {
    domain: string;
@@ -254,6 +254,36 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
 
       return ret;
    }
+
+   processOneToMany(domainFieldname: string, value: RequestableFields<unknown>): ProcessOneToManyResult | undefined {
+      const joins: Set<string> = new Set();
+      joins.add(this.buildJoin());
+      const fieldnames: ProcessOneToManyResult['fieldnames'] = {
+         children: [],
+         rootDomain: { name: domainFieldname, type: 'object' },
+      };
+      // return undefined
+      for (const key in value) {
+         const map = (this.mapping as any)[key] as FieldMapping;
+         if (map === undefined) {
+            console.log(
+               `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
+            );
+            continue;
+         }
+         const res = map.processOneToMany(key, (value as any)[key]);
+         if (res !== undefined) {
+            fieldnames.children.push(res);
+            res.joins.forEach((v) => joins.add(v));
+         }
+      }
+
+      return {
+         fieldnames,
+         tablename: this.tableDef.name,
+         joins: [...joins],
+      };
+   }
 }
 
 export class OneToManyTableMapping<T extends string> extends FieldMapping {
@@ -281,6 +311,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
             );
             continue;
          }
+         // TODO if instance of OneToManyTableMapping => processOneToMany
          const res = map.processField(key, (value as any)[key]);
          if (res !== undefined) {
             fieldnames.children.push(res);
@@ -344,7 +375,9 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    }
 
    processField(domainFieldname: string, _value: RequestableFields<T>): ProcessResult {
-      const join=`${this.nullable?'LEFT ':''}JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${this.tableDef.primaryKey} = ${this.tableName}.${this.foreignKey}`
+      const join = `${this.nullable ? 'LEFT ' : ''}JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${
+         this.tableDef.primaryKey
+      } = ${this.tableName}.${this.foreignKey}`;
       const ret: ProcessResult = {
          fieldnames: {
             rootDomain: { name: domainFieldname, type: 'value' },
@@ -359,7 +392,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
             ],
          },
          tablename: this.tableDef.name,
-         joins: [join ],
+         joins: [join],
       };
       return ret;
    }

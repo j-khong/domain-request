@@ -456,7 +456,7 @@ describe('Data fetch with one to many fields', () => {
       await resetClient();
    });
 
-   it('requests with 1 1toN field (1 value)', async () => {
+   it('requests with 1 1toN field', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -547,7 +547,7 @@ describe('Data fetch with one to many fields', () => {
       await test(input, role, domainRequestName, expected);
    });
 
-   it('requests with 1 field, 1 1to1 field, 1 1toN field (1 value)', async () => {
+   it('requests with 1 field, 1 1to1 field, 1 1toN field', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -694,7 +694,7 @@ describe('Data fetch with one to many fields', () => {
       await test(input, role, domainRequestName, expected);
    });
 
-   it('requests with 1 field, 2 1to1 fields, 2toN field (1 value)', async () => {
+   it('requests with 1 field, 2 1to1 fields, 2 1toN fields', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -868,6 +868,219 @@ describe('Data fetch with one to many fields', () => {
                      status: 'on',
                   },
                ],
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 1 1toN field (3 fields), 2 fields', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               name: true,
+               category: true,
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  name: 'A',
+                  category: 'Colonial',
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 1 1toN field (3 fields), 1 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               name: true,
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  name: 'A',
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 1 1toN field (3 fields), 0 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 1 1toN field (1 field), 0 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               pictures: { name: true },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  pictures: [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }],
+               },
+               id: '1',
             },
          ],
       };

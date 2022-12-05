@@ -14,7 +14,8 @@ import * as Building from './Building/index.ts';
 import * as BuildingPersistence from './Building/builder/persistence/database/index.ts';
 import * as BuildingCategory from './BuildingCategory/index.ts';
 import * as BuildingCategoryPersistence from './BuildingCategory/builder/persistence/database/index.ts';
-// import * as BuildingSponsor from './BuildingSponsor/index.ts';
+import * as BuildingSponsor from './BuildingSponsor/index.ts';
+import * as BuildingSponsorPersistence from './BuildingSponsor/builder/persistence/database/index.ts';
 
 import { DomainRequestName, Role } from './types.ts';
 import { DomainRequestHandler, Factory, SelectMethodResult } from '../mod.ts';
@@ -44,7 +45,9 @@ function createFactories(select: (query: string) => Promise<SelectMethodResult>)
          BuildingCategoryPersistence.buildTableConnector(select),
       ) as GenericType,
       // student: Student.buildFactory(),
-      // buildingSponsor: BuildingSponsor.buildFactory(),
+      buildingSponsor: BuildingSponsor.buildFactory(
+         BuildingSponsorPersistence.buildTableConnector(select),
+      ) as GenericType,
       // courseApplication: CourseApplication.buildFactory(),
    };
 }

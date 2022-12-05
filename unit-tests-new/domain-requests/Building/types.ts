@@ -61,7 +61,10 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
          },
       }),
       category: new StringFieldConfiguration({}),
-      type: new LinkedDomainConfiguration<DomainRequestName, Category.Fields>('building', Category.domainRequestName),
+      type: new LinkedDomainConfiguration<DomainRequestName, Category.Fields>(
+         domainRequestName,
+         Category.domainRequestName,
+      ),
       status: new FieldConfiguration<Status>({
          filtering: {
             byListOfValue: true,
@@ -89,7 +92,10 @@ export function generateFieldsSetup(): FieldsSetup<Fields> {
             filtering: { byListOfValue: true },
          }),
       }),
-      architect: new LinkedDomainConfiguration<DomainRequestName, Architect.Fields>('building', 'architect'),
+      architect: new LinkedDomainConfiguration<DomainRequestName, Architect.Fields>(
+         domainRequestName,
+         Architect.domainRequestName,
+      ),
       openingHours: new ObjectFieldConfiguration<OpeningHours>({
          day: new NumberFieldConfiguration({
             filtering: {

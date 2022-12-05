@@ -15,21 +15,10 @@ import {
    OneToManyTableDef,
 } from '../../../../../mod.ts';
 import { DomainRequestName } from '../../../../types.ts';
-import { Fields, Status, OpeningHours, Picture, Sponsor } from '../../../types.ts';
+import { /*Fields, TimeSlot , OpeningHours, */ Status, Picture, Sponsor } from '../../../types.ts';
 import * as BuildingCategory from '../../../../BuildingCategory/builder/persistence/database/index.ts';
 import * as Sponsoro from '../../../../Sponsor/builder/persistence/database/index.ts';
 import * as Architect from '../../../../Architect/builder/persistence/database/index.ts';
-
-// const openingHoursTable: OneToManyTableDef = {
-//    name: 'building_opening_hours',
-//    primaryKey: 'id',
-//    foreignKey: 'id_building',
-// };
-// const openingHoursMapping: TableMapping<OpeningHours> = {
-//    id: new SameTableMapping(openingHoursTable, 'id', new ToDbSqlNumberConverter(), unknownToString),
-//    day: new SameTableMapping(openingHoursTable, 'day', new ToDbSqlNumberConverter(), unknownToNumber),
-//    slots: new ObjectFieldConfiguration()
-// };
 
 const buildingTable: TableDef = {
    name: 'buildings',
@@ -40,6 +29,20 @@ const picturesTable: TableDef = {
    name: 'pictures',
    primaryKey: 'id',
 };
+
+// const openingHoursTable: OneToManyTableDef = {
+//    name: 'building_opening_hours',
+//    primaryKey: 'id',
+//    foreign: { keyName: 'id_building', otherTable: buildingTable },
+// };
+// const openingHoursMapping: TableMapping<keyof OpeningHours> = {
+//    day: new SameTableMapping(openingHoursTable, 'day', new ToDbSqlNumberConverter(), unknownToNumber),
+//    slots: new SameTableObjectMapping<TimeSlot>(openingHoursTable,
+//       {
+//       start:
+//       end:
+//    }),
+// };
 
 const buildingSponsorsTable: OneToManyTableDef = {
    name: 'building_sponsors',
@@ -111,7 +114,7 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
    ),
 };
 
-// type BuildingDomainFieldNames = Fields;
+// type BuildingDomainFieldNames = keyof Fields;
 type BuildingDomainFieldNames =
    | 'id'
    | 'name'
@@ -178,4 +181,12 @@ function toDomainStatus(o: unknown): Status {
 export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {
    // buildingMapping.openingHours.init(new Table(openingHoursTable, openingHoursMapping, select));
    return new Table(buildingTable, buildingMapping, select);
+}
+
+export function getTableDefinition(): TableDef {
+   return buildingTable;
+}
+
+export function getTableMapping(): TableMapping<BuildingDomainFieldNames /*keyof Fields*/> {
+   return buildingMapping;
 }

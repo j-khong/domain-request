@@ -174,7 +174,10 @@ CREATE TABLE `building_pictures` (
 
 INSERT INTO `sponsors` (`name`) VALUES
 ('Rockefeller'),
-('Carnegie');
+('Carnegie'),
+('Ford'),
+('Vanderbilt'),
+('JP Morgan');
 
 INSERT INTO `building_categories` (`name`) VALUES
 ('Colonial'),

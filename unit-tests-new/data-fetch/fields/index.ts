@@ -24,6 +24,10 @@ export * from './simple.ts';
 // ✅ - 1to1 (2 fields from different tables)
 // ✅ - chain of 1to1 (2 levels)
 // ✅ - chain of 1to1 (3 levels)
+// ✅ - 1toN (1 1toN field)
+// ✅ - 1toN (1 field, 1 1to1 field, 1 1toN field)
+// ✅ - 1toN (1 field, 2 1to1 fields, 2 1toN fields)
+// ✅ - 1toN (1 1to1 field who has 1 1toN field))
 export * from './extended.ts';
 
 // test with null / empty values from DB
