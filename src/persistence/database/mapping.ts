@@ -144,6 +144,27 @@ export class SameTableMapping extends FieldMapping {
    }
 }
 
+export class SameTableObjectMapping<T extends string> extends FieldMapping {
+   constructor(tableDef: Readonly<TableDef>, protected readonly mapping: TableMapping<T>) {
+      super(tableDef);
+   }
+
+   processField(domainFieldname: string, value: RequestableFields<unknown>): ProcessResult {
+      const ret: ProcessResult = {
+         fieldnames: { rootDomain: { name: domainFieldname, type: 'object' }, children: [] },
+         tablename: this.tableDef.name,
+         joins: [],
+      };
+      for (const domFieldname in value) {
+         const tmap = (this.mapping as any)[domFieldname] as FieldMapping;
+         const res = tmap.processField(domFieldname, (value as any)[domFieldname]);
+         if (res !== undefined) {
+            ret.fieldnames.children.push(res);
+         }
+      }
+      return ret;
+   }
+}
 export class SameTableComputedFieldMapping extends FieldMapping {
    constructor(
       tableDef: Readonly<TableDef>,
@@ -239,7 +260,6 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
    }
 
    getOrderBy(o: Options<T>): string[] {
-      console.log('OneToOneTableMapping getOrderBy:', o);
       const ret: string[] = [];
 
       if (o.orderby !== undefined) {
@@ -274,7 +294,6 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
          const res = map.processOneToMany(key, (value as any)[key]);
          if (res !== undefined) {
             fieldnames.children.push(res);
-            res.joins.forEach((v) => joins.add(v));
          }
       }
 

@@ -1,5 +1,5 @@
 import { DomainRequestName } from '../../domain-requests/types.ts';
-import { test } from '../test.ts';
+import { test, testSpecial } from '../test.ts';
 import { resetClient } from '../../persistence/database/dbUtils.ts';
 import { afterEach, /* beforeEach, */ describe, it } from '../mod.ts';
 
@@ -1085,5 +1085,329 @@ describe('Data fetch with one to many fields', () => {
          ],
       };
       await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 2 1toN fields (3 fields), 2 fields', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               name: true,
+               category: true,
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+               opening_hours: {
+                  day: true,
+                  slots: {
+                     start: true,
+                     end: true,
+                  },
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  name: 'A',
+                  category: 'Colonial',
+                  openingHours: [
+                     {
+                        day: 1,
+                        slots: {
+                           start: '10:00',
+                           end: '14:00',
+                        },
+                     },
+                     {
+                        day: 1,
+                        slots: {
+                           start: '15:00',
+                           end: '23:00',
+                        },
+                     },
+                     {
+                        day: 3,
+                        slots: {
+                           start: '8:00',
+                           end: '20:00',
+                        },
+                     },
+                  ],
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await testSpecial(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 2 1toN fields (3 fields), 1 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               name: true,
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+               opening_hours: {
+                  day: true,
+                  slots: {
+                     start: true,
+                     end: true,
+                  },
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  name: 'A',
+                  openingHours: [
+                     {
+                        day: 1,
+                        slots: {
+                           start: '10:00',
+                           end: '14:00',
+                        },
+                     },
+                     {
+                        day: 1,
+                        slots: {
+                           start: '15:00',
+                           end: '23:00',
+                        },
+                     },
+                     {
+                        day: 3,
+                        slots: {
+                           start: '8:00',
+                           end: '20:00',
+                        },
+                     },
+                  ],
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await testSpecial(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 2 1toN fields (3 fields), 0 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               pictures: {
+                  url: true,
+                  name: true,
+                  status: true,
+               },
+               opening_hours: {
+                  day: true,
+                  slots: {
+                     start: true,
+                     end: true,
+                  },
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  openingHours: [
+                     {
+                        day: 1,
+                        slots: {
+                           start: '10:00',
+                           end: '14:00',
+                        },
+                     },
+                     {
+                        day: 1,
+                        slots: {
+                           start: '15:00',
+                           end: '23:00',
+                        },
+                     },
+                     {
+                        day: 3,
+                        slots: {
+                           start: '8:00',
+                           end: '20:00',
+                        },
+                     },
+                  ],
+                  pictures: [
+                     {
+                        url: 'https://harvardplanning.emuseum.com/internal/media/dispatcher/145625/preview',
+                        name: 'A',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://static.independent.co.uk/s3fs-public/thumbnails/image/2015/11/16/18/harvard.jpg?quality=75&width=990&auto=webp&crop=982:726,smart',
+                        name: 'B',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://blog.prepscholar.com/hs-fs/hubfs/feature_harvardbuilding2-1.jpg',
+                        name: 'C',
+                        status: 'on',
+                     },
+                     {
+                        url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                        name: 'D',
+                        status: 'on',
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await testSpecial(input, role, domainRequestName, expected);
+   });
+
+   it('requests with 1 1to1 field who has 2 1toN fields (1 field), 0 field', async () => {
+      const domainRequestName: DomainRequestName = 'buildingSponsor';
+      const role = 'admin';
+      const input = {
+         fields: {
+            building: {
+               pictures: { name: true },
+               opening_hours: {
+                  day: true,
+                  slots: {
+                     start: true,
+                  },
+               },
+            },
+         },
+         filters: {
+            sponsor: {
+               name: {
+                  value: 'Rockefeller',
+                  operator: 'equals',
+               },
+            },
+         },
+      };
+      const expected = {
+         domainName: domainRequestName,
+         total: 1,
+         results: [
+            {
+               building: {
+                  pictures: [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }],
+
+                  openingHours: [
+                     {
+                        day: 1,
+                        slots: { start: '10:00' },
+                     },
+                     {
+                        day: 1,
+                        slots: { start: '15:00' },
+                     },
+                     {
+                        day: 3,
+                        slots: { start: '8:00' },
+                     },
+                  ],
+               },
+               id: '1',
+            },
+         ],
+      };
+      await testSpecial(input, role, domainRequestName, expected);
    });
 });

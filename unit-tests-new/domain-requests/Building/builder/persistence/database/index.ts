@@ -13,9 +13,10 @@ import {
    unknownToNumber,
    ValueMapper,
    OneToManyTableDef,
+   SameTableObjectMapping,
 } from '../../../../../mod.ts';
 import { DomainRequestName } from '../../../../types.ts';
-import { /*Fields, TimeSlot , OpeningHours, */ Status, Picture, Sponsor } from '../../../types.ts';
+import { Fields, TimeSlot, OpeningHours, Status, Picture, Sponsor } from '../../../types.ts';
 import * as BuildingCategory from '../../../../BuildingCategory/builder/persistence/database/index.ts';
 import * as Sponsoro from '../../../../Sponsor/builder/persistence/database/index.ts';
 import * as Architect from '../../../../Architect/builder/persistence/database/index.ts';
@@ -30,19 +31,18 @@ const picturesTable: TableDef = {
    primaryKey: 'id',
 };
 
-// const openingHoursTable: OneToManyTableDef = {
-//    name: 'building_opening_hours',
-//    primaryKey: 'id',
-//    foreign: { keyName: 'id_building', otherTable: buildingTable },
-// };
-// const openingHoursMapping: TableMapping<keyof OpeningHours> = {
-//    day: new SameTableMapping(openingHoursTable, 'day', new ToDbSqlNumberConverter(), unknownToNumber),
-//    slots: new SameTableObjectMapping<TimeSlot>(openingHoursTable,
-//       {
-//       start:
-//       end:
-//    }),
-// };
+const openingHoursTable: OneToManyTableDef = {
+   name: 'building_opening_hours',
+   primaryKey: 'id',
+   foreign: { keyName: 'id_building', otherTable: buildingTable },
+};
+const openingHoursMapping: TableMapping<keyof OpeningHours> = {
+   day: new SameTableMapping(openingHoursTable, 'day', new ToDbSqlNumberConverter(), unknownToNumber),
+   slots: new SameTableObjectMapping<keyof TimeSlot>(openingHoursTable, {
+      start: new SameTableMapping(openingHoursTable, 'start', new ToDbSqlStringConverter(), unknownToString),
+      end: new SameTableMapping(openingHoursTable, 'end', new ToDbSqlStringConverter(), unknownToString),
+   }),
+};
 
 const buildingSponsorsTable: OneToManyTableDef = {
    name: 'building_sponsors',
@@ -114,17 +114,7 @@ const buildingPicturesMapping: TableMapping<keyof Picture> = {
    ),
 };
 
-// type BuildingDomainFieldNames = keyof Fields;
-type BuildingDomainFieldNames =
-   | 'id'
-   | 'name'
-   | 'type'
-   | 'category'
-   | 'status'
-   | 'pictures'
-   | 'sponsors' /*| 'openingHours' */
-   | 'architect'
-   | 'privateField';
+type BuildingDomainFieldNames = keyof Fields;
 
 class ToDbSqlStatusConverter extends ToDbSqlStringConverter {
    constructor() {
@@ -158,7 +148,7 @@ const buildingMapping: TableMapping<BuildingDomainFieldNames> = {
    status: new SameTableMapping(buildingTable, 'status', new ToDbSqlStatusConverter(), toDomainStatus),
    sponsors: new OneToManyTableMapping(buildingSponsorsTable, buildingSponsorsMapping),
 
-   // openingHours: new OneToManyTableMapping(openingHoursTable, openingHoursMapping),
+   openingHours: new OneToManyTableMapping(openingHoursTable, openingHoursMapping),
    pictures: new OneToManyTableMapping(buildingPicturesTable, buildingPicturesMapping),
 };
 

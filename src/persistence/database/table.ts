@@ -198,29 +198,10 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          return;
       }
 
-      const dataByArray: Map<
-         string,
-         {
-            fields: string[];
-            joins: Set<string>;
-            fieldsToMapResults: FieldsToSelect;
-         }
-      > = new Map();
-      // const fields: string[] = [];
-      // const joins: Set<string> = new Set();
-      // const fieldsToMapResults: FieldsToSelect = [];
+      const dataByArray: Map<string, DataByArrayType> = new Map();
 
-      const processFN = (pr: ProcessResult, path: DomainPath[]) => {
+      const process1toN = (pr: ProcessResult, path: DomainPath[], data: DataByArrayType) => {
          path.push(pr.fieldnames.rootDomain);
-         let data = dataByArray.get(path[0].name);
-         if (data === undefined) {
-            data = {
-               fields: [],
-               joins: new Set(),
-               fieldsToMapResults: [],
-            };
-            dataByArray.set(path[0].name, data);
-         }
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
                data.fieldsToMapResults.push({
@@ -230,9 +211,45 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                });
                data.fields.push(fieldname.dbFullFieldName);
             } else {
-               pr.joins.forEach((v) => data?.joins.add(v));
+               pr.joins.forEach((v) => data.joins.add(v));
                // other child at the same level, need to copy the path
-               processFN(fieldname, [...path]);
+               process1toN(fieldname, [...path], data);
+            }
+         }
+      };
+      const findAndProcessFirst1toN = (pr: ProcessResult, path: DomainPath[], prevJoin: string[]) => {
+         path.push(pr.fieldnames.rootDomain);
+         if (pr.fieldnames.rootDomain.type === 'array') {
+            let data = dataByArray.get(pr.fieldnames.rootDomain.name);
+            if (data === undefined) {
+               data = {
+                  fields: [],
+                  joins: new Set(),
+                  fieldsToMapResults: [],
+               };
+               dataByArray.set(pr.fieldnames.rootDomain.name, data);
+            }
+            prevJoin.forEach((v) => data?.joins.add(v));
+
+            for (const fieldname of pr.fieldnames.children) {
+               if (isChild(fieldname)) {
+                  data.fieldsToMapResults.push({
+                     fieldnameAlias: fieldname.dbAlias,
+                     path,
+                     toDomainConvert: fieldname.toDomainConvert,
+                  });
+                  data.fields.push(fieldname.dbFullFieldName);
+               } else {
+                  pr.joins.forEach((v) => data?.joins.add(v));
+                  // other child at the same level, need to copy the path
+                  process1toN(fieldname, [...path], data);
+               }
+            }
+         } else {
+            for (const fieldname of pr.fieldnames.children) {
+               if (!isChild(fieldname)) {
+                  findAndProcessFirst1toN(fieldname, [...path], pr.joins);
+               }
             }
          }
       };
@@ -251,7 +268,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          }
 
          const path: DomainPath[] = [];
-         processFN(resp, path);
+         findAndProcessFirst1toN(resp, path, []);
       }
 
       if (dataByArray.size === 0) {
@@ -288,6 +305,12 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
    }
 }
+
+type DataByArrayType = {
+   fields: string[];
+   joins: Set<string>;
+   fieldsToMapResults: FieldsToSelect;
+};
 
 function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): void {
    const keyValue = dbRecord[key];

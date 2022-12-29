@@ -77,8 +77,6 @@ export class ComputedFieldConfiguration<
       const ret: {
          errors: InputErrors;
       } = { errors: [] };
-
-      console.log('RELATIVE sanitizeFilter:', inputFilters);
       const inputFieldName = this.camelToInputStyle(fieldName);
       const val = inputFilters[inputFieldName];
       if (val === undefined) {
