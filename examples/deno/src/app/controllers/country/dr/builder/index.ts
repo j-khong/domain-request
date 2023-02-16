@@ -1,8 +1,13 @@
-import { buildDomainRequestFactory, DomainConfig, DomainRequestByRole, Factory, Persistence } from '/deps/index.ts';
-import { DomainRequestName, Role } from '/app/domains/types.ts';
-import { Fields } from '../types.ts';
-import * as Admin from './roles/Admin.ts';
-import * as Student from './roles/Student.ts';
+import {
+   buildDomainRequestBuilderByRole,
+   buildDomainRequestFactory,
+   DomainConfig,
+   DomainRequestByRole,
+   Factory,
+   Persistence,
+} from '/deps/index.ts';
+import { DomainRequestName, getRoles, Role } from '/app/domains/types.ts';
+import { domainRequestName, Fields, generateFieldsSetup } from '../types.ts';
 
 export function buildFactory(
    datastore: Persistence<DomainRequestName, Fields>,
@@ -14,7 +19,12 @@ export function createDomainConfig(role: Role): DomainConfig<DomainRequestName, 
    return mapping[role].createDomainConfig();
 }
 
-const mapping: DomainRequestByRole<Role, DomainRequestName, Fields> = {
-   admin: Admin,
-   student: Student,
-};
+const mapping: DomainRequestByRole<Role, DomainRequestName, Fields> = buildDomainRequestBuilderByRole({
+   domainRequestName,
+   generateFieldsSetup,
+   rolesList: getRoles(),
+   rolesSpecifics: {
+      admin: {},
+      student: {},
+   },
+});

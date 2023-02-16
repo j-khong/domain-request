@@ -1,5 +1,4 @@
 import { DomainRequest, InputErrors, Report } from '/deps/index.ts';
-import { getDatabaseConnector } from '/interfaces/index.ts';
 import { DomainRequestName, Role } from '/app/domains/types.ts';
 import { getDomainRequestHandler } from './index.ts';
 import { User } from '/app/domains/User.ts';
