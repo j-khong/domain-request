@@ -14,4 +14,8 @@ export type DomainRequestName =
    | 'buildingSponsor'; // building - sponsor
 // | 'courseApplication'; // course - student
 
-export type Role = 'admin' | 'student';
+const roles = ['admin', 'student'] as const;
+export type Role = typeof roles[number];
+export function getRoles(): Role[] {
+   return roles.map((o) => o);
+}
