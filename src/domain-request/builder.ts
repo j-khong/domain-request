@@ -1,13 +1,7 @@
 import { isSomethingLike } from './type-checkers.ts';
 import { InputErrors, NaturalKey, Tree, BoolTree, RequestableFields } from './types.ts';
 
-import {
-   DomainConfig,
-   FiltersTree,
-   FieldsSetup,
-   ObjectFieldConfiguration,
-   Options,
-} from './field-configuration/index.ts';
+import { DomainConfig, FiltersTree, Options } from './field-configuration/index.ts';
 
 export interface DomainResult {
    domainName: string;
@@ -98,29 +92,4 @@ export class DomainRequestBuilder<Name extends string, T> {
          options,
       };
    }
-}
-
-export function createDomainConfig<DRN extends string, T>(
-   drn: DRN,
-   fields: FieldsSetup<T>,
-   authorizedFields?: (keyof T)[],
-): DomainConfig<DRN, T> {
-   const fieldsToUse = getAuthorizedFields(fields, authorizedFields);
-   return {
-      name: drn,
-      fields: new ObjectFieldConfiguration<T>(fieldsToUse),
-   };
-}
-
-function getAuthorizedFields<T>(fields: FieldsSetup<T>, authorizedFields?: (keyof T)[]): FieldsSetup<T> {
-   let fieldsToUse: FieldsSetup<T> = fields;
-   if (authorizedFields !== undefined) {
-      fieldsToUse = {} as FieldsSetup<T>;
-      for (const key in fields) {
-         if (authorizedFields.includes(key)) {
-            fieldsToUse[key] = fields[key];
-         }
-      }
-   }
-   return fieldsToUse;
 }
