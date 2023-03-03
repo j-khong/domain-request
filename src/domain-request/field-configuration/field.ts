@@ -60,6 +60,22 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
       return ret;
    }
 
+   createInputFieldType(fieldName: string) {
+      return `${this.camelToInputStyle(fieldName)}?: boolean;`;
+   }
+
+   createInputFilterType(fieldName: string) {
+      let valueType: string = typeof this.conf.values.default;
+      if (this.conf.values.authorized !== undefined) {
+         valueType = this.conf.values.authorized.map((v) => `"${v.toString()}"`).join('|');
+      }
+
+      return `${this.camelToInputStyle(fieldName)}?: {
+         operator: ${this.fv.acceptedOperators.map((v) => `"${this.camelToInputStyle(v.toString())}"`).join('|')};
+         value: ${valueType};
+      };`;
+   }
+
    sanitizeFilter(
       inputFilters: { [key: string]: unknown },
       fieldName: string, //Extract<keyof T, string>,

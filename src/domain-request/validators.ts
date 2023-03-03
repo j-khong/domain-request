@@ -16,23 +16,23 @@ export class ValidatorCreator<T> {
       ];
       const range: Operator[] = ['between'];
       const array: Operator[] = ['contains'];
-      let acceptedOperators: Operator[] = [...allTime];
+      let acceptedOperatorsSet: Set<Operator> = new Set([...allTime]);
 
       if (filter !== undefined) {
          const isByList = filter.byListOfValue !== undefined && filter.byListOfValue;
          const isByRange = filter.byRangeOfValue !== undefined && filter.byRangeOfValue;
          if (isByList && isByRange) {
             validator = this.generateTypeOrArrayValidator();
-            acceptedOperators = [...allTime, ...range, ...array];
+            acceptedOperatorsSet = new Set([...allTime, ...range, ...array]);
          } else if (isByList) {
             validator = this.generateTypeOrArrayValidator();
-            acceptedOperators = [...allTime, ...array];
+            acceptedOperatorsSet = new Set([...allTime, ...array]);
          } else if (isByRange) {
             validator = this.generateTypeOrRangeValidator();
-            acceptedOperators = [...allTime, ...range];
+            acceptedOperatorsSet = new Set([...allTime, ...range]);
          }
       }
-      return { validator, acceptedOperators };
+      return { validator, acceptedOperators: Array.from(acceptedOperatorsSet.values()) };
    }
 
    protected generateTypeValidator(): Validator {

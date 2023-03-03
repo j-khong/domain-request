@@ -1,7 +1,7 @@
 import { isSomethingLike } from './type-checkers.ts';
 import { InputErrors, NaturalKey, Tree, BoolTree, RequestableFields } from './types.ts';
-
 import { DomainConfig, FiltersTree, Options } from './field-configuration/index.ts';
+import { DomainRequestHandler } from './Factory.ts';
 
 export interface DomainResult {
    domainName: string;
@@ -67,6 +67,19 @@ export class DomainRequestBuilder<Name extends string, T> {
       };
    }
 
+   createInputRequestType() {
+      const manageUndefined = (field: 'fields' | 'filters', s: string | undefined): string =>
+         s === undefined ? '' : `${field}?:${s}`;
+
+      const fieldsType = this.domainConfig.fields.createInputFieldsType();
+      const filtersType = this.domainConfig.fields.createInputFiltersType();
+
+      return `{
+         ${manageUndefined('fields', fieldsType)}
+         ${manageUndefined('filters', filtersType)}
+      }`;
+   }
+
    protected splitValues(input: unknown): {
       fields: BoolTree;
       filters: Tree;
@@ -92,4 +105,23 @@ export class DomainRequestBuilder<Name extends string, T> {
          options,
       };
    }
+}
+
+export function generateRequestsTypes<DomainRequestName extends string, Role extends string, DF>(
+   drn: DomainRequestName[],
+   roles: Role[],
+   getDomainRequestHandler: (name: DomainRequestName) => DomainRequestHandler<Role, DomainRequestName, DF>,
+) {
+   const requestTypes = new Map<DomainRequestName, { [property in Role]: string }>();
+   for (const domainName of drn) {
+      const handler = getDomainRequestHandler(domainName);
+
+      const byRoles: { [property in Role]: string } = {} as { [property in Role]: string };
+      for (const role of roles) {
+         const domainRequestBuilder = handler.getRoleDomainRequestBuilder(role);
+         byRoles[role] = domainRequestBuilder.createInputRequestType();
+      }
+      requestTypes.set(domainName, byRoles);
+   }
+   return requestTypes;
 }

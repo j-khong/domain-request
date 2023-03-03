@@ -48,6 +48,19 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
       return { errors: res.errors };
    }
 
+   createInputFieldType(fieldName: string): string | undefined {
+      const value = this.getDomain().fields.createInputFieldsType();
+      if (value === undefined) {
+         return undefined;
+      }
+
+      return `${this.camelToInputStyle(fieldName)}?:${value};`;
+   }
+
+   createInputFilterType(fieldName: string): string | undefined {
+      return this.getDomain().fields.createInputFilterType(fieldName);
+   }
+
    sanitizeFilter(
       inputFilters: { [key: string]: unknown },
       fieldName: string, //Extract<keyof T, string>,

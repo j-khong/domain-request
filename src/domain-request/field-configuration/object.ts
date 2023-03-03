@@ -76,6 +76,89 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       };
    }
 
+   createInputFieldsType(): string | undefined {
+      const v = this.processInputFieldType();
+      if (v === undefined) {
+         return undefined;
+      }
+      return `{
+         ${v}
+      }`;
+   }
+
+   createInputFieldType(fieldName: string): string | undefined {
+      const v = this.processInputFieldType();
+      if (v === undefined) {
+         return undefined;
+      }
+
+      return `${this.camelToInputStyle(fieldName)}?: {
+         ${v}
+      }`;
+   }
+
+   private processInputFieldType(): string | undefined {
+      if (Object.keys(this.conf).length === 0) {
+         return undefined;
+      }
+
+      const values: string[] = [];
+      for (const key in this.conf) {
+         const v = this.conf[key].createInputFieldType(key);
+         if (v !== undefined) {
+            values.push(v);
+         }
+      }
+      if (values.length === 0) {
+         return undefined;
+      }
+
+      return values.join('');
+   }
+
+   createInputFiltersType(): string | undefined {
+      const v = this.processInputFilterType();
+      if (v === undefined) {
+         return undefined;
+      }
+      return `{
+         ${v}
+      };`;
+   }
+
+   createInputFilterType(fieldName: string) {
+      const v = this.processInputFilterType();
+      if (v === undefined) {
+         return undefined;
+      }
+
+      return `${this.camelToInputStyle(fieldName)}?: {
+         ${v}
+      };`;
+   }
+
+   private processInputFilterType(): string | undefined {
+      if (Object.keys(this.conf).length === 0) {
+         return undefined;
+      }
+
+      let str = '';
+      const ffs = [];
+      for (const key in this.conf) {
+         const ff = this.conf[key].createInputFilterType(key);
+         if (ff !== undefined) {
+            ffs.push(ff);
+            str += ff;
+         }
+      }
+      if (ffs.length > 0) {
+         const and = `Array<${ffs.map((v) => `{${v}}`).join('|')}>`;
+         const or = `Array<${ffs.map((v) => `{${v}}`).join('|')}>`;
+         str += `and?:${and}; or?:${or};`;
+      }
+      return str;
+   }
+
    findErrors(
       context: 'selected field' | 'filtering field',
       inputFieldsToSelect: Tree,
