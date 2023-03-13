@@ -1,8 +1,8 @@
 import { DomainRequest, InputErrors, Report } from '/deps/index.ts';
-import { DomainRequestName, Role } from '/app/domains/types.ts';
+import { DomainRequestName, Role } from '@domains/types.ts';
 import { Fields } from './dr/index.ts';
 import { domainFetch as genericDomainFetch } from '/app/helpers.ts';
-import { User } from '/app/domains/User.ts';
+import { User } from '@domains/User.ts';
 import { domainRequestName } from './dr/types.ts';
 
 export function domainFetch(

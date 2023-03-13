@@ -8,7 +8,7 @@ import {
    ToDbSqlStringConverter,
    unknownToString,
 } from '/deps/index.ts';
-import { DomainRequestName } from '/app/domains/types.ts';
+import { DomainRequestName } from '@domains/types.ts';
 import { Fields } from '../../../types.ts';
 
 const tableDef: TableDef = {

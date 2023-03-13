@@ -1,4 +1,4 @@
-import { ConfigFile } from '/app/domains/ConfigurationFile.ts';
+import { ConfigFile } from '@domains/ConfigurationFile.ts';
 import { buildDatabaseConnector } from './persistence.ts';
 export { getConfigFile, loadConfig } from './filesystem.ts';
 export { getDatabaseConnector } from './persistence.ts';

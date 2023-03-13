@@ -1,5 +1,5 @@
 import { FieldsSetup, StringFieldConfiguration } from '/deps/index.ts';
-import { DomainRequestName } from '/app/domains/types.ts';
+import { DomainRequestName } from '@domains/types.ts';
 
 export const domainRequestName: DomainRequestName = 'country';
 

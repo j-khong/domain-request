@@ -1,20 +1,16 @@
-import { ConfigFile } from '/app/domains/ConfigurationFile.ts';
+import { ConfigFile, parse } from '@domains/ConfigurationFile.ts';
 
 export async function loadConfig(filename: string): Promise<ConfigFile | undefined> {
    try {
       const str = await Deno.readTextFile(filename);
       const json = JSON.parse(str);
       if (json === null || json === undefined) {
-         console.error(
-            `error while parsing to json file content of ${filename}`,
-         );
+         console.error(`error while parsing to json file content of ${filename}`);
          return undefined;
       }
 
-      // TODO validate with joi
-
-      config = json;
-      return json;
+      config = parse(json);
+      return config;
    } catch (e) {
       if (e instanceof Deno.errors.NotFound) {
          console.error('file does not exists', e);

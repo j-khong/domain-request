@@ -1,5 +1,5 @@
-import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report } from '/deps/index.ts';
-import { getRoles, Role } from '/app/domains/types.ts';
+import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report, RequestableFields } from '/deps/index.ts';
+import { getRoles, Role } from '@domains/types.ts';
 
 export async function fetch(
    ctx: Context,

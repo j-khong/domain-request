@@ -1,5 +1,5 @@
 import { Application, oakCors, Router, SelectMethodResult } from '/deps/index.ts';
-import { ConfigFile } from '/app/domains/ConfigurationFile.ts';
+import { ConfigFile } from '@domains/ConfigurationFile.ts';
 import { buildInterfaces, getDatabaseConnector, plugRoutes } from '/interfaces/index.ts';
 import { init as initDomainRequests } from '/app/index.ts';
 

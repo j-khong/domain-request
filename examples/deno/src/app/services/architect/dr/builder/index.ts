@@ -6,7 +6,7 @@ import {
    Factory,
    Persistence,
 } from '/deps/index.ts';
-import { DomainRequestName, getRoles, Role } from '/app/domains/types.ts';
+import { DomainRequestName, getRoles, Role } from '@domains/types.ts';
 import { domainRequestName, Fields, generateFieldsSetup } from '../types.ts';
 
 export function buildFactory(

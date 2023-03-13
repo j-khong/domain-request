@@ -2,6 +2,7 @@
    "imports": {
       "/": "./src/",
       "./": "./",
-      "@controllers/": "./src/app/controllers/"
+      "@services/": "./src/app/services/",
+      "@domains/": "./src/app/domains/"
    }
 }
