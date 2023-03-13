@@ -192,8 +192,8 @@ function createDomainRequestObjectName<DomainRequestName extends string>(drn: Do
 }
 
 function getCurrentFilePath(): string {
-   if (import.meta.url) {
-      return Path.dirname(Path.fromFileUrl(import.meta.url));
-   }
+   // if (import.meta.url) {
+   //    return Path.dirname(Path.fromFileUrl(import.meta.url));
+   // }
    return '.';
 }
