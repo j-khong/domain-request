@@ -195,5 +195,5 @@ function getCurrentFilePath(): string {
    // if (import.meta.url) {
    //    return Path.dirname(Path.fromFileUrl(import.meta.url));
    // }
-   return '.';
+   return 'https://deno.land/x/domain_request/src/tools';
 }
