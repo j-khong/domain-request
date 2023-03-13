@@ -1,8 +1,6 @@
 import { Path } from '../deps/index.ts';
 import { DomainRequestHandler, generateRequestsTypes, SelectMethod, SelectMethodResult } from '../index.ts';
 
-const currentFilePath = Path.dirname(Path.fromFileUrl(import.meta.url));
-
 type DataType<DomainRequestName extends string, Role extends string, DF> = {
    drn: DomainRequestName[];
    roles: Role[];
@@ -42,7 +40,7 @@ function createFolder(folder: string) {
 async function copyResources(conf: { destFolder: string; importExt: string }) {
    const { destFolder, importExt } = conf;
 
-   let str = await Deno.readTextFile(joinPath(currentFilePath, 'resources/Query.tpl'));
+   let str = await Deno.readTextFile(joinPath(getCurrentFilePath(), 'resources/Query.tpl'));
    str = str.replaceAll('{EXT}', importExt);
 
    const filename = Path.join(destFolder, 'Query.ts');
@@ -60,10 +58,10 @@ async function generateDomainsFolder<DomainRequestName extends string, Role exte
    const domainsFolder = Path.join(destFolder, 'domains');
    createFolder(domainsFolder);
    // copy Error file
-   await Deno.copyFile(joinPath(currentFilePath, 'resources/Error.ts'), Path.join(domainsFolder, 'Error.ts'));
+   await Deno.copyFile(joinPath(getCurrentFilePath(), 'resources/Error.ts'), Path.join(domainsFolder, 'Error.ts'));
    // copy QueryResult file
    await Deno.copyFile(
-      joinPath(currentFilePath, 'resources/QueryResult.ts'),
+      joinPath(getCurrentFilePath(), 'resources/QueryResult.ts'),
       Path.join(domainsFolder, 'QueryResult.ts'),
    );
    // gen Roles file
@@ -191,4 +189,11 @@ function capitalize(s: string): string {
 function createDomainRequestObjectName<DomainRequestName extends string>(drn: DomainRequestName): string {
    const name = toPascalCase(drn);
    return `${name}Request`;
+}
+
+function getCurrentFilePath(): string {
+   if (import.meta.url) {
+      return Path.dirname(Path.fromFileUrl(import.meta.url));
+   }
+   return '.';
 }
