@@ -48,11 +48,12 @@ async function copyResources(conf: { destFolder: string; importExt: string }) {
 }
 
 async function fetchResourceFileContent(path: string): Promise<string> {
-   let url = 'https://deno.land/x/domain_request/src/tools';
+   const url = 'https://deno.land/x/domain_request/src/tools';
 
-   if (import.meta.url) {
-      url = import.meta.url;
-   }
+   console.log('import.meta.url:', import.meta.url);
+   // if (import.meta.url) {
+   //    url = import.meta.url;
+   // }
 
    const resp = await fetch(Path.join(url, 'resources', path));
    return resp.text();
