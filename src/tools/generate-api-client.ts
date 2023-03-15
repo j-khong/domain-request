@@ -48,12 +48,11 @@ async function copyResources(conf: { destFolder: string; importExt: string }) {
 }
 
 async function fetchResourceFileContent(path: string): Promise<string> {
-   const url = 'https://deno.land/x/domain_request/src/tools';
+   let url = 'https://deno.land/x/domain_request/src/tools';
 
-   console.log('import.meta.url:', import.meta.url);
-   // if (import.meta.url) {
-   //    url = import.meta.url;
-   // }
+   if (import.meta.url) {
+      url = Path.dirname(import.meta.url);
+   }
 
    const resp = await fetch(Path.join(url, 'resources', path));
    return resp.text();
@@ -143,11 +142,6 @@ async function generateClient<DomainRequestName extends string, Role extends str
 async function writeFile(filename: string, str: string) {
    // const data = encoder.encode(str);
    await Deno.writeTextFile(filename, str);
-}
-
-function joinPath(folder: string, s: string): string {
-   const arr = s.split('/');
-   return Path.join(folder, ...arr);
 }
 
 async function genRequests<DomainRequestName extends string, Role extends string, DF>(
