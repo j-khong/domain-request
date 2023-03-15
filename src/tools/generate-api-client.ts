@@ -40,11 +40,22 @@ function createFolder(folder: string) {
 async function copyResources(conf: { destFolder: string; importExt: string }) {
    const { destFolder, importExt } = conf;
 
-   let str = await Deno.readTextFile(joinPath(getCurrentFilePath(), 'resources/Query.tpl'));
+   let str = await fetchResourceFileContent('Query.tpl');
    str = str.replaceAll('{EXT}', importExt);
 
    const filename = Path.join(destFolder, 'Query.ts');
    writeFile(filename, str);
+}
+
+async function fetchResourceFileContent(path: string): Promise<string> {
+   let url = 'https://deno.land/x/domain_request/src/tools';
+
+   if (import.meta.url) {
+      url = import.meta.url;
+   }
+
+   const resp = await fetch(Path.join(url, 'resources', path));
+   return resp.text();
 }
 
 async function generateDomainsFolder<DomainRequestName extends string, Role extends string, DF>(
@@ -57,16 +68,20 @@ async function generateDomainsFolder<DomainRequestName extends string, Role exte
 
    const domainsFolder = Path.join(destFolder, 'domains');
    createFolder(domainsFolder);
+
    // copy Error file
-   await Deno.copyFile(joinPath(getCurrentFilePath(), 'resources/Error.ts'), Path.join(domainsFolder, 'Error.ts'));
+   let content = await fetchResourceFileContent('Error.ts');
+   let filename = Path.join(domainsFolder, 'Error.ts');
+   writeFile(filename, content);
+
    // copy QueryResult file
-   await Deno.copyFile(
-      joinPath(getCurrentFilePath(), 'resources/QueryResult.ts'),
-      Path.join(domainsFolder, 'QueryResult.ts'),
-   );
+   content = await fetchResourceFileContent('QueryResult.ts');
+   filename = Path.join(domainsFolder, 'QueryResult.ts');
+   writeFile(filename, content);
+
    // gen Roles file
    const rolesDef = `export type Role = ${roles.map((v) => `"${v}"`).join('|')};`;
-   const filename = Path.join(domainsFolder, 'Role.ts');
+   filename = Path.join(domainsFolder, 'Role.ts');
    writeFile(filename, rolesDef);
 
    // gen requests
@@ -189,11 +204,4 @@ function capitalize(s: string): string {
 function createDomainRequestObjectName<DomainRequestName extends string>(drn: DomainRequestName): string {
    const name = toPascalCase(drn);
    return `${name}Request`;
-}
-
-function getCurrentFilePath(): string {
-   // if (import.meta.url) {
-   //    return Path.dirname(Path.fromFileUrl(import.meta.url));
-   // }
-   return 'https://deno.land/x/domain_request/src/tools';
 }
