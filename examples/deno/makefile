@@ -12,7 +12,7 @@ launch-server: install
 
 .PHONY: install
 install:
-	@which deno &>1 && : || { \
+	@which deno 1>$$TMPDIR/null && : || { \
 	echo '⚙️ installing deno...'; \
 	curl -fsSL https://deno.land/x/install/install.sh | sh ; \
 	echo '✅ done'; \
@@ -51,16 +51,18 @@ set-node-client:
 
 .PHONY: gen-client
 gen-client:
-	@echo '⚙️ generating client...' && \
+	@[ -d "$(GENERATED_CLIENT_FOLDER)" ] && rm -fr "$(GENERATED_CLIENT_FOLDER)" || : && \
+	echo '⚙️ generating client...' && \
 	deno run  --allow-env --allow-net --allow-read --allow-write tools/cli.ts $(CLIENT_TYPE) --dest-folder $(GENERATED_CLIENT_FOLDER) --roles admin && \
 	echo '✅ done'
 
 .PHONY: run-deno-example
-run-deno-example:
+run-deno-example: check-server gen-deno-client
+	@echo '🚀 launching the client' && \
+	deno run --allow-net example/client.ts
+
+.PHONY: check-server
+check-server:
 	@curl "http://localhost:8080" 1>/tmp/dumb 2>/tmp/dumb && : || { \
     echo "please launch the server first"; \
-	exit 1 ; } && \
-	[ -d "$(GENERATED_CLIENT_FOLDER)" ] && rm -fr "$(GENERATED_CLIENT_FOLDER)" || : && \
-	make gen-deno-client && \
-	echo '🚀 launching the client' && \
-	deno run --allow-net example/client.ts
+	exit 1 ; }

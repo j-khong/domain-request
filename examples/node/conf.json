@@ -1,0 +1,12 @@
+{
+    "env": "development",
+    "server": {
+       "version": "dev",
+       "host": "localhost",
+       "port": 8181
+   },
+   "database": {
+      "type": "sqlite",
+      "filepath": "../../unit-tests-new/persistence/database/sqlite.tables.sql"
+   }
+}

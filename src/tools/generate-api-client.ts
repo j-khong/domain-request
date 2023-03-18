@@ -24,7 +24,7 @@ export async function generateApiClient<DomainRequestName extends string, Role e
    });
 
    createFolder(conf.destFolder);
-   await copyResources({ destFolder, importExt, fetch });
+   await copyResources({ destFolder, target, importExt, fetch });
    await generateDomainsFolder({ destFolder, importExt, fetch }, data, domainRequest.getDomainRequestHandler);
    await generateClient({ destFolder, importExt }, data);
 }
@@ -37,13 +37,23 @@ function createFolder(folder: string) {
    }
 }
 
-async function copyResources(conf: { destFolder: string; importExt: string; fetch: (url: string) => Promise<string> }) {
-   const { destFolder, importExt, fetch } = conf;
+async function copyResources(conf: {
+   destFolder: string;
+   importExt: string;
+   target: 'deno' | 'node';
+   fetch: (url: string) => Promise<string>;
+}) {
+   const { destFolder, target, importExt, fetch } = conf;
 
-   let str = await fetchResourceFileContent('Query.tpl', fetch);
+   let str = await fetchResourceFileContent('ApiConnection.tpl', fetch);
    str = str.replaceAll('{EXT}', importExt);
 
-   const filename = Path.join(destFolder, 'Query.ts');
+   let filename = Path.join(destFolder, 'ApiConnection.ts');
+   writeFile(filename, str);
+
+   const basename = target === 'node' ? 'NodeExample' : target === 'deno' ? 'DenoExample' : '';
+   str = await fetchResourceFileContent(`${basename}.tpl`, fetch);
+   filename = Path.join(destFolder, `${basename}.ts`);
    writeFile(filename, str);
 }
 
@@ -112,8 +122,7 @@ async function generateClient<DomainRequestName extends string, Role extends str
    };
 
    const imports: string[] = [
-      `import {Query} from "./Query${importExt}"`,
-      `import {Role} from "./domains/Role${importExt}"`,
+      `import { ApiConnection } from './ApiConnection${importExt}';`,
       `import {QueryResult} from "./domains/QueryResult${importExt}"`,
    ];
    imports.push(...resourceDomainMapping.map((n) => genDomainImport(n.drn)));
@@ -121,16 +130,14 @@ async function generateClient<DomainRequestName extends string, Role extends str
    const genFetch = (data: { resource: string; drn: DomainRequestName }) => {
       return `fetch${toPascalCase(data.drn)}(query: ${createDomainRequestObjectName(data.drn)}): Promise<QueryResult> {
          const resource = '${data.resource}';
-         return this.query.process(resource, query);
+         return this.conn.process(resource, query);
       }`;
    };
 
    const content = `
    ${imports.join(';')}
    export class QueryApi {
-      private query: Query;
-      constructor(url: string) { this.query=new Query(url); }
-      init(v: { token: string; role: Role }) { this.query.init(v); }
+      constructor(private readonly conn: ApiConnection) {}
 
       ${resourceDomainMapping.map((n) => genFetch(n)).join('\n')}
    }`;

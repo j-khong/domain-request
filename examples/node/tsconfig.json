@@ -1,0 +1,27 @@
+{
+   "ts-node": {
+      // Do not forget to `npm i -D tsconfig-paths`
+      "require": ["tsconfig-paths/register"]
+   },
+    "compilerOptions": {
+      "baseUrl": "./" /* Base directory to resolve non-absolute module names. */,
+      "paths": {
+         /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
+         "*": ["src/*", "src/@types/*"],
+         "@app/*": ["src/app/*"],
+         "@domains/*": ["src/app/domains/*"],
+         "@services/*": ["src/app/services/*"],
+         "@interfaces/*": ["src/interfaces/*"]
+      },
+      "esModuleInterop": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+       "module": "commonjs",
+       "target": "es2017",
+       "lib": ["es2017"]
+    },
+    "include": ["src"]
+ }
+ 
