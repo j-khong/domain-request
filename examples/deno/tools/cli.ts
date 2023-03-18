@@ -28,7 +28,14 @@ async function generateClient(cliOptions: Options, target: 'deno' | 'node') {
    const destFolder = cliOptions.getSwitchValue('dest-folder');
 
    await generateApiClient(
-      { destFolder, target },
+      {
+         destFolder,
+         target,
+         fetch: async (url: string) => {
+            const res = await fetch(url);
+            return res.text();
+         },
+      },
       { getDomainRequestHandler, init },
       {
          drn: getDomainRequestName(),

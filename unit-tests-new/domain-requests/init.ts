@@ -1,5 +1,5 @@
 import * as Architect from './Architect/index.ts';
-import * as ArchitectPersistence from './Architect/builder/persistence/database/index.ts';
+import * as ArchitectPersistence from './Architect/builder/persistence/index.ts';
 import * as Sponsor from './Sponsor/index.ts';
 import * as SponsorPersistence from './Sponsor/builder/persistence/database/index.ts';
 import * as Country from './Country/index.ts';
@@ -33,7 +33,7 @@ export function getDomainRequestHandler<DF>(
 type GenericType = Factory<Role, DomainRequestName, unknown>;
 function createFactories(select: (query: string) => Promise<SelectMethodResult>): void {
    factories = {
-      architect: Architect.buildFactory(ArchitectPersistence.buildTableConnector(select)) as GenericType,
+      architect: Architect.buildFactory(ArchitectPersistence.buildConnector(select)) as GenericType,
       sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
       country: Country.buildFactory(CountryPersistence.buildTableConnector(select)) as GenericType,
       course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,

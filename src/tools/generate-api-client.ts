@@ -7,14 +7,14 @@ type DataType<DomainRequestName extends string, Role extends string, DF> = {
    resourceDomainMapping: Array<{ resource: string; drn: DomainRequestName }>;
 };
 export async function generateApiClient<DomainRequestName extends string, Role extends string, DF>(
-   conf: { target: 'deno' | 'node'; destFolder: string },
+   conf: { target: 'deno' | 'node'; destFolder: string; fetch: (url: string) => Promise<string> },
    domainRequest: {
       init: (select: SelectMethod) => void;
       getDomainRequestHandler: (name: DomainRequestName) => DomainRequestHandler<Role, DomainRequestName, DF>;
    },
    data: DataType<DomainRequestName, Role, DF>,
 ) {
-   const { destFolder, target } = conf;
+   const { destFolder, target, fetch } = conf;
    const importExt = target === 'node' ? '' : target === 'deno' ? '.ts' : '';
 
    domainRequest.init((_query: string): Promise<SelectMethodResult> => {
@@ -24,8 +24,8 @@ export async function generateApiClient<DomainRequestName extends string, Role e
    });
 
    createFolder(conf.destFolder);
-   await copyResources({ destFolder, importExt });
-   await generateDomainsFolder({ destFolder, importExt }, data, domainRequest.getDomainRequestHandler);
+   await copyResources({ destFolder, importExt, fetch });
+   await generateDomainsFolder({ destFolder, importExt, fetch }, data, domainRequest.getDomainRequestHandler);
    await generateClient({ destFolder, importExt }, data);
 }
 
@@ -37,45 +37,44 @@ function createFolder(folder: string) {
    }
 }
 
-async function copyResources(conf: { destFolder: string; importExt: string }) {
-   const { destFolder, importExt } = conf;
+async function copyResources(conf: { destFolder: string; importExt: string; fetch: (url: string) => Promise<string> }) {
+   const { destFolder, importExt, fetch } = conf;
 
-   let str = await fetchResourceFileContent('Query.tpl');
+   let str = await fetchResourceFileContent('Query.tpl', fetch);
    str = str.replaceAll('{EXT}', importExt);
 
    const filename = Path.join(destFolder, 'Query.ts');
    writeFile(filename, str);
 }
 
-async function fetchResourceFileContent(path: string): Promise<string> {
+async function fetchResourceFileContent(path: string, fetch: (url: string) => Promise<string>): Promise<string> {
    let url = 'https://deno.land/x/domain_request/src/tools';
 
    if (import.meta.url) {
       url = Path.dirname(import.meta.url);
    }
 
-   const resp = await fetch(Path.join(url, 'resources', path));
-   return resp.text();
+   return fetch(Path.join(url, 'resources', path));
 }
 
 async function generateDomainsFolder<DomainRequestName extends string, Role extends string, DF>(
-   conf: { destFolder: string; importExt: string },
+   conf: { destFolder: string; importExt: string; fetch: (url: string) => Promise<string> },
    data: DataType<DomainRequestName, Role, DF>,
    getDomainRequestHandler: (name: DomainRequestName) => DomainRequestHandler<Role, DomainRequestName, DF>,
 ) {
-   const { destFolder, importExt } = conf;
+   const { destFolder, importExt, fetch } = conf;
    const { roles, resourceDomainMapping } = data;
 
    const domainsFolder = Path.join(destFolder, 'domains');
    createFolder(domainsFolder);
 
    // copy Error file
-   let content = await fetchResourceFileContent('Error.ts');
+   let content = await fetchResourceFileContent('Error.ts', fetch);
    let filename = Path.join(domainsFolder, 'Error.ts');
    writeFile(filename, content);
 
    // copy QueryResult file
-   content = await fetchResourceFileContent('QueryResult.ts');
+   content = await fetchResourceFileContent('QueryResult.ts', fetch);
    filename = Path.join(domainsFolder, 'QueryResult.ts');
    writeFile(filename, content);
 
