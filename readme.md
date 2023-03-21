@@ -1,3 +1,17 @@
+# Table of content
+- [Table of content](#table-of-content)
+- [Why would you like to use this project ?](#why-would-you-like-to-use-this-project-)
+  - [1. CQRS](#1-cqrs)
+  - [2. Business Domain Model vs Persistence Data Model](#2-business-domain-model-vs-persistence-data-model)
+  - [3. GraphQL](#3-graphql)
+- [A package named Domain Request](#a-package-named-domain-request)
+- [Features](#features)
+  - [Data request](#data-request)
+    - [Fields selection](#fields-selection)
+    - [Value filtering](#value-filtering)
+    - [Classic API options](#classic-api-options)
+
+
 # Why would you like to use this project ?
 
 ## 1. CQRS
