@@ -1,21 +1,18 @@
 import * as fs from 'fs';
-import { ConfigFile,parse } from '@domains/ConfigurationFile';
+import { ConfigFile, parse } from '@domains/ConfigurationFile';
 
 export async function loadConfig(filename: string): Promise<ConfigFile | undefined> {
    try {
       const json = await readConfig(filename);
       if (json === null || json === undefined) {
-         console.error(
-            `error while parsing to json file content of ${filename}`,
-         );
+         console.error(`error while parsing to json file content of ${filename}`);
          return undefined;
       }
 
-      // TODO validate with zod
       config = parse(json);
       return config;
    } catch (e) {
-         console.error(e);
+      console.error(e);
    }
    return undefined;
 }

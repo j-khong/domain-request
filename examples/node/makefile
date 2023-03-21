@@ -5,9 +5,15 @@ GENERATED_CLIENT_FOLDER := ./client
 all: launch-server
 
 .PHONY: launch-server
-launch-server:
-	yarn && \
+launch-server: install
+	@echo '🚀 launching the server' && \
 	npx ts-node-dev -r tsconfig-paths/register --respawn tools/cli.ts launch-server --settings=$(SETTINGS_FILE)
+
+.PHONY: install
+install:
+	@echo '⚙️ installing deps...' && \
+	npm i && \
+	echo '✅ done'
 
 .PHONY: gen-client
 gen-client:
