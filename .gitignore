@@ -1,3 +1,19 @@
+npm
+examples/deno/client
+examples/node/client
+
+dbUtils.ts
+debug.ts
+tests-report
+
+.DS_Store
+
+A-migrer
+examples/**/src/deps/domain-request
+notes.txt
+scripts/
+
+
 # Logs
 logs
 *.log
