@@ -83,7 +83,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       }
       return `{
          ${v}
-      }`;
+      };`;
    }
 
    createInputFieldType(fieldName: string): string | undefined {
@@ -94,7 +94,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
       return `${this.camelToInputStyle(fieldName)}?: {
          ${v}
-      }`;
+      };`;
    }
 
    private processInputFieldType(): string | undefined {
