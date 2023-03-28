@@ -54,7 +54,7 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
          return undefined;
       }
 
-      return `${this.camelToInputStyle(fieldName)}?:${value};`;
+      return `${this.camelToInputStyle(fieldName)}?:${value}`;
    }
 
    createInputFilterType(fieldName: string): string | undefined {
