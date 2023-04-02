@@ -21,13 +21,13 @@ describe('Data fetch for simple', () => {
                total: 3,
                results: [
                   {
+                     id: '1',
+                  },
+                  {
                      id: '2',
                   },
                   {
                      id: '3',
-                  },
-                  {
-                     id: '1',
                   },
                ],
             };
@@ -44,13 +44,13 @@ describe('Data fetch for simple', () => {
                total: 3,
                results: [
                   {
+                     id: '1',
+                  },
+                  {
                      id: '2',
                   },
                   {
                      id: '3',
-                  },
-                  {
-                     id: '1',
                   },
                ],
             };
@@ -67,16 +67,16 @@ describe('Data fetch for simple', () => {
                total: 3,
                results: [
                   {
+                     id: '1',
+                     name: 'Math 101',
+                  },
+                  {
                      id: '2',
                      name: 'Arts',
                   },
                   {
                      id: '3',
                      name: 'History',
-                  },
-                  {
-                     id: '1',
-                     name: 'Math 101',
                   },
                ],
             };
@@ -251,16 +251,16 @@ describe('Data fetch for simple', () => {
                total: 3,
                results: [
                   {
+                     id: '1',
+                     name: 'Math 101',
+                  },
+                  {
                      id: '2',
                      name: 'Arts',
                   },
                   {
                      id: '3',
                      name: 'History',
-                  },
-                  {
-                     id: '1',
-                     name: 'Math 101',
                   },
                ],
             };
@@ -470,13 +470,13 @@ describe('Data fetch for simple', () => {
             total: 3,
             results: [
                {
+                  id: '1',
+               },
+               {
                   id: '2',
                },
                {
                   id: '3',
-               },
-               {
-                  id: '1',
                },
             ],
          };
@@ -498,16 +498,16 @@ describe('Data fetch for simple', () => {
             total: 3,
             results: [
                {
+                  name: 'Math 101',
+                  id: '1',
+               },
+               {
                   name: 'Arts',
                   id: '2',
                },
                {
                   name: 'History',
                   id: '3',
-               },
-               {
-                  name: 'Math 101',
-                  id: '1',
                },
             ],
          };

@@ -208,16 +208,16 @@ describe('Data fetch with filters for simple ', () => {
                total: 3,
                results: [
                   {
+                     name: 'Math 101',
+                     id: '1',
+                  },
+                  {
                      name: 'Arts',
                      id: '2',
                   },
                   {
                      name: 'History',
                      id: '3',
-                  },
-                  {
-                     name: 'Math 101',
-                     id: '1',
                   },
                ],
             };
@@ -382,14 +382,14 @@ describe('Data fetch with filters for simple ', () => {
                total: 2,
                results: [
                   {
-                     name: 'History',
-                     status: 'validating',
-                     id: '3',
-                  },
-                  {
                      name: 'Math 101',
                      status: 'opened',
                      id: '1',
+                  },
+                  {
+                     name: 'History',
+                     status: 'validating',
+                     id: '3',
                   },
                ],
             };
@@ -435,12 +435,12 @@ describe('Data fetch with filters for simple ', () => {
                total: 2,
                results: [
                   {
-                     status: 'validating',
-                     id: '3',
-                  },
-                  {
                      status: 'opened',
                      id: '1',
+                  },
+                  {
+                     status: 'validating',
+                     id: '3',
                   },
                ],
             };
@@ -734,14 +734,14 @@ describe('Data fetch with filters for simple ', () => {
                total: 2,
                results: [
                   {
-                     name: 'History',
-                     status: 'validating',
-                     id: '3',
-                  },
-                  {
                      name: 'Math 101',
                      status: 'opened',
                      id: '1',
+                  },
+                  {
+                     name: 'History',
+                     status: 'validating',
+                     id: '3',
                   },
                ],
             };
@@ -765,12 +765,12 @@ describe('Data fetch with filters for simple ', () => {
                total: 2,
                results: [
                   {
-                     status: 'validating',
-                     id: '3',
-                  },
-                  {
                      status: 'opened',
                      id: '1',
+                  },
+                  {
+                     status: 'validating',
+                     id: '3',
                   },
                ],
             };

@@ -28,9 +28,9 @@ describe('Data fetch with one to one fields', () => {
             },
             {
                type: {
-                  name: 'Colonial',
+                  name: 'Rococco',
                },
-               id: '4',
+               id: '2',
             },
             {
                type: {
@@ -40,9 +40,9 @@ describe('Data fetch with one to one fields', () => {
             },
             {
                type: {
-                  name: 'Rococco',
+                  name: 'Colonial',
                },
-               id: '2',
+               id: '4',
             },
          ],
       };
@@ -80,17 +80,17 @@ describe('Data fetch with one to one fields', () => {
             },
             {
                architect: {
-                  id: '3',
-                  name: 'Rodrigo',
-               },
-               id: '4',
-            },
-            {
-               architect: {
                   id: '4',
                   name: 'Armando',
                },
                id: '3',
+            },
+            {
+               architect: {
+                  id: '3',
+                  name: 'Rodrigo',
+               },
+               id: '4',
             },
          ],
       };
@@ -193,21 +193,21 @@ describe('Data fetch with one to one fields', () => {
             },
             {
                architect: {
-                  name: 'Rodrigo',
-                  rating: {
-                     rate: 'A',
-                  },
-               },
-               id: '4',
-            },
-            {
-               architect: {
                   name: 'Armando',
                   rating: {
                      rate: 'B',
                   },
                },
                id: '3',
+            },
+            {
+               architect: {
+                  name: 'Rodrigo',
+                  rating: {
+                     rate: 'A',
+                  },
+               },
+               id: '4',
             },
          ],
       };
@@ -255,18 +255,6 @@ describe('Data fetch with one to one fields', () => {
             },
             {
                architect: {
-                  name: 'Rodrigo',
-                  rating: {
-                     rate: 'A',
-                     rater: {
-                        name: 'Fitch',
-                     },
-                  },
-               },
-               id: '4',
-            },
-            {
-               architect: {
                   name: 'Armando',
                   rating: {
                      rate: 'B',
@@ -276,6 +264,18 @@ describe('Data fetch with one to one fields', () => {
                   },
                },
                id: '3',
+            },
+            {
+               architect: {
+                  name: 'Rodrigo',
+                  rating: {
+                     rate: 'A',
+                     rater: {
+                        name: 'Fitch',
+                     },
+                  },
+               },
+               id: '4',
             },
          ],
       };
@@ -498,16 +498,6 @@ describe('Data fetch with one to many fields', () => {
                ],
             },
             {
-               id: '4',
-               pictures: [
-                  {
-                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
-                     name: 'D',
-                     status: 'on',
-                  },
-               ],
-            },
-            {
                id: '2',
                pictures: [
                   {
@@ -535,6 +525,16 @@ describe('Data fetch with one to many fields', () => {
                      name: 'C',
                      status: 'on',
                   },
+                  {
+                     url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
+                     name: 'D',
+                     status: 'on',
+                  },
+               ],
+            },
+            {
+               id: '4',
+               pictures: [
                   {
                      url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
                      name: 'D',
