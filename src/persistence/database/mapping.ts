@@ -330,7 +330,9 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
             );
             continue;
          }
-         // TODO if instance of OneToManyTableMapping => processOneToMany
+         if( map instanceof OneToManyTableMapping){
+            console.error("TODO call processOneToMany instead")
+         }
          const res = map.processField(key, (value as any)[key]);
          if (res !== undefined) {
             fieldnames.children.push(res);
@@ -394,9 +396,6 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
    }
 
    processField(domainFieldname: string, _value: RequestableFields<T>): ProcessResult {
-      const join = `${this.nullable ? 'LEFT ' : ''}JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${
-         this.tableDef.primaryKey
-      } = ${this.tableName}.${this.foreignKey}`;
       const ret: ProcessResult = {
          fieldnames: {
             rootDomain: { name: domainFieldname, type: 'value' },
@@ -411,7 +410,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
             ],
          },
          tablename: this.tableDef.name,
-         joins: [join],
+         joins: [this.buildJoin()],
       };
       return ret;
    }
@@ -421,13 +420,21 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
       domainFilters: FilterArrayType<T>,
       errors: string[],
    ): { or: string[]; and: string[]; joins: string[] } {
-      return sameTableProcessAllFilters(
+      const res = sameTableProcessAllFilters(
          domainFieldname,
          domainFilters,
-         `${this.tableName}.${this.foreignKey}`,
+         `${this.tableDef.name}.${this.field}`,
          this.toDbConvert,
          errors,
       );
+      res.joins.push(this.buildJoin());
+      return res;
+   }
+
+   private buildJoin(): string {
+      return `${this.nullable ? 'LEFT ' : ''}JOIN ${this.tableDef.name} ON ${this.tableDef.name}.${
+         this.tableDef.primaryKey
+      } = ${this.tableName}.${this.foreignKey}`;
    }
 }
 

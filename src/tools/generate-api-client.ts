@@ -57,7 +57,7 @@ async function copyResources(conf: {
    writeFile(filename, str);
 }
 
-async function fetchResourceFileContent(path: string, fetch: (url: string) => Promise<string>): Promise<string> {
+function fetchResourceFileContent(path: string, fetch: (url: string) => Promise<string>): Promise<string> {
    let url = 'https://deno.land/x/domain_request/src/tools';
 
    if (import.meta.url) {

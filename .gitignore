@@ -1,6 +1,5 @@
 npm
-examples/deno/client
-examples/node/client
+examples/**/client
 
 dbUtils.ts
 debug.ts

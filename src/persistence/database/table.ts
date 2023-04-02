@@ -122,7 +122,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
 
       // 1. COUNT SELECT
-      const reqCountSql = `SELECT COUNT(${tableDef.name}.${tableDef.primaryKey}) AS total
+      const reqCountSql = `SELECT COUNT(DISTINCT ${tableDef.name}.${tableDef.primaryKey}) AS total
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}`;
@@ -138,6 +138,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
+ GROUP BY ${tableDef.name}.${tableDef.primaryKey}
  ${orderby}
  LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}`;
 
@@ -276,9 +277,22 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
 
       const pk = `${tableDef.name}.${tableDef.primaryKey}`;
-      const where = `WHERE ${pk} IN (${ids.join(', ')})`;
+      const commonWhere = `WHERE ${pk} IN (${ids.join(', ')})`;
 
       for (const [key, value] of dataByArray) {
+         const andFiltersArr: string[] = [];
+         //    console.log('key:', key)
+         //    console.log(extractFilter(key as any, req.filters))
+
+         //    const {
+         //    and: andFiltersArr,
+         //    or: orFiltersArr,
+         // } = processAllFilters(extractFilter(key as any, req.filters), mapping, res.errors);
+         // if (orFiltersArr.length > 0) {
+         //    andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
+         // }
+
+         const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
          const joinsSql = value.joins.size > 0 ? [...value.joins].join('\n') : '';
 
          const reqSql = `SELECT ${[
@@ -305,6 +319,22 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
    }
 }
+
+// function extractFilter<T>(key:Extract<keyof T, string>, filters:FiltersTree<T>):FiltersTree<T>{
+//    const ret:FiltersTree<T>={or:[],and:[]}
+//    for(const f of filters.and){
+//       if( isFilteringFields(f[key]) ){
+//          ret.and.push({[key]:f[key]})
+//       }
+//    }
+//    for(const f of filters.or){
+//       if( isFilteringFields(f[key]) ){
+//          ret.or.push({[key]:f[key]})
+//       }
+//    }
+//  console.log('ret:', ret)
+//  return ret;
+// }
 
 type DataByArrayType = {
    fields: string[];
