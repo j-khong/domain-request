@@ -844,6 +844,18 @@ describe('Data fetch with one to many fields', () => {
                      status: 'on',
                   },
                ],
+               sponsors: [
+                  {
+                     contribution: 500,
+                     id: '3',
+                     name: 'Ford',
+                  },
+                  {
+                     contribution: 1500,
+                     id: '4',
+                     name: 'Vanderbilt',
+                  },
+               ],
             },
             {
                name: 'D',
@@ -866,6 +878,13 @@ describe('Data fetch with one to many fields', () => {
                      url: 'https://i1.wp.com/www.thefrontdoorproject.com/wp-content/uploads/2016/03/IMG_4910.jpg',
                      name: 'D',
                      status: 'on',
+                  },
+               ],
+               sponsors: [
+                  {
+                     contribution: 5000,
+                     id: '5',
+                     name: 'JP Morgan',
                   },
                ],
             },

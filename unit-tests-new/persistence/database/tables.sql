@@ -216,7 +216,10 @@ INSERT INTO `buildings` (`name`, `status`, `id_category`, `confidential`, `id_ar
 INSERT INTO `building_sponsors` (`id_building`, `id_sponsor`, `contribution`) VALUES
 ((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Rockefeller'), 100),
 ((SELECT id FROM buildings WHERE `name`='A'), (SELECT id FROM sponsors WHERE `name`='Carnegie'), 200),
-((SELECT id FROM buildings WHERE `name`='B'), (SELECT id FROM sponsors WHERE `name`='Carnegie'), 500);
+((SELECT id FROM buildings WHERE `name`='B'), (SELECT id FROM sponsors WHERE `name`='Carnegie'), 500),
+((SELECT id FROM buildings WHERE `name`='C'), (SELECT id FROM sponsors WHERE `name`='Ford'), 500),
+((SELECT id FROM buildings WHERE `name`='C'), (SELECT id FROM sponsors WHERE `name`='Vanderbilt'), 1500),
+((SELECT id FROM buildings WHERE `name`='D'), (SELECT id FROM sponsors WHERE `name`='JP Morgan'), 5000);
 
 INSERT INTO `countries` (`name`, `timezone`) VALUES
 ('france', 'Europe/Paris'),
