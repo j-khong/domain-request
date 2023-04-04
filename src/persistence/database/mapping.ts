@@ -312,7 +312,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
 
    private buildJoin(): string {
       const td: OneToManyTableDef = this.tableDef as OneToManyTableDef;
-      return `JOIN ${td.name} ON ${td.name}.${td.foreign.keyName} = ${td.foreign.otherTable.name}.${td.foreign.otherTable.primaryKey}`;
+      return `LEFT JOIN ${td.name} ON ${td.name}.${td.foreign.keyName} = ${td.foreign.otherTable.name}.${td.foreign.otherTable.primaryKey}`;
    }
 
    processOneToMany(domainFieldname: string, value: RequestableFields<unknown>): ProcessOneToManyResult | undefined {
@@ -330,8 +330,8 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
             );
             continue;
          }
-         if( map instanceof OneToManyTableMapping){
-            console.error("TODO call processOneToMany instead")
+         if (map instanceof OneToManyTableMapping) {
+            console.error('TODO call processOneToMany instead');
          }
          const res = map.processField(key, (value as any)[key]);
          if (res !== undefined) {

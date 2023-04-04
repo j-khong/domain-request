@@ -402,7 +402,7 @@ function createResultAndPopulate<F>(dbRecord: DbRecord, fieldsToSelect: FieldsTo
 }
 
 function populateValueTree(struct: any, fieldnames: DomainPath[], value: any): void {
-   if (fieldnames.length === 0) {
+   if (fieldnames.length === 0 || value === undefined) {
       return;
    }
 
