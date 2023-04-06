@@ -3,7 +3,7 @@ import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
 import { processAllFilters, addSetToSet, createRequestFullFieldName, createSqlAlias } from './functions.ts';
-import { FiltersTree, isFilteringFields } from '../../domain-request/field-configuration/index.ts';
+import { FiltersTree, isFilteringFields, Options } from '../../domain-request/field-configuration/index.ts';
 
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
@@ -132,7 +132,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       results.total = total;
       results.report.requests.push(reportCount);
 
-      const orderby = Table.buildOrderby(req, mapping, results.errors);
+      const orderby = Table.buildOrderby(req.options, mapping, results.errors);
 
       // 2. SELECT fields + 1to1
       const reqSql = `SELECT ${fields.join(', ')}
@@ -153,30 +153,31 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       return Promise.resolve(results);
    }
 
-   private static buildOrderby<DRN extends string, T>(
-      req: DomainRequest<DRN, T>,
+   private static buildOrderby<T>(
+      options: Options<Extract<keyof T, string>>,
       mapping: TableMapping<Extract<keyof T, string>>,
       errors: string[],
    ): string {
       const fields = [];
 
-      if (req.options.orderby !== undefined) {
-         const fieldMap = mapping[req.options.orderby.fieldname];
+      if (options.orderby !== undefined) {
+         const fieldMap = mapping[options.orderby.fieldname];
          if (fieldMap === undefined) {
-            errors.push(`cannot find db mapping for domain field name [${req.options.orderby.fieldname}]`);
+            errors.push(`cannot find db mapping for domain field name [${options.orderby.fieldname}]`);
          } else {
-            const orderbys = fieldMap.getOrderBy(req.options);
+            const orderbys = fieldMap.getOrderBy(options);
             fields.push(...orderbys);
          }
       }
 
-      for (const key in req.options) {
-         if (key !== 'pagination' && key !== 'orderby') {
+      const optionNames = ['pagination', 'orderby', 'useFilter'];
+      for (const key in options) {
+         if (!optionNames.includes(key)) {
             const fieldMap = mapping[key as Extract<keyof T, string>];
             if (fieldMap === undefined) {
                errors.push(`cannot find db mapping for domain field name [${key}]`);
             } else {
-               const orderbys = fieldMap.getOrderBy((req.options as any)[key]);
+               const orderbys = fieldMap.getOrderBy((options as any)[key]);
                fields.push(...orderbys);
             }
          }
@@ -281,9 +282,12 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const commonWhere = `WHERE ${pk} IN (${ids.join(', ')})`;
 
       for (const [key, value] of dataByArray) {
+         let orderby = '';
+         let limit = '';
          let andFiltersArr: string[] = [];
 
-         if ((req.options as any)[key] !== undefined && (req.options as any)[key].useFilter === true) {
+         const fieldOptions = (req.options as any)[key];
+         if (fieldOptions !== undefined && fieldOptions.useFilter === true) {
             const { and, or: orFiltersArr } = processAllFilters(
                extractFilter(key as any, req.filters),
                mapping,
@@ -295,6 +299,8 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             if (orFiltersArr.length > 0) {
                andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
             }
+            orderby = Table.buildOrderby(fieldOptions, mapping, res.errors);
+            limit = `LIMIT ${fieldOptions.pagination.offset},${fieldOptions.pagination.limit}`;
          }
 
          const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
@@ -307,8 +313,9 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
- `; // TODO put orderby and limit of the filter
-         //  LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}
+ ${orderby}
+ ${limit}
+ `;
 
          const { res: dbResults, report } = await executeRequest(select, reqSql);
          res.report.requests.push(report);
