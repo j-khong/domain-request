@@ -3,6 +3,7 @@ import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
 import { processAllFilters, addSetToSet, createRequestFullFieldName, createSqlAlias } from './functions.ts';
+import { FiltersTree, isFilteringFields } from '../../domain-request/field-configuration/index.ts';
 
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
@@ -280,17 +281,21 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const commonWhere = `WHERE ${pk} IN (${ids.join(', ')})`;
 
       for (const [key, value] of dataByArray) {
-         const andFiltersArr: string[] = [];
-         //    console.log('key:', key)
-         //    console.log(extractFilter(key as any, req.filters))
+         let andFiltersArr: string[] = [];
 
-         //    const {
-         //    and: andFiltersArr,
-         //    or: orFiltersArr,
-         // } = processAllFilters(extractFilter(key as any, req.filters), mapping, res.errors);
-         // if (orFiltersArr.length > 0) {
-         //    andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
-         // }
+         if ((req.options as any)[key] !== undefined && (req.options as any)[key].useFilter === true) {
+            const { and, or: orFiltersArr } = processAllFilters(
+               extractFilter(key as any, req.filters),
+               mapping,
+               res.errors,
+            );
+            if (and.length > 0) {
+               andFiltersArr = and;
+            }
+            if (orFiltersArr.length > 0) {
+               andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
+            }
+         }
 
          const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
          const joinsSql = value.joins.size > 0 ? [...value.joins].join('\n') : '';
@@ -320,21 +325,20 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
    }
 }
 
-// function extractFilter<T>(key:Extract<keyof T, string>, filters:FiltersTree<T>):FiltersTree<T>{
-//    const ret:FiltersTree<T>={or:[],and:[]}
-//    for(const f of filters.and){
-//       if( isFilteringFields(f[key]) ){
-//          ret.and.push({[key]:f[key]})
-//       }
-//    }
-//    for(const f of filters.or){
-//       if( isFilteringFields(f[key]) ){
-//          ret.or.push({[key]:f[key]})
-//       }
-//    }
-//  console.log('ret:', ret)
-//  return ret;
-// }
+function extractFilter<T>(key: Extract<keyof T, string>, filters: FiltersTree<T>): FiltersTree<T> {
+   const ret: FiltersTree<T> = { or: [], and: [] };
+   for (const f of filters.and) {
+      if (isFilteringFields(f[key])) {
+         ret.and.push({ [key]: f[key] });
+      }
+   }
+   for (const f of filters.or) {
+      if (isFilteringFields(f[key])) {
+         ret.or.push({ [key]: f[key] });
+      }
+   }
+   return ret;
+}
 
 type DataByArrayType = {
    fields: string[];

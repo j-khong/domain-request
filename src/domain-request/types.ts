@@ -71,6 +71,7 @@ export interface Options<Fields extends DomainFields> {
       fieldname: keyof Fields;
       sort: OrderbySort;
    };
+   useFilter?:boolean;
 }
 const orderbySort = ['asc', 'desc'] as const;
 export type OrderbySort = typeof orderbySort[number];

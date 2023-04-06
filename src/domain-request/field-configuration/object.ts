@@ -1,5 +1,5 @@
 import { RequestableFields, BoolTree, Tree, InputErrors } from '../types.ts';
-import { isPositiveNumber, isString } from '../type-checkers.ts';
+import { isBoolean, isPositiveNumber, isString } from '../type-checkers.ts';
 import { DomainFieldConfiguration, FiltersTree } from './types.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';
@@ -336,6 +336,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
          limit: inputOptions.limit ?? undefined,
          offset: inputOptions.offset ?? undefined,
          orderby: inputOptions.orderby ?? undefined,
+         use_filter: inputOptions.use_filter ?? undefined,
       };
       const { options, errors } = this.sanitizeOption2(toPass, MAX_LIMIT);
       // search for field name and pass object
@@ -429,6 +430,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
             }
          }
          this.sanitizeOrderBy(inputOptions, options, errors);
+         this.sanitize1toNFilter(inputOptions, options, errors);
       }
       return {
          options,
@@ -473,6 +475,21 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       }
       options.orderby = { fieldname: cameledFieldName, sort };
    }
+
+   private sanitize1toNFilter(
+      inputOptions: { [key: string]: unknown },
+      options: Options<Extract<keyof Fields, string>>,
+      errors: InputErrors,
+   ): void {
+      if (inputOptions.use_filter === undefined) {
+         return;
+      }
+      if (!isBoolean(inputOptions.use_filter)) {
+         errors.push({ context: 'option', fieldName: 'use_filter', reason: 'not a boolean' });
+         return;
+      }
+      options.useFilter = inputOptions.use_filter;
+   }
 }
 
 export interface Options<FieldNames extends string> {
@@ -484,6 +501,7 @@ export interface Options<FieldNames extends string> {
       fieldname: FieldNames;
       sort: OrderbySort;
    };
+   useFilter?: boolean;
 }
 // {
 //    [Property in FieldNames]:Options<string>;
