@@ -385,9 +385,9 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
          return undefined;
       }
 
-      const errors: InputErrors = [];
+      const { options, errors } = this.sanitizeOption2(val as { [key: string]: unknown }, MAX_LIMIT);
+      toSet[fieldName] = { ...options };
 
-      toSet[fieldName] = {};
       for (const key in this.conf) {
          const res = this.conf[key].sanitizeOption(
             val as Tree,
