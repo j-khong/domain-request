@@ -4,6 +4,7 @@ import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './ma
 import { Persistence } from '../index.ts';
 import { processAllFilters, addSetToSet, createRequestFullFieldName, createSqlAlias } from './functions.ts';
 import { FiltersTree, isFilteringFields, Options } from '../../domain-request/field-configuration/index.ts';
+import { FilterArrayType } from '../../domain-request/field-configuration/types.ts';
 
 interface DbRecord {
    [key: string]: string | number | Date | boolean;
@@ -286,10 +287,15 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          let limit = '';
          let andFiltersArr: string[] = [];
 
-         const fieldOptions = (req.options as any)[key];
-         if (fieldOptions !== undefined && fieldOptions.useFilter === true) {
+         const fieldOptions = req.options[key as keyof Options<Extract<keyof T, string>>];
+         if (
+            fieldOptions !== undefined &&
+            isSomethingLike<Options<Extract<keyof T, string>>>(fieldOptions) &&
+            fieldOptions.useFilter === true
+         ) {
+            const fo = fieldOptions as Options<Extract<keyof T, string>>;
             const { and, or: orFiltersArr } = processAllFilters(
-               extractFilter(key as any, req.filters),
+               extractFilter(key as Extract<keyof T, string>, req.filters),
                mapping,
                res.errors,
             );
@@ -299,8 +305,8 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             if (orFiltersArr.length > 0) {
                andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
             }
-            orderby = Table.buildOrderby(fieldOptions, mapping, res.errors);
-            limit = `LIMIT ${fieldOptions.pagination.offset},${fieldOptions.pagination.limit}`;
+            orderby = Table.buildOrderby(fo, mapping, res.errors);
+            limit = `LIMIT ${fo.pagination.offset},${fo.pagination.limit}`;
          }
 
          const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
@@ -336,12 +342,12 @@ function extractFilter<T>(key: Extract<keyof T, string>, filters: FiltersTree<T>
    const ret: FiltersTree<T> = { or: [], and: [] };
    for (const f of filters.and) {
       if (isFilteringFields(f[key])) {
-         ret.and.push({ [key]: f[key] });
+         ret.and.push({ [key]: f[key] } as FilterArrayType<T>);
       }
    }
    for (const f of filters.or) {
       if (isFilteringFields(f[key])) {
-         ret.or.push({ [key]: f[key] });
+         ret.or.push({ [key]: f[key] } as FilterArrayType<T>);
       }
    }
    return ret;

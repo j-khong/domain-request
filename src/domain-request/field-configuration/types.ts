@@ -1,4 +1,5 @@
 import { camelToSnake, snakeToCamel } from '../converters.ts';
+import { isSomethingLike } from '../type-checkers.ts';
 import { BoolTree, Tree, InputErrors } from '../types.ts';
 import { ObjectFieldConfiguration } from './object.ts';
 export type FieldFilteringConfig<T> = {
@@ -107,16 +108,23 @@ const operators = [
 ] as const;
 export type Operator = typeof operators[number];
 
-export function isComparison<T>(o: any): o is Comparison<T> {
-   return o !== undefined && o.operator !== undefined && o.value !== undefined;
+export function isComparison<T>(o: unknown): o is Comparison<T> {
+   return o !== undefined && isSomethingLike<Comparison<T>>(o) && o.operator !== undefined && o.value !== undefined;
 }
 
-export function isComputedComparison<T>(o: any): o is ComputedComparison<T> {
-   return o !== undefined && o.data !== undefined && isComparison(o);
+export function isComputedComparison<T>(o: unknown): o is ComputedComparison<T> {
+   return o !== undefined && isSomethingLike<ComputedComparison<T>>(o) && o.data !== undefined && isComparison(o);
 }
 
-export function isFilteringFields<T>(o: any): o is FilteringFields<T> {
-   return o !== undefined && o.and !== undefined && o.or !== undefined && Array.isArray(o.and) && Array.isArray(o.or);
+export function isFilteringFields<T>(o: unknown): o is FilteringFields<T> {
+   return (
+      o !== undefined &&
+      isSomethingLike<FilteringFields<T>>(o) &&
+      o.and !== undefined &&
+      o.or !== undefined &&
+      Array.isArray(o.and) &&
+      Array.isArray(o.or)
+   );
 }
 
 // export interface Comparison<T> {

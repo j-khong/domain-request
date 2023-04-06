@@ -503,12 +503,11 @@ export interface Options<FieldNames extends string> {
    };
    useFilter?: boolean;
 }
-// {
-//    [Property in FieldNames]:Options<string>;
-// }
+// & { [Property in FieldNames]?: Options<string> };
+
 const orderbySort = ['asc', 'desc'] as const;
 type OrderbySort = typeof orderbySort[number];
-function isOrderbySort(o: any): o is OrderbySort {
+function isOrderbySort(o: unknown): o is OrderbySort {
    return o !== undefined && orderbySort.includes(o as OrderbySort);
 }
 function getOrderbySort(): OrderbySort[] {

@@ -156,8 +156,8 @@ export class SameTableObjectMapping<T extends string> extends FieldMapping {
          joins: [],
       };
       for (const domFieldname in value) {
-         const tmap = (this.mapping as any)[domFieldname] as FieldMapping;
-         const res = tmap.processField(domFieldname, (value as any)[domFieldname]);
+         const tmap = this.mapping[domFieldname as T] as FieldMapping;
+         const res = tmap.processField(domFieldname, value[domFieldname as T]);
          if (res !== undefined) {
             ret.fieldnames.children.push(res);
          }
@@ -238,8 +238,8 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
          joins: [this.buildJoin()],
       };
       for (const domFieldname in value) {
-         const tmap = (this.mapping as any)[domFieldname] as FieldMapping;
-         const res = tmap.processField(domFieldname, (value as any)[domFieldname]);
+         const tmap = this.mapping[domFieldname as T] as FieldMapping;
+         const res = tmap.processField(domFieldname, value[domFieldname as T]);
          if (res !== undefined) {
             ret.fieldnames.children.push(res);
          }
@@ -284,14 +284,14 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       };
       // return undefined
       for (const key in value) {
-         const map = (this.mapping as any)[key] as FieldMapping;
+         const map = this.mapping[key as T] as FieldMapping;
          if (map === undefined) {
             console.log(
                `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
             );
             continue;
          }
-         const res = map.processOneToMany(key, (value as any)[key]);
+         const res = map.processOneToMany(key, value[key as T]);
          if (res !== undefined) {
             fieldnames.children.push(res);
          }
@@ -323,7 +323,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
          rootDomain: { name: domainFieldname, type: 'array' },
       };
       for (const key in value) {
-         const map = (this.mapping as any)[key] as FieldMapping;
+         const map = this.mapping[key as T] as FieldMapping;
          if (map === undefined) {
             console.log(
                `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
@@ -333,7 +333,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
          if (map instanceof OneToManyTableMapping) {
             console.error('TODO call processOneToMany instead');
          }
-         const res = map.processField(key, (value as any)[key]);
+         const res = map.processField(key, value[key as T]);
          if (res !== undefined) {
             fieldnames.children.push(res);
             res.joins.forEach((v) => joins.add(v));

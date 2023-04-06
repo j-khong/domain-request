@@ -71,11 +71,11 @@ export interface Options<Fields extends DomainFields> {
       fieldname: keyof Fields;
       sort: OrderbySort;
    };
-   useFilter?:boolean;
+   useFilter?: boolean;
 }
 const orderbySort = ['asc', 'desc'] as const;
 export type OrderbySort = typeof orderbySort[number];
-export function isOrderbySort(o: any): o is OrderbySort {
+export function isOrderbySort(o: unknown): o is OrderbySort {
    return o !== undefined && orderbySort.includes(o as OrderbySort);
 }
 export function getOrderbySort(): OrderbySort[] {

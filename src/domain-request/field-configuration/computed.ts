@@ -199,7 +199,7 @@ export class ComputedFieldConfiguration<
 
       return {
          operator,
-         value: comparison.value as any,
+         value: comparison.value as ComputedComparison<Value>['value'],
          data: comparison.data,
       };
    }

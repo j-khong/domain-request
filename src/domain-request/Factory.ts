@@ -33,7 +33,7 @@ export function buildDomainRequestFactory<R extends string, DRN extends string, 
    return {
       getAllRolesRequestBuilders: () => domainRequestBuilderByRole,
       getRoleDomainRequestBuilder: (role: R) => domainRequestBuilderByRole[role],
-      fetchDomain: async (req: DomainRequest<DRN, Fields>) => datastore.fetch(req),
+      fetchDomain: (req: DomainRequest<DRN, Fields>) => datastore.fetch(req),
       // datastore,
    };
 }

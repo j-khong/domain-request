@@ -47,7 +47,15 @@ export class ToDbSqlCoordinatesConverter extends ToDbSqlConverter<Coordinates> {
 }
 
 export class ToDbSqlStringConverter extends ToDbSqlConverter<string> {
-   constructor(typeConverter: (o: unknown) => string = (o: unknown) => (o as any).toString()) {
+   constructor(
+      typeConverter: (o: unknown) => string = (o: unknown) => {
+         try {
+            return (o as { toString: () => string }).toString();
+         } catch (_e) {
+            return `cannot convert [${o}] to string`;
+         }
+      },
+   ) {
       super(typeConverter);
    }
 
@@ -113,12 +121,16 @@ function format2digits(val: number): string {
    return String(val).padStart(2, '0');
 }
 
-const toNumber = (o: any): number => {
-   const r = Number.parseFloat(o);
-   if (isNaN(r)) {
+const toNumber = (o: unknown): number => {
+   try {
+      const r = Number.parseFloat((o as { toString: () => string }).toString());
+      if (isNaN(r)) {
+         return 0;
+      }
+      return r;
+   } catch (_e) {
       return 0;
    }
-   return r;
 };
 
 export class ValueMapper<DbValues, DomainValues> {
