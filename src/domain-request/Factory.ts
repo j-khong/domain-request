@@ -41,7 +41,11 @@ export function buildDomainRequestFactory<R extends string, DRN extends string, 
 export type DomainRequestByRole<R extends string, DRN extends string, F> = {
    [Property in R]: {
       buildRequestBuilder: () => DomainRequestBuilder<DRN, F>;
-      createDomainConfig: () => DomainConfig<DRN, F>;
+      /**
+       *
+       * @param toIgnore domain names to ignore, when 2 domains are mutually imported
+       */
+      createDomainConfig: (toIgnore?: string[]) => DomainConfig<DRN, F>;
    };
 };
 
@@ -59,7 +63,7 @@ class ConfigBuilderForRole<DomainRequestName extends string, Fields, Role extend
    private readonly generateFieldsSetup: () => FieldsSetup<Fields>;
    private readonly authorizedFields?: Array<keyof Fields>;
    private readonly dependencies?: {
-      initDomainConfig: (dc: DomainConfig<DomainRequestName, Fields>, role: Role) => void;
+      initDomainConfig: (dc: DomainConfig<DomainRequestName, Fields>, role: Role, toIgnore: string[]) => void;
       role: Role;
    };
 
@@ -71,7 +75,7 @@ class ConfigBuilderForRole<DomainRequestName extends string, Fields, Role extend
       domainRequestName: DomainRequestName;
       generateFieldsSetup: () => FieldsSetup<Fields>;
       dependencies?: {
-         initDomainConfig: (dc: DomainConfig<DomainRequestName, Fields>, role: Role) => void;
+         initDomainConfig: (dc: DomainConfig<DomainRequestName, Fields>, role: Role, toIgnore: string[]) => void;
          role: Role;
       };
       authorizedFields?: Array<keyof Fields>; // explicitly pass an empty array if you want the role to NOT GET ANY DATA FROM THIS DOMAIN
@@ -91,12 +95,12 @@ class ConfigBuilderForRole<DomainRequestName extends string, Fields, Role extend
          this.createDomainConfig(),
       );
    }
-   createDomainConfig(): DomainConfig<DomainRequestName, Fields> {
+   createDomainConfig(toIgnore: string[] = []): DomainConfig<DomainRequestName, Fields> {
       const fieldMapping = this.generateFieldsSetup();
       const conf = createDomainConfig(this.domainRequestName, fieldMapping, this.authorizedFields);
 
       if (this.dependencies !== undefined) {
-         this.dependencies.initDomainConfig(conf, this.dependencies.role);
+         this.dependencies.initDomainConfig(conf, this.dependencies.role, toIgnore);
       }
       return conf;
    }
@@ -112,7 +116,12 @@ export function buildDomainRequestBuilderByRole<R extends string, DRN extends st
    naturalKey?: Array<Extract<keyof F, string>>;
 
    rolesList: R[];
-   initDomainConfig?: (dc: DomainConfig<DRN, F>, role: R) => void;
+
+   /**
+    *
+    * @param toIgnore domain names to ignore, when 2 domains are mutually imported
+    */
+   initDomainConfig?: (dc: DomainConfig<DRN, F>, role: R, toIgnore: string[]) => void;
 
    rolesSpecifics: Partial<{
       [Property in R]: {

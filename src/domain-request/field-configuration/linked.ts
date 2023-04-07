@@ -49,7 +49,11 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
    }
 
    createInputFieldType(fieldName: string): string | undefined {
-      const value = this.getDomain().fields.createInputFieldsType();
+      // in case of domains mutually importing one another
+      if (undefined === this.dom) {
+         return undefined;
+      }
+      const value = this.dom.fields.createInputFieldsType();
       if (value === undefined) {
          return undefined;
       }
@@ -58,7 +62,11 @@ class CommonLinkedDomainConfiguration<DRN extends string, T> extends DomainField
    }
 
    createInputFilterType(fieldName: string): string | undefined {
-      return this.getDomain().fields.createInputFilterType(fieldName);
+      // in case of domains mutually importing one another
+      if (undefined === this.dom) {
+         return undefined;
+      }
+      return this.dom.fields.createInputFilterType(fieldName);
    }
 
    sanitizeFilter(
