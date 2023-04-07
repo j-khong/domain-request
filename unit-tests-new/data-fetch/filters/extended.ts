@@ -295,7 +295,7 @@ describe('Data fetch with filter on one to N fields', () => {
       await resetClient();
    });
 
-   it('requests 1 1toN field + filter on it', async () => {
+   it('requests with 1 1toN field + filter main resource on it', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -335,7 +335,52 @@ describe('Data fetch with filter on one to N fields', () => {
       await test(input, role, domainRequestName, expected);
    });
 
-   it('requests no fields + filter on 1 1toN field', async () => {
+   it('requests with 1 1toN field + filter main resource on it + filter 1toN field results', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {
+            sponsors: { name: true },
+         },
+         filters: {
+            sponsors: {
+               name: { operator: 'contains', value: 'e' },
+            },
+         },
+         options: {
+            sponsors: {
+               use_filter: true,
+            },
+         },
+      };
+      const results = [
+         {
+            id: '1',
+            sponsors: [{ name: 'Carnegie' }, { name: 'Rockefeller' }],
+         },
+         {
+            id: '2',
+            sponsors: [{ name: 'Carnegie' }],
+         },
+         {
+            id: '3',
+            sponsors: [{ name: 'Vanderbilt' }],
+         },
+      ];
+      const expected = {
+         domainName: domainRequestName,
+         total: results.length,
+         results,
+      };
+      await test(input, role, domainRequestName, expected);
+
+      (input as any).filters = {
+         and: [input.filters],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests no fields + filter main resource on 1 1toN field', async () => {
       const domainRequestName: DomainRequestName = 'building';
       const role = 'admin';
       const input = {
@@ -343,6 +388,36 @@ describe('Data fetch with filter on one to N fields', () => {
          filters: {
             sponsors: {
                name: { operator: 'contains', value: 'e' },
+            },
+         },
+      };
+      const results = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const expected = {
+         domainName: domainRequestName,
+         total: results.length,
+         results,
+      };
+      await test(input, role, domainRequestName, expected);
+
+      (input as any).filters = {
+         and: [input.filters],
+      };
+      await test(input, role, domainRequestName, expected);
+   });
+
+   it('requests no fields + filter main resource on 1 1toN field + filter 1toN field results', async () => {
+      const domainRequestName: DomainRequestName = 'building';
+      const role = 'admin';
+      const input = {
+         fields: {},
+         filters: {
+            sponsors: {
+               name: { operator: 'contains', value: 'e' },
+            },
+         },
+         options: {
+            sponsors: {
+               use_filter: true,
             },
          },
       };
