@@ -3,7 +3,7 @@
       // Do not forget to `npm i -D tsconfig-paths`
       "require": ["tsconfig-paths/register"]
    },
-    "compilerOptions": {
+   "compilerOptions": {
       "baseUrl": "./" /* Base directory to resolve non-absolute module names. */,
       "paths": {
          /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
@@ -16,12 +16,13 @@
       "esModuleInterop": true,
       "noImplicitAny": true,
       "strictNullChecks": true,
-      "moduleResolution": "node",
+      // "verbatimModuleSyntax": true,
+      "allowImportingTsExtensions": true,
+      "moduleResolution": "NodeNext",
       "resolveJsonModule": true,
-       "module": "commonjs",
-       "target": "es2017",
-       "lib": ["es2017"]
-    },
-    "include": ["src"]
- }
- 
+      "module": "commonjs",
+      "target": "es2017",
+      "lib": ["es2017"]
+   },
+   "include": ["src"]
+}

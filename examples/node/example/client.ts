@@ -1,6 +1,6 @@
 import conf from '../conf.json';
-import { QueryApi } from '../client';
-import { NodeExample } from '../client/NodeExample';
+import { QueryApi } from '../client/index.ts';
+import { NodeExample } from '../client/NodeExample.ts';
 
 (async () => {
    const url = `http://${conf.server.host}:${conf.server.port}`;

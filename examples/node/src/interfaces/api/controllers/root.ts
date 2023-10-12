@@ -1,5 +1,5 @@
-import {  Context } from 'koa';
-import { getConfigFile } from '@interfaces/index';
+import { Context } from '/deps/index.ts';
+import { getConfigFile } from '../../index.ts';
 
 export function fetch(ctx: Context) {
    const config = getConfigFile();

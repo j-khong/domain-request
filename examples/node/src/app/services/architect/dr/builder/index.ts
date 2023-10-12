@@ -5,9 +5,9 @@ import {
    DomainRequestByRole,
    Factory,
    Persistence,
-} from "@jkhong/domain-request"
-import { DomainRequestName, getRoles, Role } from '@domains/types';
-import { domainRequestName, Fields, generateFieldsSetup } from '../types';
+} from '/deps/index.ts';
+import { DomainRequestName, getRoles, Role } from '@domains/types.ts';
+import { domainRequestName, Fields, generateFieldsSetup } from '../types.ts';
 
 export function buildFactory(
    datastore: Persistence<DomainRequestName, Fields>,

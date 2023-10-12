@@ -1,11 +1,11 @@
-import CLI from '@jkhong/cli-js';
+import * as CLI from '@jkhong/cli-js';
 import { generateApiClient } from '@jkhong/domain-request';
-import { getDomainRequestName, getRoles, Role } from '../src/app/domains/types';
-import { getDomainRequestHandler, init } from '../src/app/index';
-import { getResourceDomainMapping } from '../src/interfaces/api/index';
-import { loadConfig } from '../src/interfaces/index';
-import { start } from '../src/start/index';
-import { readFile } from '../src/interfaces/filesystem';
+import { getDomainRequestName, getRoles,type Role } from '../src/app/domains/types.ts';
+import { getDomainRequestHandler, init } from '../src/app/index.ts';
+import { getResourceDomainMapping } from '../src/interfaces/api/index.ts';
+import { loadConfig } from '../src/interfaces/index.ts';
+import { start } from '../src/start/index.ts';
+import { readFile } from '../src/interfaces/filesystem.ts';
 
 async function launchServer(cliOptions: CLI.Options) {
    const config = await loadConfig(cliOptions.getSwitchValue('settings'));
@@ -31,8 +31,8 @@ async function generateClient(cliOptions: CLI.Options, target: 'deno' | 'node') 
          destFolder,
          target,
          fetch: (url: string) => {
-            const oUrl=new URL(url)
-            return readFile(oUrl.pathname)
+            const oUrl = new URL(url);
+            return readFile(oUrl.pathname);
          },
       },
       { getDomainRequestHandler, init },

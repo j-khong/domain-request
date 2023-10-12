@@ -7,9 +7,9 @@ import {
    ToDbSqlNumberConverter,
    ToDbSqlStringConverter,
    unknownToString,
-} from "@jkhong/domain-request"
-import { DomainRequestName } from '@domains/types';
-import { Fields } from '../../../types';
+} from '/deps/index.ts';
+import { DomainRequestName } from '@domains/types.ts';
+import { Fields } from '../../../types.ts';
 
 const tableDef: TableDef = {
    name: 'countries',

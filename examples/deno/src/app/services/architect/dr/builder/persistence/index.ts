@@ -8,5 +8,6 @@ export function buildConnector(select: SelectMethod): Persistence<DomainRequestN
    // which aggregates data from differents data source :
    // - SQL DB
    // - mem cache DB
+   // - etc...
    return buildTableConnector(select);
 }

@@ -1,5 +1,5 @@
-import { FieldsSetup, ObjectFieldConfiguration, StringFieldConfiguration } from "@jkhong/domain-request";
-import { DomainRequestName } from '@domains/types';
+import { FieldsSetup, ObjectFieldConfiguration, StringFieldConfiguration } from '/deps/index.ts';
+import { DomainRequestName } from '@domains/types.ts';
 
 export const domainRequestName: DomainRequestName = 'architect';
 

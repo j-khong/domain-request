@@ -1,9 +1,9 @@
-import { DomainRequestHandler, Factory, SelectMethodResult } from '@jkhong/domain-request';
-import { DomainRequestName, Role } from '@domains/types';
-import * as Country from '@services/country/dr';
-import * as CountryPersistence from '@services/country/dr/builder/persistence';
-import * as Architect from '@services/architect/dr';
-import * as ArchitectPersistence from '@services/architect/dr/builder/persistence';
+import { DomainRequestHandler, Factory, SelectMethodResult } from '/deps/index.ts';
+import { DomainRequestName, Role } from '@domains/types.ts';
+import * as Country from '@services/country/dr/index.ts';
+import * as CountryPersistence from '@services/country/dr/builder/persistence/index.ts';
+import * as Architect from '@services/architect/dr/index.ts';
+import * as ArchitectPersistence from '@services/architect/dr/builder/persistence/index.ts';
 
 export function init(select: (query: string) => Promise<SelectMethodResult>): void {
    createFactories(select);

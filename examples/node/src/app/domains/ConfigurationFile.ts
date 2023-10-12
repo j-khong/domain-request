@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from '/deps/index.ts';
 
 const dbConf = z.discriminatedUnion('type', [
    z.object({

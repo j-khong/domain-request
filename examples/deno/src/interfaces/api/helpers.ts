@@ -1,4 +1,4 @@
-import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report, RequestableFields } from '/deps/index.ts';
+import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report } from '/deps/index.ts';
 import { getRoles, Role } from '@domains/types.ts';
 
 export async function fetch(
@@ -38,7 +38,7 @@ export async function fetch(
 }
 
 function getToken(ctx: Context): string | undefined {
-   const auth = ctx.request.headers.get('authorization');
+   const auth = helpers.getHeader(ctx, 'authorization');
    if (auth === undefined || auth === null || auth === '' || !auth.includes('Bearer')) {
       return undefined;
    }
@@ -50,7 +50,7 @@ function getToken(ctx: Context): string | undefined {
 }
 
 function getRole(ctx: Context): Role | undefined {
-   const role = ctx.request.headers.get('user-role') as Role;
+   const role = helpers.getHeader(ctx, 'user-role') as Role;
    if (role === undefined || role === null) {
       return undefined;
    }

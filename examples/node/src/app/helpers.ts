@@ -1,7 +1,7 @@
-import { DomainRequest, InputErrors, Report } from '@jkhong/domain-request';
-import { DomainRequestName, Role } from '@domains/types';
-import { User } from '@domains/User';
-import { getDomainRequestHandler } from './';
+import { DomainRequest, InputErrors, Report } from '/deps/index.ts';
+import { DomainRequestName, Role } from '@domains/types.ts';
+import { User } from '@domains/User.ts';
+import { getDomainRequestHandler } from './index.ts';
 
 export const dumbModifyRequest: <DF>(user: User, dr: DomainRequest<DomainRequestName, DF>) => void = <DF>(
    _user: User,

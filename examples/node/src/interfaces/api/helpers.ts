@@ -1,6 +1,5 @@
-import {Context} from 'koa';
-import { cameledFieldsObjectToSnaked ,InputErrors, Report, RequestableFields } from '@jkhong/domain-request';
-import { getRoles, Role } from '@domains/types';
+import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report } from '/deps/index.ts';
+import { getRoles, Role } from '@domains/types.ts';
 
 export async function fetch(
    ctx: Context,
@@ -20,8 +19,8 @@ export async function fetch(
          throw new Error('unknown role');
       }
 
-      const obj = ctx.request.query;
-      const queryData = JSON.parse(obj.query as string);
+      const obj = helpers.getQuery(ctx);
+      const queryData = JSON.parse(obj.query);
 
       const fetchedResult = await domainFetch(queryData, { token, role });
 
@@ -39,7 +38,7 @@ export async function fetch(
 }
 
 function getToken(ctx: Context): string | undefined {
-   const auth = ctx.request.headers.authorization
+   const auth = helpers.getHeader(ctx, 'authorization');
    if (auth === undefined || auth === null || auth === '' || !auth.includes('Bearer')) {
       return undefined;
    }
@@ -51,7 +50,7 @@ function getToken(ctx: Context): string | undefined {
 }
 
 function getRole(ctx: Context): Role | undefined {
-   const role = ctx.request.headers['user-role'] as Role;
+   const role = helpers.getHeader(ctx, 'user-role') as Role;
    if (role === undefined || role === null) {
       return undefined;
    }
