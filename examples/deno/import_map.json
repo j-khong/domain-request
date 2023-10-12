@@ -3,6 +3,7 @@
       "/": "./src/",
       "./": "./",
       "@services/": "./src/app/services/",
-      "@domains/": "./src/app/domains/"
+      "@domains/": "./src/app/domains/",
+      "@interfaces/": "./src/interfaces/"
    }
 }
