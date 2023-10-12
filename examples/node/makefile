@@ -16,7 +16,9 @@ install:
 	echo '✅ done' && \
 	echo '⚙️ linking code...' && \
 	[ -L src/app ] && rm src/app || : && \
-	cd src && ln -s ../../src/app && \
+	cd src && ln -s ../../src/app && cd - && \
+	[ -L src/interfaces/api ] && rm src/interfaces/api || : && \
+	cd src/interfaces && ln -s ../../../src/interfaces/api && \
 	echo '✅ done'
 
 

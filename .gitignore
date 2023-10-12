@@ -1,5 +1,7 @@
 npm
 examples/**/client
+examples/**/src/app
+examples/**/src/interfaces/api
 
 dbUtils.ts
 debug.ts
@@ -8,7 +10,6 @@ tests-report
 .DS_Store
 
 A-migrer
-examples/**/src/deps/domain-request
 notes.txt
 scripts/
 
