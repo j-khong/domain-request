@@ -13,7 +13,12 @@ launch-server: install
 install:
 	@echo '⚙️ installing deps...' && \
 	npm i && \
+	echo '✅ done' && \
+	echo '⚙️ linking code...' && \
+	[ -L src/app ] && rm src/app || : && \
+	cd src && ln -s ../../src/app && \
 	echo '✅ done'
+
 
 .PHONY: gen-client
 gen-client:

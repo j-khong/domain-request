@@ -18,7 +18,11 @@ install:
 	echo '✅ done'; \
 	echo '⚙️ installing denon...'; \
 	deno install --allow-read --allow-run --allow-write -f --unstable https://deno.land/x/denon/denon.ts; \
-	echo '✅ done'; }
+	echo '✅ done'; } && \
+	echo '⚙️ linking code...' && \
+	[ -L src/app ] && rm src/app || : && \
+	cd src && ln -s ../../src/app && \
+	echo '✅ done'
 
 .PHONY: build
 build: format lint
