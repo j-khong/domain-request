@@ -1,4 +1,6 @@
 npm
+examples/bun/example
+examples/bun/tools
 examples/**/client
 examples/**/src/app
 examples/**/src/interfaces/api

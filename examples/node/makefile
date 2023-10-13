@@ -42,6 +42,6 @@ run-node-example: check-server gen-client format-gen-client
 
 .PHONY: check-server
 check-server:
-	@curl "http://localhost:8181" 1>/tmp/dumb 2>/tmp/dumb && : || { \
+	@curl "http://localhost:"$(shell cat conf.json | jq .server.port) 1>/tmp/dumb 2>/tmp/dumb && : || { \
     echo "please launch the server first"; \
 	exit 1 ; }

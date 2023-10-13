@@ -1,11 +1,11 @@
 import * as CLI from '@jkhong/cli-js';
-import { generateApiClient } from '@jkhong/domain-request';
-import { getDomainRequestName, getRoles,type Role } from '../src/app/domains/types.ts';
-import { getDomainRequestHandler, init } from '../src/app/index.ts';
-import { getResourceDomainMapping } from '../src/interfaces/api/index.ts';
-import { loadConfig } from '../src/interfaces/index.ts';
-import { start } from '../src/start/index.ts';
-import { readFile } from '../src/interfaces/filesystem.ts';
+import { generateApiClient } from '/deps/index.ts';
+import { getDomainRequestName, getRoles,type Role } from '@domains/types.ts';
+import { getDomainRequestHandler, init } from '@app/index.ts';
+import { getResourceDomainMapping } from '@interfaces/api/index.ts';
+import { loadConfig } from '@interfaces/index.ts';
+import { start } from '/start/index.ts';
+import { readFile } from '@interfaces/filesystem.ts';
 
 async function launchServer(cliOptions: CLI.Options) {
    const config = await loadConfig(cliOptions.getSwitchValue('settings'));
