@@ -1,5 +1,5 @@
 import { Context, Router } from '/deps/index.ts';
-import { DomainRequestName } from '/app/domains/types.ts';
+import { DomainRequestName } from '@domains/types.ts';
 import * as Root from './controllers/root.ts';
 import * as Country from './controllers/country.ts';
 import * as Architect from './controllers/architect.ts';

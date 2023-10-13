@@ -8,7 +8,7 @@ export async function fetch(
       userData: { token: string; role: Role },
    ) => Promise<{ total: number; results: unknown[]; errors: InputErrors; persistenceReport: Report }>,
 ): Promise<void> {
-   const { response } = ctx;
+   const response = helpers.createResponse(ctx);
    try {
       const token = getToken(ctx);
       if (undefined === token) {
@@ -24,16 +24,16 @@ export async function fetch(
 
       const fetchedResult = await domainFetch(queryData, { token, role });
 
-      response.body = {
+      helpers.setResponseBody(response, {
          total: fetchedResult.total,
          results: cameledFieldsObjectToSnaked(fetchedResult.results),
          errors: cameledFieldsObjectToSnaked(fetchedResult.errors),
-      };
-      response.status = 200;
+      });
+      helpers.setResponseStatus(response, 200);
    } catch (e) {
       console.log(e);
-      response.status = 400;
-      response.body = { message: e.message };
+      helpers.setResponseStatus(response, 400);
+      helpers.setResponseBody(response, { message: e.message });
    }
 }
 

@@ -12,4 +12,7 @@ export * from 'https://deno.land/x/domain_request@0.7.0/src/index.ts';
 export const helpers = {
    getQuery: oakHelpers.getQuery,
    getHeader: (ctx: Context, name: string) => ctx.request.headers.get(name),
+   createResponse: (ctx: Context): Context['response'] => ctx.response,
+   setResponseBody: (resp: Context['response'], body: Context['response']['body']) => (resp.body = body),
+   setResponseStatus: (resp: Context['response'], status: number) => (resp.status = status),
 };
