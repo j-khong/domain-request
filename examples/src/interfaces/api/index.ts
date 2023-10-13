@@ -1,10 +1,10 @@
-import { Context, Router } from '/deps/index.ts';
+import { Context, Router, Response } from '/deps/index.ts';
 import { DomainRequestName } from '@domains/types.ts';
 import * as Root from './controllers/root.ts';
 import * as Country from './controllers/country.ts';
 import * as Architect from './controllers/architect.ts';
 
-const mapping: Array<{ resource: string; drn: DomainRequestName; fetch: (ctx: Context) => void }> = [
+const mapping: Array<{ resource: string; drn: DomainRequestName; fetch: (ctx: Context) => Promise<Response> }> = [
    { resource: 'countries', drn: 'country', fetch: Country.fetch },
    { resource: 'architects', drn: 'architect', fetch: Architect.fetch },
 ];

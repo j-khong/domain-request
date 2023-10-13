@@ -1,4 +1,4 @@
-import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report } from '/deps/index.ts';
+import { cameledFieldsObjectToSnaked, Context, helpers, InputErrors, Report, Response } from '/deps/index.ts';
 import { getRoles, Role } from '@domains/types.ts';
 
 export async function fetch(
@@ -7,8 +7,7 @@ export async function fetch(
       inputData: unknown,
       userData: { token: string; role: Role },
    ) => Promise<{ total: number; results: unknown[]; errors: InputErrors; persistenceReport: Report }>,
-): Promise<void> {
-   const response = helpers.createResponse(ctx);
+): Promise<Response> {
    try {
       const token = getToken(ctx);
       if (undefined === token) {
@@ -24,16 +23,18 @@ export async function fetch(
 
       const fetchedResult = await domainFetch(queryData, { token, role });
 
-      helpers.setResponseBody(response, {
+      const body = {
          total: fetchedResult.total,
          results: cameledFieldsObjectToSnaked(fetchedResult.results),
          errors: cameledFieldsObjectToSnaked(fetchedResult.errors),
-      });
-      helpers.setResponseStatus(response, 200);
+      };
+      const status = 200;
+      return helpers.createResponse(ctx, body, status);
    } catch (e) {
       console.log(e);
-      helpers.setResponseStatus(response, 400);
-      helpers.setResponseBody(response, { message: e.message });
+      const status = 400;
+      const body = { message: e.message };
+      return helpers.createResponse(ctx, body, status);
    }
 }
 
