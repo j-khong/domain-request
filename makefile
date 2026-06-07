@@ -8,6 +8,7 @@ DB_USER := root
 DB_PASSWORD := gWpYF4dZfW
 DB_PORT := 8106
 DB_SCHEMA := unit-tests-new/persistence/database/tables.sql
+UNIT_TESTS_API ?= old
 
 .PHONY: db-up # start mysql container if not already running
 db-up:
@@ -39,9 +40,20 @@ db-reset: db-init
 
 .PHONY: unit-tests # launch unit tests
 unit-tests: db-init
+	@echo ""
+	@profile=$(UNIT_TESTS_API); \
+	if [ "$$profile" != "old" ] && [ "$$profile" != "new" ]; then \
+		echo "UNIT_TESTS_API must be 'old' or 'new' (got: $$profile)"; \
+		exit 1; \
+	fi; \
+	cd unit-tests-new/data-fetch && [ -L test.ts ] && rm test.ts || true && ln -s "test-$$profile.ts" test.ts && cd - && \
+	cd unit-tests-new && [ -L domain-requests ] && rm domain-requests || true && ln -s "domain-requests-$$profile" domain-requests && cd - && \
 	d=$$(date +%s); \
 	deno test --allow-all unit-tests-new/index.ts > unit-tests.log 2>&1 && \
-	echo "Tests took $$(($$(date +%s)-d)) seconds"
+	echo "✅ Tests ($$profile) took $$(($$(date +%s)-d)) seconds" || \
+	echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)" && \
+	cd unit-tests-new/data-fetch && [ -L test.ts ] && rm test.ts && cd - && \
+	cd unit-tests-new && [ -L domain-requests ] && rm domain-requests || :
 
 .PHONY: tests-coverage # generate tests coverage report
 tests-coverage:
