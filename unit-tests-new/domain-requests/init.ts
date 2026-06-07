@@ -8,8 +8,10 @@ import * as Course from './Course/index.ts';
 import * as CoursePersistence from './Course/builder/persistence/database/index.ts';
 import * as StudentCategory from './StudentCategory/index.ts';
 import * as StudentCategoryPersistence from './StudentCategory/builder/persistence/database/index.ts';
-// import * as Student from './Student/index.ts';
-// import * as CourseApplication from './CourseApplication/index.ts';
+import * as Student from './Student/index.ts';
+import * as StudentPersistence from './Student/builder/persistence/database/index.ts';
+import * as CourseApplication from './CourseApplication/index.ts';
+import * as CourseApplicationPersistence from './CourseApplication/builder/persistence/database/index.ts';
 import * as Building from './Building/index.ts';
 import * as BuildingPersistence from './Building/builder/persistence/database/index.ts';
 import * as BuildingCategory from './BuildingCategory/index.ts';
@@ -44,11 +46,13 @@ function createFactories(select: (query: string) => Promise<SelectMethodResult>)
       buildingCategory: BuildingCategory.buildFactory(
          BuildingCategoryPersistence.buildTableConnector(select),
       ) as GenericType,
-      // student: Student.buildFactory(),
+      student: Student.buildFactory(StudentPersistence.buildTableConnector(select)) as GenericType,
       buildingSponsor: BuildingSponsor.buildFactory(
          BuildingSponsorPersistence.buildTableConnector(select),
       ) as GenericType,
-      // courseApplication: CourseApplication.buildFactory(),
+      courseApplication: CourseApplication.buildFactory(
+         CourseApplicationPersistence.buildTableConnector(select),
+      ) as GenericType,
    };
 }
 type Factories = {

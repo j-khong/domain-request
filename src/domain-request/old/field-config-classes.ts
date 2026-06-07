@@ -1,21 +1,22 @@
 /**
  * DEPRECATED: Old Field Configuration Classes
- * 
+ *
  * These 6 classes are now replaced by FieldConfigFactory for better maintainability
  * and to reduce boilerplate code (96 lines → 0 lines).
- * 
+ *
  * @deprecated Use FieldConfigFactory instead (see ../field-configuration/FieldConfigFactory.ts)
- * 
+ *
  * MIGRATION:
  * Before:
  *   new StringFieldConfiguration({ filtering: { byListOfValue: true } })
- * 
+ *
  * After:
  *   FieldConfigFactory.createString({ filtering: { byListOfValue: true } })
  */
 
-import { FieldConfiguration, IsoDate } from '../field-configuration/field.ts';
+import { FieldConfiguration } from '../field-configuration/field.ts';
 import { isString, isNumber, isDate, isIsoDate, isBoolean } from '../type-checkers.ts';
+import { IsoDate } from '../types.ts';
 
 type InputSpecializedFieldFilteringConfig<T> = {
    filtering?: {

@@ -133,7 +133,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       results.total = total;
       results.report.requests.push(reportCount);
 
-      const orderby = Table.buildOrderby(req.options, mapping, results.errors);
+      const generatedOrderby = Table.buildOrderby(req.options, mapping, results.errors);
+      const orderby =
+         generatedOrderby.length > 0
+            ? `${generatedOrderby}, ${tableDef.name}.${tableDef.primaryKey} ASC`
+            : `ORDER BY ${tableDef.name}.${tableDef.primaryKey} ASC`;
 
       // 2. SELECT fields + 1to1
       const reqSql = `SELECT ${fields.join(', ')}
@@ -203,6 +207,16 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
 
       const dataByArray: Map<string, DataByArrayType> = new Map();
+      const getRelationOrderBy = (pr: ProcessResult): string => {
+         const firstJoin = pr.joins[0];
+         if (firstJoin !== undefined) {
+            const match = firstJoin.match(/JOIN\s+([^\s]+)\s+ON/i);
+            if (match !== null && match[1] !== undefined) {
+               return `${match[1]}.id ASC`;
+            }
+         }
+         return `${pr.tablename}.id ASC`;
+      };
 
       const process1toN = (pr: ProcessResult, path: DomainPath[], data: DataByArrayType) => {
          path.push(pr.fieldnames.rootDomain);
@@ -230,8 +244,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                   fields: [],
                   joins: new Set(),
                   fieldsToMapResults: [],
+                  relationOrderBy: getRelationOrderBy(pr),
                };
                dataByArray.set(pr.fieldnames.rootDomain.name, data);
+            } else if (data.relationOrderBy === undefined) {
+               data.relationOrderBy = getRelationOrderBy(pr);
             }
             prevJoin.forEach((v) => data?.joins.add(v));
 
@@ -286,6 +303,10 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          let orderby = '';
          let limit = '';
          let andFiltersArr: string[] = [];
+         const orderByTieBreakers = [
+            `${tableDef.name}.${tableDef.primaryKey} ASC`,
+            ...(value.relationOrderBy !== undefined ? [value.relationOrderBy] : []),
+         ];
 
          const fieldOptions = req.options[key as keyof Options<Extract<keyof T, string>>];
          if (
@@ -305,8 +326,16 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             if (orFiltersArr.length > 0) {
                andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
             }
-            orderby = Table.buildOrderby(fo, mapping, res.errors);
+            const generatedNestedOrderby = Table.buildOrderby(fo, mapping, res.errors);
+            orderby =
+               generatedNestedOrderby.length > 0
+                  ? `${generatedNestedOrderby}, ${orderByTieBreakers.join(', ')}`
+                  : `ORDER BY ${tableDef.name}.${tableDef.primaryKey} ASC`;
             limit = `LIMIT ${fo.pagination.offset},${fo.pagination.limit}`;
+         }
+
+         if (orderby.length === 0) {
+            orderby = `ORDER BY ${orderByTieBreakers.join(', ')}`;
          }
 
          const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
@@ -357,6 +386,7 @@ type DataByArrayType = {
    fields: string[];
    joins: Set<string>;
    fieldsToMapResults: FieldsToSelect;
+   relationOrderBy?: string;
 };
 
 function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): void {

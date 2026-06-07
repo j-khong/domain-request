@@ -1,5 +1,4 @@
-import { FieldsSetup } from './types.ts';
-import { DomainFieldConfiguration } from './types.ts';
+import { FieldsSetup } from './object.ts';
 
 /**
  * FieldsSetupBuilder - Makes it easy to create and modify FieldsSetup
@@ -29,7 +28,7 @@ export class FieldsSetupBuilder<T> {
    /**
     * Override a field's configuration
     */
-   override<K extends keyof T>(field: K, config: DomainFieldConfiguration): this {
+   override<K extends keyof T>(field: K, config: FieldsSetup<T>[K]): this {
       this.setup[field] = config;
       return this;
    }
@@ -37,7 +36,7 @@ export class FieldsSetupBuilder<T> {
    /**
     * Override multiple fields with same configuration
     */
-   overrideMultiple(fields: Array<keyof T>, config: DomainFieldConfiguration): this {
+   overrideMultiple<K extends keyof T>(fields: Array<K>, config: FieldsSetup<T>[K]): this {
       for (const field of fields) {
          this.setup[field] = config;
       }
@@ -47,10 +46,7 @@ export class FieldsSetupBuilder<T> {
    /**
     * Modify a field's configuration using a callback
     */
-   modify<K extends keyof T>(
-      field: K,
-      modifier: (current: DomainFieldConfiguration) => DomainFieldConfiguration,
-   ): this {
+   modify<K extends keyof T>(field: K, modifier: (current: FieldsSetup<T>[K]) => FieldsSetup<T>[K]): this {
       const current = this.setup[field];
       this.setup[field] = modifier(current);
       return this;

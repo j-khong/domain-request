@@ -319,10 +319,10 @@ export class BooleanFieldConfiguration extends FieldConfiguration<boolean> {
    }
 }
 
-   /**
-    * DEPRECATED: These field configuration classes have been moved to ../old/field-config-classes.ts
-    * They are re-exported here for backwards compatibility.
-    * Use FieldConfigFactory instead for new code.
-    * 
-    * See: ../old/field-config-classes.ts
-    */
+/**
+ * DEPRECATED: These field configuration classes have been moved to ../old/field-config-classes.ts
+ * They are re-exported here for backwards compatibility.
+ * Use FieldConfigFactory instead for new code.
+ *
+ * See: ../old/field-config-classes.ts
+ */

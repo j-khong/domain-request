@@ -9,13 +9,13 @@ export type DomainRequestName =
    | 'buildingCategory'
    // wihth 1to1 chain
    | 'architect'
-   // | 'student'
+   | 'student'
    // pure joining Domains
-   | 'buildingSponsor'; // building - sponsor
-// | 'courseApplication'; // course - student
+   | 'buildingSponsor'
+   | 'courseApplication'; // course - student
 
 const roles = ['admin', 'student'] as const;
-export type Role = typeof roles[number];
+export type Role = (typeof roles)[number];
 export function getRoles(): Role[] {
    return roles.map((o) => o);
 }

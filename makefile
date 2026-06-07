@@ -1,11 +1,46 @@
 # https://itnext.io/step-by-step-building-and-publishing-an-npm-typescript-package-44fe7164964c
 TESTS_REPORT := tests-report
 COVERAGE_OPTION := --trace-ops --coverage=$(TESTS_REPORT)/cov_profile
+DB_CONTAINER := domain-request-mysql
+DB_IMAGE := mysql:8.0
+DB_NAME := domain-request
+DB_USER := root
+DB_PASSWORD := gWpYF4dZfW
+DB_PORT := 8106
+DB_SCHEMA := unit-tests-new/persistence/database/tables.sql
+
+.PHONY: db-up # start mysql container if not already running
+db-up:
+	@docker inspect $(DB_CONTAINER) >/dev/null 2>&1 || \
+		docker run --name $(DB_CONTAINER) \
+		-e MYSQL_ROOT_PASSWORD=$(DB_PASSWORD) \
+		-e MYSQL_DATABASE=$(DB_NAME) \
+		-p $(DB_PORT):3306 \
+		-d $(DB_IMAGE)
+	@docker start $(DB_CONTAINER) >/dev/null 2>&1 || true
+
+.PHONY: db-wait # wait until mysql is ready to accept connections
+db-wait:
+	@echo "Waiting for MySQL on container $(DB_CONTAINER)..."
+	@until docker exec $(DB_CONTAINER) mysqladmin ping -h 127.0.0.1 -u$(DB_USER) -p$(DB_PASSWORD) --silent >/dev/null 2>&1; do \
+		sleep 1; \
+	done
+
+.PHONY: db-init # initialize test schema and seed data
+db-init: db-up db-wait
+	@docker exec -i $(DB_CONTAINER) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) < $(DB_SCHEMA)
+
+.PHONY: db-down # stop mysql container
+db-down:
+	@docker stop $(DB_CONTAINER) >/dev/null 2>&1 || true
+
+.PHONY: db-reset # drop and recreate schema in running container
+db-reset: db-init
 
 .PHONY: unit-tests # launch unit tests
-unit-tests:
+unit-tests: db-init
 	d=$$(date +%s); \
-	deno test --allow-all unit-tests-new/index.ts && \
+	deno test --allow-all unit-tests-new/index.ts > unit-tests.log 2>&1 && \
 	echo "Tests took $$(($$(date +%s)-d)) seconds"
 
 .PHONY: tests-coverage # generate tests coverage report

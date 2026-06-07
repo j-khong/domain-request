@@ -1,9 +1,9 @@
 /**
  * DEPRECATED: Old Factory API
- * 
+ *
  * This file contains the legacy API for building domain request factories.
  * Use the new fluent API (DomainRoleBuilder) instead.
- * 
+ *
  * @deprecated Use DomainRoleBuilder from ../roles/DomainRoleBuilder.ts
  */
 

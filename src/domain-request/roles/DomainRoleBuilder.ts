@@ -1,5 +1,5 @@
 import { DomainRequestBuilder } from '../builder.ts';
-import { FieldsSetup, DomainConfig } from '../field-configuration/index.ts';
+import { FieldsSetup, DomainConfig, ObjectFieldConfiguration } from '../field-configuration/index.ts';
 import { RolePermissionsConfig } from './RolePermissions.ts';
 
 /**
@@ -137,7 +137,7 @@ export class DomainRoleBuilder<DRN extends string, Fields, Role extends string> 
 
       const conf: DomainConfig<DRN, Fields> = {
          name: this.domainRequestName,
-         fields: this.createObjectFieldConfiguration(fieldsToUse),
+         fields: new ObjectFieldConfiguration<Fields>(fieldsToUse),
       };
 
       // Call dependency initializer if provided
@@ -156,16 +156,6 @@ export class DomainRoleBuilder<DRN extends string, Fields, Role extends string> 
       }
 
       return conf;
-   }
-
-   /**
-    * Create ObjectFieldConfiguration instance
-    * This imports at the module level to avoid circular dependencies
-    */
-   private createObjectFieldConfiguration(fieldsSetup: FieldsSetup<Fields>): any {
-      // This will be imported from field-configuration at runtime
-      const { ObjectFieldConfiguration } = require('../field-configuration/index.ts');
-      return new ObjectFieldConfiguration(fieldsSetup);
    }
 }
 
