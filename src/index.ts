@@ -12,3 +12,6 @@ export * from './persistence/index.ts';
 export * from './persistence/database/index.ts';
 
 export * from './tools/generate-api-client.ts';
+
+// Optional: Re-export deprecated APIs for backwards compatibility
+export * from './domain-request/old/index.ts';

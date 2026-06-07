@@ -197,3 +197,10 @@ function getAuthorizedFields<T>(fields: FieldsSetup<T>, authorizedFields?: (keyo
    }
    return fieldsToUse;
 }
+
+   /**
+    * DEPRECATED: These functions have been moved to ./old/Factory.ts
+    * They are re-exported here for backwards compatibility.
+    * Use DomainRoleBuilder instead.
+    */
+   export { buildDomainRequestBuilderByRole, DomainRequestByRole } from './old/Factory.ts';
