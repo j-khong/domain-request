@@ -3,7 +3,6 @@ import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { Options } from '../../domain-request/field-configuration/object.ts';
 import {
    FilterArrayType,
-   isComputedComparison,
    isComparison,
    isFilteringFields,
    Operator,
@@ -145,7 +144,10 @@ export class SameTableMapping extends FieldMapping {
 }
 
 export class SameTableObjectMapping<T extends string> extends FieldMapping {
-   constructor(tableDef: Readonly<TableDef>, protected readonly mapping: TableMapping<T>) {
+   constructor(
+      tableDef: Readonly<TableDef>,
+      protected readonly mapping: TableMapping<T>,
+   ) {
       super(tableDef);
    }
 
@@ -163,62 +165,6 @@ export class SameTableObjectMapping<T extends string> extends FieldMapping {
          }
       }
       return ret;
-   }
-}
-export class SameTableComputedFieldMapping extends FieldMapping {
-   constructor(
-      tableDef: Readonly<TableDef>,
-      protected readonly fieldname: string,
-      protected readonly toDbConvert: ToDbSqlConverter<unknown>,
-      protected readonly toDomainConvert: (o: unknown) => unknown | undefined,
-   ) {
-      super(tableDef);
-   }
-
-   processField(domainFieldname: string, value: boolean): ProcessResult {
-      const dbAlias = createSqlAlias(this.tableDef.name, this.fieldname);
-      const dbFullFieldName = `${this.toDbConvert.prepare(value)} AS ${dbAlias}`;
-      const ret: ProcessResult = {
-         fieldnames: {
-            children: [
-               {
-                  domain: domainFieldname,
-                  toDomainConvert: this.toDomainConvert,
-                  dbAlias,
-                  dbFullFieldName,
-               },
-            ],
-            rootDomain: { name: domainFieldname, type: 'value' },
-         },
-         tablename: this.tableDef.name,
-         joins: [],
-      };
-      return ret;
-   }
-
-   processAllFilters<T>(
-      domainFieldname: Extract<keyof T, string>,
-      domainFilters: FilterArrayType<T>,
-      errors: string[],
-   ): { or: string[]; and: string[]; joins: string[] } {
-      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
-
-      if (domainFilters !== undefined) {
-         const comparison = domainFilters[domainFieldname];
-         if (comparison !== undefined && isComputedComparison(comparison)) {
-            const comparisonMapper = comparisonOperatorMap[comparison.operator];
-            this.toDbConvert.setValue(comparison.data);
-            ret.and.push(comparisonMapper.format(`${comparison.value}`, this.toDbConvert));
-         } else {
-            errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
-         }
-      }
-      return ret;
-   }
-
-   getOrderBy(o: Options<string>): string[] {
-      const defSort: 'asc' | 'desc' = 'asc';
-      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
    }
 }
 
@@ -306,7 +252,10 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
 }
 
 export class OneToManyTableMapping<T extends string> extends FieldMapping {
-   constructor(tableDef: Readonly<OneToManyTableDef>, protected readonly mapping: TableMapping<T>) {
+   constructor(
+      tableDef: Readonly<OneToManyTableDef>,
+      protected readonly mapping: TableMapping<T>,
+   ) {
       super(tableDef);
    }
 

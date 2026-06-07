@@ -1,5 +1,4 @@
 import { IsoDate } from '../../domain-request/types.ts';
-import { Coordinates } from '../../domain-request/field-configuration/index.ts';
 import { isIsoDate, isDate } from '../../domain-request/type-checkers.ts';
 
 const defaultBuildInstruction = (field: string, operator: string, value: unknown) => `${field} ${operator} ${value}`;
@@ -31,19 +30,6 @@ export abstract class ToDbSqlConverter<OriginalType> {
    }
 
    abstract prepare(v: OriginalType, deco?: string): unknown;
-}
-
-export class ToDbSqlCoordinatesConverter extends ToDbSqlConverter<Coordinates> {
-   constructor(private tableName: string) {
-      super(
-         (o: unknown) => o as Coordinates,
-         (field: string, operator: string, value: unknown): string => `${value} ${operator} ${field}`,
-      );
-   }
-
-   prepare(coord: Coordinates): string {
-      return `( 6371 * acos( cos(radians(${coord.latitude})) * cos(radians(${this.tableName}.latitude)) * cos( radians(${this.tableName}.longitude) - radians(${coord.longitude}) ) + sin(radians(${coord.latitude})) * sin(radians(${this.tableName}.latitude)) ) )`;
-   }
 }
 
 export class ToDbSqlStringConverter extends ToDbSqlConverter<string> {
@@ -83,24 +69,10 @@ export class ToDbSqlDateConverter extends ToDbSqlStringConverter {
    }
 }
 
-export class ToDbSqlDatetimeConverter extends ToDbSqlStringConverter {
-   constructor() {
-      super(fromDatetimeToMysqlDatetime);
-   }
-}
-
 export class ToDbSqlBooleanConverter extends ToDbSqlNumberConverter {
    constructor() {
       super((o: unknown): number => Number(o));
    }
-}
-
-function fromDatetimeToMysqlDatetime(input: unknown): string {
-   const d = getFunctionalDate(input);
-
-   const formattedDate = fromDateToMysqlDate(d);
-   const time = [d.getHours(), d.getMinutes(), d.getSeconds()];
-   return `${formattedDate} ${time.map((v) => format2digits(v)).join(':')}`;
 }
 
 function fromDateToMysqlDate(input: unknown): string {
