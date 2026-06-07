@@ -14,7 +14,7 @@ export type ValidationResult = {
 /**
  * Validates domain configurations at setup time to catch dependency issues early
  * instead of at runtime.
- * 
+ *
  * Checks for:
  * - LinkedDomainConfiguration properly initialized
  * - No circular dependencies
@@ -22,7 +22,10 @@ export type ValidationResult = {
  */
 export class DomainConfigValidator {
    private readonly allConfigs: Map<string, DomainConfig<string, any>> = new Map();
-   private readonly linkedConfigs: Map<string, LinkedDomainConfiguration<string, any> | ArrayOfLinkedDomainConfiguration<string, any>> = new Map();
+   private readonly linkedConfigs: Map<
+      string,
+      LinkedDomainConfiguration<string, any> | ArrayOfLinkedDomainConfiguration<string, any>
+   > = new Map();
 
    /**
     * Register all domain configurations for validation

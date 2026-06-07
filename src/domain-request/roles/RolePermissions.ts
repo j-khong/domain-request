@@ -1,11 +1,11 @@
 /**
  * Central configuration for role-based permissions
- * 
+ *
  * This is the single source of truth for what each role can:
  * - See (fields)
  * - Filter on (filterable fields)
  * - Default filters (when no filter specified)
- * 
+ *
  * Benefits:
  * - Easy audit: see exactly what role X can access
  * - Adding new field: update only here

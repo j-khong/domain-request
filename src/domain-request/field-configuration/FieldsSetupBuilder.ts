@@ -3,14 +3,14 @@ import { DomainFieldConfiguration } from './types.ts';
 
 /**
  * FieldsSetupBuilder - Makes it easy to create and modify FieldsSetup
- * 
+ *
  * Before (manual, error-prone):
  * ```
  * const setup = generateFieldsSetup();
  * setup.status = new FieldConfiguration(...);
  * setup.name = new FieldConfiguration(...);
  * ```
- * 
+ *
  * After (builder, chainable):
  * ```
  * new FieldsSetupBuilder(generateFieldsSetup())

@@ -4,10 +4,10 @@ import { RolePermissionsConfig } from './RolePermissions.ts';
 
 /**
  * Fluent builder for defining domains with role-based configurations
- * 
+ *
  * This replaces the complex nested object pattern of buildDomainRequestBuilderByRole
  * with a clearer, chainable API
- * 
+ *
  * Before (nested, hard to understand):
  * ```
  * buildDomainRequestBuilderByRole({
@@ -17,7 +17,7 @@ import { RolePermissionsConfig } from './RolePermissions.ts';
  *    }
  * })
  * ```
- * 
+ *
  * After (fluent, self-documented):
  * ```
  * new DomainRoleBuilder(...)
@@ -40,9 +40,7 @@ export class DomainRoleBuilder<DRN extends string, Fields, Role extends string> 
    /**
     * Register an initializer for domain dependencies (e.g., linked domains)
     */
-   withDependencyInitializer(
-      fn: (dc: DomainConfig<DRN, Fields>, role: Role, toIgnore: string[]) => void,
-   ): this {
+   withDependencyInitializer(fn: (dc: DomainConfig<DRN, Fields>, role: Role, toIgnore: string[]) => void): this {
       this.dependencyInitializer = fn;
       return this;
    }
@@ -115,7 +113,10 @@ export class DomainRoleBuilder<DRN extends string, Fields, Role extends string> 
    /**
     * Internal method to create domain config for a role
     */
-   private createDomainConfig(roleConfig: RoleConfig<DRN, Fields, Role>, toIgnore: string[]): DomainConfig<DRN, Fields> {
+   private createDomainConfig(
+      roleConfig: RoleConfig<DRN, Fields, Role>,
+      toIgnore: string[],
+   ): DomainConfig<DRN, Fields> {
       let fieldsSetup = this.generateFieldsSetup();
 
       // Apply field-level modifications if specified

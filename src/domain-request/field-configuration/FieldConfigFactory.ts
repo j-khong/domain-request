@@ -2,18 +2,12 @@ import { FieldConfiguration } from '../field-configuration/field.ts';
 import { ComputedFieldConfiguration } from '../field-configuration/computed.ts';
 import { ValidatorCreator } from '../validators.ts';
 import { TypeChecker } from '../type-checkers.ts';
-import {
-   isString,
-   isNumber,
-   isBoolean,
-   isDate,
-   isIsoDate,
-} from '../type-checkers.ts';
+import { isString, isNumber, isBoolean, isDate, isIsoDate } from '../type-checkers.ts';
 import { FieldFilteringConfig } from '../field-configuration/types.ts';
 
 /**
  * FieldConfigFactory - Eliminates 6 repetitive field configuration classes
- * 
+ *
  * Old approach (96 lines):
  * ```
  * export class StringFieldConfiguration extends FieldConfiguration<string> {}
@@ -21,7 +15,7 @@ import { FieldFilteringConfig } from '../field-configuration/types.ts';
  * export class BooleanFieldConfiguration extends FieldConfiguration<boolean> {}
  * // ... 3 more
  * ```
- * 
+ *
  * New approach (centralized, reusable):
  * ```
  * FieldConfigFactory.createString(config)
@@ -105,7 +99,10 @@ export class FieldConfigFactory {
     * Auto-detect field type and create appropriate configuration
     * Useful when building from a sample object
     */
-   static createFromValue(value: any, filtering?: { byRangeOfValue?: boolean; byListOfValue?: boolean }): FieldConfiguration<any> {
+   static createFromValue(
+      value: any,
+      filtering?: { byRangeOfValue?: boolean; byListOfValue?: boolean },
+   ): FieldConfiguration<any> {
       if (typeof value === 'string') {
          return this.createString({ filtering });
       } else if (typeof value === 'number') {
