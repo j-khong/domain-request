@@ -1,12 +1,10 @@
 import {
    TableDef,
    TableMapping,
-   SameTableMapping,
+   MappingBuilder,
    SelectMethod,
    Table,
-   ToDbSqlNumberConverter,
-   unknownToString,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 
@@ -15,11 +13,16 @@ const tableDef: TableDef = {
    primaryKey: 'id',
 };
 
-const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   studentId: new SameTableMapping(tableDef, 'id_student', new ToDbSqlNumberConverter(), unknownToString),
-   courseId: new SameTableMapping(tableDef, 'id_course', new ToDbSqlNumberConverter(), unknownToString),
-};
+const mapping: TableMapping<keyof Fields> = new MappingBuilder<
+   Fields,
+   { id: number; id_student: number; id_course: number }
+>(tableDef, { id: '', studentId: '', courseId: '' }, ['id', 'id_student', 'id_course'])
+   .addAutoMapping('id')
+   .addAutoMappingWithOptions(['studentId', 'courseId'], {
+      conventions: { explicit: { studentId: 'id_student', courseId: 'id_course' } },
+      fieldKinds: { studentId: 'number', courseId: 'number' },
+   })
+   .build();
 
 export function getTableDefinition(): TableDef {
    return tableDef;

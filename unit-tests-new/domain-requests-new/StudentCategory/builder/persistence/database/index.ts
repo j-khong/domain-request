@@ -1,13 +1,10 @@
 import {
    TableDef,
    TableMapping,
-   SameTableMapping,
+   MappingBuilder,
    SelectMethod,
    Table,
-   ToDbSqlNumberConverter,
-   ToDbSqlStringConverter,
-   unknownToString,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 
@@ -16,11 +13,16 @@ const tableDef: TableDef = {
    primaryKey: 'id',
 };
 
-const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   name: new SameTableMapping(tableDef, 'name', new ToDbSqlStringConverter(), unknownToString),
-   otherData: new SameTableMapping(tableDef, 'other_data', new ToDbSqlStringConverter(), unknownToString),
-};
+const mapping: TableMapping<keyof Fields> = new MappingBuilder<
+   Fields,
+   { id: number; name: string; other_data: string }
+>(tableDef, { id: '', name: '', otherData: '' }, ['id', 'name', 'other_data'])
+   .addAutoMapping('id', 'name')
+   .addAutoMappingWithOptions(['otherData'], {
+      conventions: { explicit: { otherData: 'other_data' } },
+      fieldKinds: { otherData: 'string' },
+   })
+   .build();
 
 export function getTableDefinition(): TableDef {
    return tableDef;

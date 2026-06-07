@@ -1,17 +1,12 @@
 import {
    TableDef,
    TableMapping,
+   MappingBuilder,
    SameTableMapping,
    OneToOneTableMapping,
    SelectMethod,
    Table,
-   ToDbSqlNumberConverter,
-   ToDbSqlStringConverter,
-   ToDbSqlBooleanConverter,
-   unknownToString,
-   unknownToNumber,
-   unknownToBoolean,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 import * as Country from '../../../../Country/builder/persistence/database/index.ts';
@@ -22,13 +17,47 @@ const tableDef: TableDef = {
    primaryKey: 'id',
 };
 
+const scalarMapping = new MappingBuilder<
+   Pick<Fields, 'id' | 'firstname' | 'lastname' | 'yearOfBirth' | 'nationalCardId' | 'hasScholarship'>,
+   {
+      id: number;
+      firstname: string;
+      lastname: string;
+      year_of_birth: number;
+      national_card_id: string;
+      has_scholarship: boolean;
+   }
+>(
+   tableDef,
+   {
+      id: '',
+      firstname: '',
+      lastname: '',
+      yearOfBirth: 0,
+      nationalCardId: '',
+      hasScholarship: false,
+   },
+   ['id', 'firstname', 'lastname', 'year_of_birth', 'national_card_id', 'has_scholarship'],
+)
+   .addAutoMapping('id', 'firstname', 'lastname')
+   .addAutoMappingWithOptions(['yearOfBirth', 'nationalCardId', 'hasScholarship'], {
+      conventions: {
+         explicit: {
+            yearOfBirth: 'year_of_birth',
+            nationalCardId: 'national_card_id',
+            hasScholarship: 'has_scholarship',
+         },
+      },
+      fieldKinds: {
+         yearOfBirth: 'number',
+         nationalCardId: 'string',
+         hasScholarship: 'boolean',
+      },
+   })
+   .build();
+
 const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   firstname: new SameTableMapping(tableDef, 'firstname', new ToDbSqlStringConverter(), unknownToString),
-   lastname: new SameTableMapping(tableDef, 'lastname', new ToDbSqlStringConverter(), unknownToString),
-   yearOfBirth: new SameTableMapping(tableDef, 'year_of_birth', new ToDbSqlNumberConverter(), unknownToNumber),
-   nationalCardId: new SameTableMapping(tableDef, 'national_card_id', new ToDbSqlStringConverter(), unknownToString),
-   hasScholarship: new SameTableMapping(tableDef, 'has_scholarship', new ToDbSqlBooleanConverter(), unknownToBoolean),
+   ...scalarMapping,
    country: new OneToOneTableMapping(
       Country.getTableDefinition(),
       Country.getTableMapping(),

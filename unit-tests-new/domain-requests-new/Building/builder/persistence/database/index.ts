@@ -14,7 +14,7 @@ import {
    ValueMapper,
    OneToManyTableDef,
    SameTableObjectMapping,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields, TimeSlot, OpeningHours, Status, Picture, Sponsor } from '../../../types.ts';
 import * as BuildingCategory from '../../../../BuildingCategory/builder/persistence/database/index.ts';

@@ -1,13 +1,13 @@
-import { OneToOneTableMapping } from '../../../../../../src/index.ts';
 import {
    TableDef,
    TableMapping,
    SameTableMapping,
+   OneToOneTableMapping,
    SelectMethod,
    Table,
    ToDbSqlNumberConverter,
    unknownToString,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/old/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 import * as Building from '../../../../Building/builder/persistence/database/index.ts';

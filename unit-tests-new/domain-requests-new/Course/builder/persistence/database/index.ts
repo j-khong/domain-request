@@ -1,19 +1,13 @@
 import {
    TableDef,
    TableMapping,
+   MappingBuilder,
    SameTableMapping,
    SelectMethod,
    Table,
-   ToDbSqlNumberConverter,
    ToDbSqlStringConverter,
-   ToDbSqlBooleanConverter,
-   ToDbSqlDateConverter,
    ValueMapper,
-   unknownToString,
-   unknownToBoolean,
-   unknownToIsoDate,
-   unknownToNumber,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 
 import { DomainRequestName } from '../../../../types.ts';
 import { Status, Fields } from '../../../types.ts';
@@ -46,13 +40,46 @@ class ToDbSqlStatusConverter extends ToDbSqlStringConverter {
    }
 }
 
+const scalarMapping = new MappingBuilder<
+   Pick<Fields, 'id' | 'name' | 'publishedDate' | 'isMultilanguage' | 'maxSeats'>,
+   {
+      id: number;
+      name: string;
+      published: string;
+      is_multilanguage: boolean;
+      seats_max: number;
+   }
+>(
+   tableDef,
+   {
+      id: '',
+      name: '',
+      publishedDate: '',
+      isMultilanguage: false,
+      maxSeats: 0,
+   },
+   ['id', 'name', 'published', 'is_multilanguage', 'seats_max'],
+)
+   .addAutoMapping('id', 'name')
+   .addAutoMappingWithOptions(['publishedDate', 'isMultilanguage', 'maxSeats'], {
+      conventions: {
+         explicit: {
+            publishedDate: 'published',
+            isMultilanguage: 'is_multilanguage',
+            maxSeats: 'seats_max',
+         },
+      },
+      fieldKinds: {
+         publishedDate: 'isoDate',
+         isMultilanguage: 'boolean',
+         maxSeats: 'number',
+      },
+   })
+   .build();
+
 const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   name: new SameTableMapping(tableDef, 'name', new ToDbSqlStringConverter(), unknownToString),
-   publishedDate: new SameTableMapping(tableDef, 'published', new ToDbSqlDateConverter(), unknownToIsoDate),
-   isMultilanguage: new SameTableMapping(tableDef, 'is_multilanguage', new ToDbSqlBooleanConverter(), unknownToBoolean),
+   ...scalarMapping,
    status: new SameTableMapping(tableDef, 'status', new ToDbSqlStatusConverter(), toDomainStatus),
-   maxSeats: new SameTableMapping(tableDef, 'seats_max', new ToDbSqlNumberConverter(), unknownToNumber),
 };
 
 export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {

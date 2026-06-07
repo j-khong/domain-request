@@ -11,7 +11,7 @@ import {
    unknownToString,
    unknownToNumber,
    unknownToBoolean,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/old/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 import * as Country from '../../../../Country/builder/persistence/database/index.ts';

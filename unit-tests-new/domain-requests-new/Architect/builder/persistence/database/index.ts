@@ -1,14 +1,14 @@
 import {
    TableDef,
    TableMapping,
+   MappingBuilder,
    SameTableMapping,
    SelectMethod,
    Table,
-   ToDbSqlNumberConverter,
+   OneToOneTableMapping,
    ToDbSqlStringConverter,
    unknownToString,
-   OneToOneTableMapping,
-} from '../../../../../mod.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields, Rating, Rater } from '../../../types.ts';
 
@@ -21,22 +21,39 @@ const raterTableDef: TableDef = {
    name: 'raters',
    primaryKey: 'id',
 };
-const raterMapping: TableMapping<keyof Rater> = {
-   name: new SameTableMapping(raterTableDef, 'name', new ToDbSqlStringConverter(), unknownToString),
-};
+const raterMapping: TableMapping<keyof Rater> = new MappingBuilder<Rater, { name: string }>(
+   raterTableDef,
+   { name: '' },
+   ['name'],
+)
+   .addAutoMapping('name')
+   .build();
 
 const ratingTableDef: TableDef = {
    name: 'ratings',
    primaryKey: 'id',
 };
+const ratingScalarMapping = new MappingBuilder<Pick<Rating, 'rate'>, { rate: string }>(ratingTableDef, { rate: '' }, [
+   'rate',
+])
+   .addAutoMapping('rate')
+   .build();
+
 const ratingMapping: TableMapping<keyof Rating> = {
-   rate: new SameTableMapping(ratingTableDef, 'rate', new ToDbSqlStringConverter(), unknownToString),
+   ...ratingScalarMapping,
    rater: new OneToOneTableMapping(raterTableDef, raterMapping, `${ratingTableDef.name}.id_rater`),
 };
 
+const architectScalarMapping = new MappingBuilder<Pick<Fields, 'id' | 'name'>, { id: number; name: string }>(
+   tableDef,
+   { id: '', name: '' },
+   ['id', 'name'],
+)
+   .addAutoMapping('id', 'name')
+   .build();
+
 const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   name: new SameTableMapping(tableDef, 'name', new ToDbSqlStringConverter(), unknownToString),
+   ...architectScalarMapping,
    rating: new OneToOneTableMapping(ratingTableDef, ratingMapping, `${tableDef.name}.id_rating`),
 };
 
