@@ -5,6 +5,8 @@ export * from './domain-request/type-checkers.ts';
 export type { RequestableFields, IsoDate, InputErrors } from './domain-request/types.ts';
 
 export * from './domain-request/field-configuration/index.ts';
+export * from './domain-request/validation/index.ts';
+export * from './domain-request/roles/index.ts';
 
 export * from './persistence/index.ts';
 export * from './persistence/database/index.ts';

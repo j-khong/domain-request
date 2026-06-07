@@ -3,3 +3,5 @@ export * from './field.ts';
 export * from './linked.ts';
 export * from './object.ts';
 export * from './types.ts';
+export * from './FieldConfigFactory.ts';
+export * from './FieldsSetupBuilder.ts';

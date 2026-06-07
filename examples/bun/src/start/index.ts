@@ -1,4 +1,5 @@
 import { cors } from '@elysiajs/cors';
+import { t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { Router as Elysia, SelectMethodResult } from '/deps/index.ts';
 import { buildInterfaces, getDatabaseConnector, plugRoutes } from '@interfaces/index.ts';
@@ -16,10 +17,31 @@ export async function start(config: ConfigFile) {
 
    const server = new Elysia()
       // .get('/', () => 'Hello World')
-      .get('/json', (ctx) => {
-         ctx.set.status = 200;
-         return new Response(JSON.stringify({ hello: 'world' }));
-      })
+      .get(
+         '/json',
+         (ctx) => {
+            ctx.set.status = 200;
+            return new Response(JSON.stringify({ hello: 'world' }));
+         },
+         {
+            params: t.Object({
+               id: t.String(),
+            }),
+            query: t.Object({
+               name: t.String(),
+            }),
+            body: t.Object({
+               username: t.String(),
+               password: t.String(),
+            }),
+            response: t.Object({
+               username: t.String(),
+               password: t.String(),
+               id: t.String(),
+               name: t.String(),
+            }),
+         },
+      )
       .onParse(({ request }, contentType) => {
          if (contentType === 'application/json') {
             return request.text();

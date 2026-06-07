@@ -62,7 +62,7 @@ format-gen-client:
 	npx prettier --config .prettierrc --loglevel warn --write $(shell find $(GENERATED_CLIENT_FOLDER) -name "*.ts") && \
 	echo '✅ done'
 
-.PHONY: run-node-example
+.PHONY: run-bun-example
 run-node-example: check-server gen-client format-gen-client
 	@echo '🚀 launching the client' && \
 	[ -d example ] && rm -fr example || : && \

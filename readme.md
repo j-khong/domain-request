@@ -63,12 +63,13 @@ With this project, you can query a resource this way, with a js object
 
 You can jump directly to the [examples](https://github.com/j-khong/domain-request/tree/main/examples/)
 
-- a query server running on [node](https://github.com/j-khong/domain-request/tree/main/examples/node)
-- a query server running on [deno](https://github.com/j-khong/domain-request/tree/main/examples/deno)
+- a query server running on [node](https://github.com/j-khong/domain-request/tree/main/examples/node) <img src="./images/nodejs.svg" width="50"/>
+- a query server running on [deno](https://github.com/j-khong/domain-request/tree/main/examples/deno) <img src="./images/deno.svg"  width="20"/>
+- a query server running on [bun](https://github.com/j-khong/domain-request/tree/main/examples/bun) <img src="./images/bun.svg"  width="20"/>
 
-Both serves use the same domains, so the differences between them are just due to node and deno.
+All servers use the same domains, so the differences between them are just due to node, deno or bun.
 
-For each server, you can generate a client to be run on deno or node. Then whatever client you use (deno or node), you can query both server indifferently.
+For each server, you can generate a client to be run on deno, node or bun. Then whatever client you use (deno, node or bun), you can query both server indifferently.
 
 These are just examples, to help you start quickly.
 
@@ -87,7 +88,7 @@ Domain Request is a package to make custom request of a domain (i.e. to get a fi
 
 A classic implementation of data request is a REST API plugged to a database. The REST resource being the Domain. 
 
-The 2 [examples](https://github.com/j-khong/domain-request/tree/main/examples/) mentioned above implement this case.
+The 3 [examples](https://github.com/j-khong/domain-request/tree/main/examples/) mentioned above implement this case.
 
 # Features
 ## Data request
