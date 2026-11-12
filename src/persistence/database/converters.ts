@@ -1,9 +1,20 @@
 import { IsoDate } from '../../domain-request/types.ts';
 import { isIsoDate, isDate } from '../../domain-request/type-checkers.ts';
+import { createSqlParam } from './params.ts';
 
 const defaultBuildInstruction = (field: string, operator: string, value: unknown) => `${field} ${operator} ${value}`;
 
+// "\" is not usable as it is not handled the same way by all the databases
+const likeEscapeChar = '!';
+
+function escapeLikeValue(v: string): string {
+   return v.replace(/[!%_]/g, (c) => `${likeEscapeChar}${c}`);
+}
+
 export abstract class ToDbSqlConverter<OriginalType> {
+   /**
+    * @param typeConverter must throw if the value cannot be converted: the filter is then rejected with an error
+    */
    constructor(
       private readonly typeConverter: (o: unknown) => OriginalType,
       public readonly buildInstruction: (
@@ -29,24 +40,29 @@ export abstract class ToDbSqlConverter<OriginalType> {
       return this.value;
    }
 
+   /**
+    * @returns the sql to use as the value: user input must go through createSqlParam, never be concatenated
+    */
    abstract prepare(v: OriginalType, deco?: string): unknown;
 }
 
 export class ToDbSqlStringConverter extends ToDbSqlConverter<string> {
    constructor(
       typeConverter: (o: unknown) => string = (o: unknown) => {
-         try {
-            return (o as { toString: () => string }).toString();
-         } catch (_e) {
-            return `cannot convert [${o}] to string`;
+         if (o === undefined || o === null) {
+            throw new Error(`cannot convert [${o}] to string`);
          }
+         return String(o);
       },
    ) {
       super(typeConverter);
    }
 
-   prepare(v: string, deco = ''): string {
-      return `'${deco}${v}${deco}'`;
+   prepare(v: string, deco?: string): string {
+      if (deco === undefined) {
+         return createSqlParam(v);
+      }
+      return `${createSqlParam(`${deco}${escapeLikeValue(v)}${deco}`)} ESCAPE '${likeEscapeChar}'`;
    }
 }
 
@@ -56,8 +72,11 @@ export class ToDbSqlNumberConverter extends ToDbSqlConverter<number> {
    }
 
    prepare(v: number, deco?: string): string | number {
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+         throw new Error(`[${v}] is not a number`);
+      }
       if (deco !== undefined) {
-         return `'${deco}${v}${deco}'`;
+         return createSqlParam(`${deco}${v}${deco}`);
       }
       return v;
    }
@@ -71,7 +90,13 @@ export class ToDbSqlDateConverter extends ToDbSqlStringConverter {
 
 export class ToDbSqlBooleanConverter extends ToDbSqlNumberConverter {
    constructor() {
-      super((o: unknown): number => Number(o));
+      super((o: unknown): number => {
+         const r = typeof o === 'boolean' ? Number(o) : toNumber(o);
+         if (r !== 0 && r !== 1) {
+            throw new Error(`cannot convert [${o}] to boolean`);
+         }
+         return r;
+      });
    }
 }
 
@@ -82,9 +107,9 @@ function fromDateToMysqlDate(input: unknown): string {
 }
 
 function getFunctionalDate(input: unknown): Date {
-   let d = new Date(input as string);
-   if (isNaN(d.getTime())) {
-      d = new Date();
+   const d = new Date(input as string);
+   if (input === undefined || input === null || isNaN(d.getTime())) {
+      throw new Error(`cannot convert [${input}] to date`);
    }
    return d;
 }
@@ -93,17 +118,13 @@ function format2digits(val: number): string {
    return String(val).padStart(2, '0');
 }
 
-const toNumber = (o: unknown): number => {
-   try {
-      const r = Number.parseFloat((o as { toString: () => string }).toString());
-      if (isNaN(r)) {
-         return 0;
-      }
-      return r;
-   } catch (_e) {
-      return 0;
+function toNumber(o: unknown): number {
+   const r = typeof o === 'string' && o.trim().length > 0 ? Number(o) : o;
+   if (typeof r !== 'number' || !Number.isFinite(r)) {
+      throw new Error(`cannot convert [${o}] to number`);
    }
-};
+   return r;
+}
 
 export class ValueMapper<DbValues, DomainValues> {
    private readonly domainToDb: Map<DomainValues, DbValues>;

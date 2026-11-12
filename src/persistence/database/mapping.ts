@@ -53,7 +53,12 @@ export function isChild(o: unknown): o is Child {
    );
 }
 
-export type DomainPath = { name: string; type: 'array' | 'object' | 'value' };
+export type DomainPath = {
+   name: string;
+   type: 'array' | 'object' | 'value';
+   /** for an array: sql alias of the column identifying one element of the array */
+   keyAlias?: string;
+};
 export type FieldNames = {
    rootDomain: DomainPath;
    children: Array<Child | ProcessResult>;
@@ -61,6 +66,8 @@ export type FieldNames = {
 export type ProcessResult = {
    fieldnames: FieldNames;
    tablename: string;
+   /** primary key of tablename, required to fetch a one to many nested in another one to many */
+   primaryKey?: string;
    joins: string[];
 };
 
@@ -138,8 +145,7 @@ export class SameTableMapping extends FieldMapping {
    }
 
    getOrderBy(o: Options<string>): string[] {
-      const defSort: 'asc' | 'desc' = 'asc';
-      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort === 'desc' ? 'desc' : 'asc'}`];
    }
 }
 
@@ -279,10 +285,14 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
             );
             continue;
          }
-         if (map instanceof OneToManyTableMapping) {
-            console.error('TODO call processOneToMany instead');
+         const res =
+            map instanceof OneToManyTableMapping
+               ? map.processOneToMany(key, value[key as T] as RequestableFields<unknown>)
+               : map.processField(key, value[key as T]);
+         if (res !== undefined && map instanceof OneToManyTableMapping) {
+            // an inner join in the nested one to many would remove the elements of this one without nested element
+            useLeftJoins(res);
          }
-         const res = map.processField(key, value[key as T]);
          if (res !== undefined) {
             fieldnames.children.push(res);
             res.joins.forEach((v) => joins.add(v));
@@ -292,6 +302,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       return {
          fieldnames,
          tablename: this.tableDef.name,
+         primaryKey: this.tableDef.primaryKey,
          joins: [...joins],
       };
    }
@@ -302,6 +313,15 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       errors: string[],
    ): { or: string[]; and: string[]; joins: string[] } {
       return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
+   }
+}
+
+function useLeftJoins(pr: ProcessResult): void {
+   pr.joins = pr.joins.map((join) => (join.startsWith('JOIN ') ? `LEFT ${join}` : join));
+   for (const child of pr.fieldnames.children) {
+      if (!isChild(child)) {
+         useLeftJoins(child);
+      }
    }
 }
 
@@ -400,13 +420,25 @@ function sameTableProcessAllFilters<T>(
       const comparison = domainFilters[domainFieldname];
       if (comparison !== undefined && isComparison(comparison)) {
          const comparisonMapper = comparisonOperatorMap[comparison.operator];
-         toDbConvert.setValue(comparison.value);
-         ret.and.push(comparisonMapper.format(fullFieldName, toDbConvert));
+         try {
+            toDbConvert.setValue(comparison.value);
+            ret.and.push(comparisonMapper.format(fullFieldName, toDbConvert));
+         } catch (e) {
+            errors.push(invalidFilterValue(domainFieldname, e));
+            ret.and.push(matchNothing);
+         }
       } else {
          errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
       }
    }
    return ret;
+}
+
+// a filter with a value which cannot be converted must not widen the results, so it matches nothing
+const matchNothing = '1 = 0';
+
+function invalidFilterValue(domainFieldname: string, e: unknown): string {
+   return `invalid filter value for domain field name [${domainFieldname}]: ${e instanceof Error ? e.message : e}`;
 }
 
 type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';

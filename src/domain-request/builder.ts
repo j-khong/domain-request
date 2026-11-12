@@ -17,6 +17,8 @@ export interface Report {
 
 export interface RequestReport {
    request: string;
+   /** values bound to the "?" placeholders of the request */
+   params?: unknown[];
    timeInMs: number;
    error?: string;
 }

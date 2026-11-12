@@ -1,5 +1,5 @@
 import { RequestableFields, BoolTree, Tree, InputErrors } from '../types.ts';
-import { isBoolean, isPositiveNumber, isString } from '../type-checkers.ts';
+import { isBoolean, isPositiveInteger, isString } from '../type-checkers.ts';
 import { DomainFieldConfiguration, FiltersTree } from './types.ts';
 import { FieldConfiguration } from './field.ts';
 import { ArrayOfLinkedDomainConfiguration } from './linked.ts';
@@ -356,18 +356,41 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       // const options = ret as Options<Extract<keyof Fields, string>>;
       //{ pagination: { offset: 0, limit: 100 } };
 
-      //
-      // find unknown fields
-      // TODO find unknown fields
-      // const res = this.findErrors('option', inputOptions as Tree, '');
-      // if (res !== undefined) {
-      //    errors.push(...res.errors);
-      // }
+      this.findUnknownOptions(inputOptions, errors);
 
       return {
          options,
          errors,
       };
+   }
+
+   private findUnknownOptions(inputOptions: { [key: string]: unknown }, errors: InputErrors): void {
+      for (const snakedName in inputOptions) {
+         if (optionNames.includes(snakedName)) {
+            continue;
+         }
+         const cameledName = this.inputStyleToCamel(snakedName);
+         const fieldConf = this.conf[cameledName as Extract<keyof Fields, string>];
+         if (fieldConf === undefined) {
+            errors.push({ context: 'option', fieldName: snakedName, reason: `unknown option [${snakedName}]` });
+            continue;
+         }
+         const expectedSnake = this.camelToInputStyle(cameledName);
+         if (expectedSnake !== snakedName) {
+            errors.push({
+               context: 'option',
+               fieldName: snakedName,
+               reason: `unknown option [${snakedName}], did you mean [${expectedSnake}] ?`,
+            });
+         } else if (fieldConf.sanitizeOption === DomainFieldConfiguration.prototype.sanitizeOption) {
+            // this kind of field does not manage options
+            errors.push({
+               context: 'option',
+               fieldName: snakedName,
+               reason: `field [${snakedName}] does not accept options`,
+            });
+         }
+      }
    }
 
    sanitizeOption(
@@ -387,6 +410,7 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
 
       const { options, errors } = this.sanitizeOption2(val as { [key: string]: unknown }, MAX_LIMIT);
       toSet[fieldName] = { ...options };
+      this.findUnknownOptions(val as { [key: string]: unknown }, errors);
 
       for (const key in this.conf) {
          const res = this.conf[key].sanitizeOption(
@@ -416,17 +440,17 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
       const options: Options<Extract<keyof Fields, string>> = { pagination: { offset: 0, limit: 100 } };
       if (inputOptions !== undefined) {
          if (inputOptions.limit !== undefined) {
-            if (isPositiveNumber(inputOptions.limit)) {
+            if (isPositiveInteger(inputOptions.limit)) {
                options.pagination.limit = Math.min(inputOptions.limit as number, MAX_LIMIT);
             } else {
-               errors.push({ context: 'option', fieldName: 'limit', reason: 'not a positive number' });
+               errors.push({ context: 'option', fieldName: 'limit', reason: 'not a positive integer' });
             }
          }
          if (inputOptions.offset !== undefined) {
-            if (isPositiveNumber(inputOptions.offset)) {
+            if (isPositiveInteger(inputOptions.offset)) {
                options.pagination.offset = inputOptions.offset;
             } else {
-               errors.push({ context: 'option', fieldName: 'offset', reason: 'not a positive number' });
+               errors.push({ context: 'option', fieldName: 'offset', reason: 'not a positive integer' });
             }
          }
          this.sanitizeOrderBy(inputOptions, options, errors);
@@ -504,6 +528,8 @@ export interface Options<FieldNames extends string> {
    useFilter?: boolean;
 }
 // & { [Property in FieldNames]?: Options<string> };
+
+const optionNames = ['limit', 'offset', 'orderby', 'use_filter'];
 
 const orderbySort = ['asc', 'desc'] as const;
 type OrderbySort = typeof orderbySort[number];

@@ -18,6 +18,7 @@ export async function test(
    const buildResult = domainRequestBuilder.build(input);
    const result = await handler.fetchDomain(buildResult.request);
 
+   assertEquals(result.errors, []);
    assertEquals(result.domainName, domainRequestName);
    assertEquals(result.total, expected.total);
    assertEquals(result.results, expected.results);
@@ -34,6 +35,7 @@ export async function testSpecial(
    const buildResult = domainRequestBuilder.build(input);
    const result = await handler.fetchDomain(buildResult.request);
 
+   assertEquals(result.errors, []);
    assertEquals(result.domainName, domainRequestName);
    assertEquals(result.total, expected.total);
    if (!compareObjects(result.results, expected.results)) {

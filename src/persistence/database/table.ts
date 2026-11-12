@@ -2,15 +2,20 @@ import { DomainRequest, DomainResult, RequestReport } from '../../domain-request
 import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
-import { processAllFilters, addSetToSet, createRequestFullFieldName, createSqlAlias } from './functions.ts';
+import { processAllFilters, createRequestFullFieldName, createSqlAlias } from './functions.ts';
+import { createSqlParam, extractSqlParams, SqlParam } from './params.ts';
 import { FiltersTree, isFilteringFields, Options } from '../../domain-request/field-configuration/index.ts';
 import { FilterArrayType } from '../../domain-request/field-configuration/types.ts';
 
 interface DbRecord {
-   [key: string]: string | number | Date | boolean;
+   [key: string]: string | number | Date | boolean | null;
 }
 export type SelectMethodResult = DbRecord[];
-export type SelectMethod = (query: string) => Promise<SelectMethodResult>;
+/**
+ * @param query sql request, where the values coming from the filters are replaced with "?" placeholders
+ * @param params values to bind to the placeholders, in the same order
+ */
+export type SelectMethod = (query: string, params: SqlParam[]) => Promise<SelectMethodResult>;
 
 export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, unknown> {
    private select: SelectMethod = (sql: string): Promise<SelectMethodResult> => {
@@ -40,11 +45,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       const mapping = this.mapping;
       const select = this.select;
 
-      const res = await Table.fetchOneToOne(tableDef, mapping, select, req);
+      const { results, resultsByPk } = await Table.fetchOneToOne(tableDef, mapping, select, req);
 
-      await Table.fetchOneToMany(tableDef, mapping, select, req, res);
+      await Table.fetchOneToMany(tableDef, mapping, select, req, results, resultsByPk);
 
-      return res;
+      return results;
    }
 
    private static async fetchOneToOne<DRN extends string, T>(
@@ -52,7 +57,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       mapping: TableMapping<Extract<keyof T, string>>,
       select: SelectMethod,
       req: DomainRequest<DRN, T>,
-   ): Promise<DomainResult> {
+   ): Promise<{ results: DomainResult; resultsByPk: ResultsByPk }> {
       const results: DomainResult = {
          domainName: req.name,
          results: [],
@@ -60,15 +65,16 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          total: 0,
          errors: [],
       };
+      const resultsByPk: ResultsByPk = new Map();
 
       const fields: string[] = [];
-      const joins: Set<string> = new Set();
+      const fieldsJoins: Set<string> = new Set();
       const fieldsToMapResults: FieldsToSelect = [];
 
       const processFN = (pr: ProcessResult, path: DomainPath[]) => {
          path.push(pr.fieldnames.rootDomain);
          for (const fieldname of pr.fieldnames.children) {
-            pr.joins.forEach((v) => joins.add(v));
+            pr.joins.forEach((v) => fieldsJoins.add(v));
             if (isChild(fieldname)) {
                fieldsToMapResults.push({
                   fieldnameAlias: fieldname.dbAlias,
@@ -108,6 +114,11 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          processFN(res, path);
       }
 
+      // the table primary key is always fetched, as the one to many results are attached thanks to it
+      const pk = `${tableDef.name}.${tableDef.primaryKey}`;
+      const pkAlias = createSqlAlias(tableDef.name, tableDef.primaryKey);
+      addOnce(fields, createRequestFullFieldName(tableDef.name, tableDef.primaryKey));
+
       //
       // process filters
       const {
@@ -118,44 +129,46 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       if (orFiltersArr.length > 0) {
          andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
       }
-      addSetToSet(joins, filtersJoins);
 
       const where = andFiltersArr.length === 0 ? '' : `WHERE ${andFiltersArr.join(' AND ')}`;
-      const joinsSql = joins.size > 0 ? [...joins].join('\n') : '';
+      const filtersJoinsSql = [...filtersJoins].join('\n');
 
       // 1. COUNT SELECT
-      const reqCountSql = `SELECT COUNT(DISTINCT ${tableDef.name}.${tableDef.primaryKey}) AS total
+      const reqCountSql = `SELECT COUNT(DISTINCT ${pk}) AS total
  FROM ${tableDef.name}
- ${joinsSql}
+ ${[...new Set([...fieldsJoins, ...filtersJoins])].join('\n')}
  ${where}`;
-      const { res: resCount, report: reportCount } = await executeRequest(select, reqCountSql);
-      const total = resCount.length > 0 ? Number.parseInt(resCount[0].total as string) : 0;
-      results.total = total;
-      results.report.requests.push(reportCount);
+      const resCount = await executeAndReport(select, reqCountSql, results);
+      results.total = resCount.length > 0 ? Number.parseInt(resCount[0].total as string) : 0;
 
       const generatedOrderby = Table.buildOrderby(req.options, mapping, results.errors);
-      const orderby =
-         generatedOrderby.length > 0
-            ? `${generatedOrderby}, ${tableDef.name}.${tableDef.primaryKey} ASC`
-            : `ORDER BY ${tableDef.name}.${tableDef.primaryKey} ASC`;
+      const orderby = generatedOrderby.length > 0 ? `${generatedOrderby}, ${pk} ASC` : `ORDER BY ${pk} ASC`;
+
+      // the joins of the filters may multiply the rows (one to many),
+      // so they are isolated in a sub request to get each row once, whatever the database
+      const selectWhere =
+         filtersJoins.size === 0
+            ? where
+            : `WHERE ${pk} IN (SELECT ${pk} FROM ${tableDef.name}
+ ${filtersJoinsSql}
+ ${where})`;
 
       // 2. SELECT fields + 1to1
       const reqSql = `SELECT ${fields.join(', ')}
  FROM ${tableDef.name}
- ${joinsSql}
- ${where}
- GROUP BY ${tableDef.name}.${tableDef.primaryKey}
+ ${[...fieldsJoins].join('\n')}
+ ${selectWhere}
  ${orderby}
- LIMIT ${req.options.pagination.offset},${req.options.pagination.limit}`;
+ ${buildLimit(req.options.pagination)}`;
 
-      const { res: dbResults, report } = await executeRequest(select, reqSql);
-      results.report.requests.push(report);
+      const dbResults = await executeAndReport(select, reqSql, results);
 
       for (const dbRecord of dbResults) {
          const result = createResultAndPopulate(dbRecord, fieldsToMapResults);
          results.results.push(result);
+         resultsByPk.set(String(dbRecord[pkAlias]), { pkValue: dbRecord[pkAlias], result });
       }
-      return Promise.resolve(results);
+      return { results, resultsByPk };
    }
 
    private static buildOrderby<T>(
@@ -197,29 +210,38 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       select: SelectMethod,
       req: DomainRequest<DRN, T>,
       res: DomainResult,
+      resultsByPk: ResultsByPk,
    ): Promise<void> {
-      const ids = [];
-      for (const v in res.results) {
-         ids.push(res.results[v].id);
-      }
-      if (ids.length === 0) {
+      if (resultsByPk.size === 0) {
          return;
       }
 
       const dataByArray: Map<string, DataByArrayType> = new Map();
       const getRelationOrderBy = (pr: ProcessResult): string => {
+         const primaryKey = pr.primaryKey ?? 'id';
          const firstJoin = pr.joins[0];
          if (firstJoin !== undefined) {
             const match = firstJoin.match(/JOIN\s+([^\s]+)\s+ON/i);
             if (match !== null && match[1] !== undefined) {
-               return `${match[1]}.id ASC`;
+               return `${match[1]}.${primaryKey} ASC`;
             }
          }
-         return `${pr.tablename}.id ASC`;
+         return `${pr.tablename}.${primaryKey} ASC`;
       };
 
-      const process1toN = (pr: ProcessResult, path: DomainPath[], data: DataByArrayType) => {
-         path.push(pr.fieldnames.rootDomain);
+      const process1toN = (pr: ProcessResult, parentPath: DomainPath[], data: DataByArrayType) => {
+         const pathElement: DomainPath = { ...pr.fieldnames.rootDomain };
+         if (pathElement.type === 'array') {
+            addOnce(data.orderByTieBreakers, getRelationOrderBy(pr));
+            if (pr.primaryKey !== undefined) {
+               // the key tells which rows belong to the same element, when a nested one to many multiplies the rows
+               pathElement.keyAlias = createSqlAlias(pr.tablename, pr.primaryKey);
+               addOnce(data.fields, createRequestFullFieldName(pr.tablename, pr.primaryKey));
+            }
+         }
+         const path = [...parentPath, pathElement];
+         pr.joins.forEach((v) => data.joins.add(v));
+
          for (const fieldname of pr.fieldnames.children) {
             if (isChild(fieldname)) {
                data.fieldsToMapResults.push({
@@ -227,16 +249,13 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                   path,
                   toDomainConvert: fieldname.toDomainConvert,
                });
-               data.fields.push(fieldname.dbFullFieldName);
+               addOnce(data.fields, fieldname.dbFullFieldName);
             } else {
-               pr.joins.forEach((v) => data.joins.add(v));
-               // other child at the same level, need to copy the path
-               process1toN(fieldname, [...path], data);
+               process1toN(fieldname, path, data);
             }
          }
       };
-      const findAndProcessFirst1toN = (pr: ProcessResult, path: DomainPath[], prevJoin: string[]) => {
-         path.push(pr.fieldnames.rootDomain);
+      const findAndProcessFirst1toN = (pr: ProcessResult, parentPath: DomainPath[], prevJoins: string[]) => {
          if (pr.fieldnames.rootDomain.type === 'array') {
             let data = dataByArray.get(pr.fieldnames.rootDomain.name);
             if (data === undefined) {
@@ -244,32 +263,19 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                   fields: [],
                   joins: new Set(),
                   fieldsToMapResults: [],
-                  relationOrderBy: getRelationOrderBy(pr),
+                  orderByTieBreakers: [],
                };
                dataByArray.set(pr.fieldnames.rootDomain.name, data);
-            } else if (data.relationOrderBy === undefined) {
-               data.relationOrderBy = getRelationOrderBy(pr);
             }
-            prevJoin.forEach((v) => data?.joins.add(v));
-
-            for (const fieldname of pr.fieldnames.children) {
-               if (isChild(fieldname)) {
-                  data.fieldsToMapResults.push({
-                     fieldnameAlias: fieldname.dbAlias,
-                     path,
-                     toDomainConvert: fieldname.toDomainConvert,
-                  });
-                  data.fields.push(fieldname.dbFullFieldName);
-               } else {
-                  pr.joins.forEach((v) => data?.joins.add(v));
-                  // other child at the same level, need to copy the path
-                  process1toN(fieldname, [...path], data);
-               }
+            for (const join of prevJoins) {
+               data.joins.add(join);
             }
+            process1toN(pr, parentPath, data);
          } else {
+            const path = [...parentPath, pr.fieldnames.rootDomain];
             for (const fieldname of pr.fieldnames.children) {
                if (!isChild(fieldname)) {
-                  findAndProcessFirst1toN(fieldname, [...path], pr.joins);
+                  findAndProcessFirst1toN(fieldname, path, [...prevJoins, ...pr.joins]);
                }
             }
          }
@@ -288,8 +294,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             continue;
          }
 
-         const path: DomainPath[] = [];
-         findAndProcessFirst1toN(resp, path, []);
+         findAndProcessFirst1toN(resp, [], []);
       }
 
       if (dataByArray.size === 0) {
@@ -297,16 +302,16 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       }
 
       const pk = `${tableDef.name}.${tableDef.primaryKey}`;
-      const commonWhere = `WHERE ${pk} IN (${ids.join(', ')})`;
+      const pkAlias = createSqlAlias(tableDef.name, tableDef.primaryKey);
+      const pkValues = [...resultsByPk.values()].map((v) => toSqlKey(v.pkValue));
+      const commonWhere = `WHERE ${pk} IN (${pkValues.join(', ')})`;
+      const elementsByKey: ElementsByKey = new WeakMap();
 
       for (const [key, value] of dataByArray) {
          let orderby = '';
          let limit = '';
          let andFiltersArr: string[] = [];
-         const orderByTieBreakers = [
-            `${tableDef.name}.${tableDef.primaryKey} ASC`,
-            ...(value.relationOrderBy !== undefined ? [value.relationOrderBy] : []),
-         ];
+         const orderByTieBreakers = [`${pk} ASC`, ...value.orderByTieBreakers];
 
          const fieldOptions = req.options[key as keyof Options<Extract<keyof T, string>>];
          if (
@@ -330,8 +335,8 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             orderby =
                generatedNestedOrderby.length > 0
                   ? `${generatedNestedOrderby}, ${orderByTieBreakers.join(', ')}`
-                  : `ORDER BY ${tableDef.name}.${tableDef.primaryKey} ASC`;
-            limit = `LIMIT ${fo.pagination.offset},${fo.pagination.limit}`;
+                  : `ORDER BY ${pk} ASC`;
+            limit = buildLimit(fo.pagination);
          }
 
          if (orderby.length === 0) {
@@ -341,10 +346,12 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          const where = andFiltersArr.length === 0 ? commonWhere : `${commonWhere} AND ${andFiltersArr.join(' AND ')}`;
          const joinsSql = value.joins.size > 0 ? [...value.joins].join('\n') : '';
 
-         const reqSql = `SELECT ${[
-            createRequestFullFieldName(tableDef.name, tableDef.primaryKey),
-            ...value.fields,
-         ].join(', ')}
+         const fields = [createRequestFullFieldName(tableDef.name, tableDef.primaryKey)];
+         for (const field of value.fields) {
+            addOnce(fields, field);
+         }
+
+         const reqSql = `SELECT ${fields.join(', ')}
  FROM ${tableDef.name}
  ${joinsSql}
  ${where}
@@ -352,16 +359,13 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  ${limit}
  `;
 
-         const { res: dbResults, report } = await executeRequest(select, reqSql);
-         res.report.requests.push(report);
+         const dbResults = await executeAndReport(select, reqSql, res);
 
          for (const dbRecord of dbResults) {
-            populateResultsWith1toN(
-               createSqlAlias(tableDef.name, tableDef.primaryKey),
-               res.results,
-               dbRecord,
-               value.fieldsToMapResults,
-            );
+            const toPopulate = resultsByPk.get(String(dbRecord[pkAlias]));
+            if (toPopulate !== undefined) {
+               populateResultWith1toN(toPopulate.result, dbRecord, value.fieldsToMapResults, elementsByKey);
+            }
          }
       }
    }
@@ -386,52 +390,117 @@ type DataByArrayType = {
    fields: string[];
    joins: Set<string>;
    fieldsToMapResults: FieldsToSelect;
-   relationOrderBy?: string;
+   orderByTieBreakers: string[];
 };
 
-function populateResultsWith1toN(key: string, res: any[], dbRecord: DbRecord, fieldsToSelect: FieldsToSelect): void {
-   const keyValue = dbRecord[key];
-   if (keyValue === undefined || fieldsToSelect.length === 0) {
-      return;
-   }
+type DbValue = DbRecord[string];
+type ResultsByPk = Map<string, { pkValue: DbValue; result: any }>;
+// for each array of the results, its elements by key
+type ElementsByKey = WeakMap<any[], Map<string, any>>;
 
-   const toPopulate = res.find((v) => v.id == keyValue); // weak comparison on id
-   if (toPopulate === undefined) {
-      return;
+function addOnce(array: string[], value: string): void {
+   if (!array.includes(value)) {
+      array.push(value);
    }
+}
 
-   const structuredValue = {};
+function toSqlKey(value: DbValue): string {
+   if ((typeof value === 'number' && Number.isFinite(value)) || typeof value === 'bigint') {
+      return `${value}`;
+   }
+   return createSqlParam(String(value));
+}
+
+function buildLimit(pagination: { offset: number; limit: number }): string {
+   return `LIMIT ${toPositiveInteger(pagination.limit)} OFFSET ${toPositiveInteger(pagination.offset)}`;
+}
+
+function toPositiveInteger(value: unknown): number {
+   const n = Math.trunc(Number(value));
+   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function populateResultWith1toN(
+   toPopulate: any,
+   dbRecord: DbRecord,
+   fieldsToSelect: FieldsToSelect,
+   elementsByKey: ElementsByKey,
+): void {
+   // for the arrays without key, each db record is one element
+   const recordElements = new Map<any[], any>();
+
    for (const field of fieldsToSelect) {
-      let tmpStruct = toPopulate;
-      for (const pathEl of field.path) {
+      const value = field.toDomainConvert(dbRecord[field.fieldnameAlias]);
+      const lastPos = field.path.length - 1;
+      // without value, the arrays are still created, so that the ones without element are empty arrays
+      const stopAt = value === undefined ? field.path.map((p) => p.type).lastIndexOf('array') : lastPos;
+
+      let struct = toPopulate;
+      for (let i = 0; i < lastPos && i <= stopAt && struct !== undefined; i++) {
+         const pathEl = field.path[i];
          if (pathEl.type === 'value') {
             continue;
          }
-
-         if (tmpStruct[pathEl.name] === undefined) {
-            if (pathEl.type === 'array') {
-               tmpStruct[pathEl.name] = [];
-            } else if (pathEl.type === 'object') {
-               tmpStruct[pathEl.name] = {};
-            }
+         if (struct[pathEl.name] === undefined) {
+            struct[pathEl.name] = pathEl.type === 'array' ? [] : {};
          }
-         tmpStruct = tmpStruct[pathEl.name];
+         if (pathEl.type === 'object') {
+            struct = struct[pathEl.name];
+         } else if (value === undefined && i === stopAt) {
+            struct = undefined;
+         } else {
+            struct = getArrayElement(
+               struct[pathEl.name],
+               pathEl,
+               dbRecord,
+               elementsByKey,
+               recordElements,
+               value !== undefined,
+            );
+         }
       }
-      populateValueTree(structuredValue, field.path, field.toDomainConvert(dbRecord[field.fieldnameAlias]));
+
+      if (struct !== undefined && value !== undefined) {
+         struct[field.path[lastPos].name] = value;
+      }
    }
-   goThrough(structuredValue, toPopulate);
 }
 
-function goThrough(data: any, toPopulate: any): void {
-   for (const key in data as any) {
-      if (Array.isArray(toPopulate[key])) {
-         toPopulate[key].push((data as any)[key]);
-      } else if (typeof toPopulate[key] === 'object') {
-         goThrough(data[key], toPopulate[key]);
-      } else {
-         toPopulate[key] = (data as any)[key];
+function getArrayElement(
+   array: any[],
+   pathEl: DomainPath,
+   dbRecord: DbRecord,
+   elementsByKey: ElementsByKey,
+   recordElements: Map<any[], any>,
+   createWithoutKey: boolean,
+): any {
+   if (pathEl.keyAlias === undefined) {
+      let element = recordElements.get(array);
+      if (element === undefined && createWithoutKey) {
+         element = {};
+         array.push(element);
+         recordElements.set(array, element);
       }
+      return element;
    }
+
+   const key = dbRecord[pathEl.keyAlias];
+   if (key === undefined || key === null) {
+      // no row in the joined table
+      return undefined;
+   }
+   let elements = elementsByKey.get(array);
+   if (elements === undefined) {
+      elements = new Map();
+      elementsByKey.set(array, elements);
+   }
+   let element = elements.get(String(key));
+   if (element === undefined) {
+      element = {};
+      array.push(element);
+      elements.set(String(key), element);
+   }
+   return element;
 }
 
 type FieldsToSelect = Array<{
@@ -465,6 +534,20 @@ function populateValueTree(struct: any, fieldnames: DomainPath[], value: any): v
    struct[fieldnames[lastPos].name] = value;
 }
 
+// executes the request, adds its report to the results, and its error if it failed
+async function executeAndReport(
+   select: SelectMethod,
+   sql: string,
+   results: DomainResult,
+): Promise<SelectMethodResult> {
+   const { res, report } = await executeRequest(select, sql);
+   results.report.requests.push(report);
+   if (report.error !== undefined) {
+      results.errors.push(`database request failed: ${report.error}`);
+   }
+   return res;
+}
+
 export async function executeRequest(
    select: SelectMethod,
    sql: string,
@@ -472,18 +555,19 @@ export async function executeRequest(
    res: SelectMethodResult;
    report: RequestReport;
 }> {
+   const { sql: request, params } = extractSqlParams(sql);
    const start = new Date();
-   const res = [];
+   let res: SelectMethodResult = [];
    let error: string | undefined;
    try {
-      const tmp = await select(sql);
-      res.push(...tmp);
+      res = await select(request, params);
    } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
    }
    const end = new Date();
    const report: RequestReport = {
-      request: sql.replaceAll('\n', ' '),
+      request: request.replaceAll('\n', ' '),
+      params,
       timeInMs: end.getTime() - start.getTime(),
       error,
    };
