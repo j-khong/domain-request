@@ -7,6 +7,8 @@ await emptyDir('./npm');
 await build({
    entryPoints: ['./src/index.ts', { name: './tools', path: './src/tools.ts' }],
    outDir: './npm',
+   // the unit tests need a database: they are run with deno (make unit-tests), not in the npm package
+   test: false,
    shims: {
       // see JS docs for overview and more options
       deno: true,
@@ -32,5 +34,6 @@ await build({
 Deno.copyFileSync('LICENSE', 'npm/LICENSE');
 Deno.copyFileSync('readme.md', 'npm/README.md');
 
-await copy('src/tools/resources', 'npm/script/src/tools/resources', { overwrite: true });
-await copy('src/tools/resources', 'npm/esm/src/tools/resources', { overwrite: true });
+// templates read at runtime by generateApiClient, next to its module
+await copy('src/tools/resources', 'npm/script/tools/resources', { overwrite: true });
+await copy('src/tools/resources', 'npm/esm/tools/resources', { overwrite: true });

@@ -1,7 +1,7 @@
 import { cors } from '@elysiajs/cors';
 import { t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
-import { Router as Elysia, SelectMethodResult } from '/deps/index.ts';
+import { Router as Elysia, SelectMethod } from '/deps/index.ts';
 import { buildInterfaces, getDatabaseConnector, plugRoutes } from '@interfaces/index.ts';
 import { init as initDomainRequests } from '@app/index.ts';
 import { ConfigFile } from '@domains/ConfigurationFile.ts';
@@ -9,11 +9,8 @@ import { ConfigFile } from '@domains/ConfigurationFile.ts';
 export async function start(config: ConfigFile) {
    await buildInterfaces(config);
 
-   initDomainRequests(
-      (query: string): Promise<SelectMethodResult> => {
-         return getDatabaseConnector().query(query);
-      },
-   );
+   const select: SelectMethod = (query, params) => getDatabaseConnector().query(query, params);
+   initDomainRequests(select);
 
    const server = new Elysia()
       // .get('/', () => 'Hello World')

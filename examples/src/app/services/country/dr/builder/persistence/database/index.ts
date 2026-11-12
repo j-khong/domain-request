@@ -1,13 +1,4 @@
-import {
-   SameTableMapping,
-   SelectMethod,
-   Table,
-   TableDef,
-   TableMapping,
-   ToDbSqlNumberConverter,
-   ToDbSqlStringConverter,
-   unknownToString,
-} from '/deps/index.ts';
+import { MappingBuilder, SelectMethod, Table, TableDef, TableMapping } from '/deps/index.ts';
 import { DomainRequestName } from '@domains/types.ts';
 import { Fields } from '../../../types.ts';
 
@@ -16,11 +7,13 @@ const tableDef: TableDef = {
    primaryKey: 'id',
 };
 
-const mapping: TableMapping<keyof Fields> = {
-   id: new SameTableMapping(tableDef, 'id', new ToDbSqlNumberConverter(), unknownToString),
-   name: new SameTableMapping(tableDef, 'name', new ToDbSqlStringConverter(), unknownToString),
-   timezone: new SameTableMapping(tableDef, 'timezone', new ToDbSqlStringConverter(), unknownToString),
-};
+const mapping: TableMapping<keyof Fields> = new MappingBuilder<Fields, { id: number; name: string; timezone: string }>(
+   tableDef,
+   { id: '', name: '', timezone: '' },
+   ['id', 'name', 'timezone'],
+)
+   .addAutoMapping('id', 'name', 'timezone')
+   .build();
 
 export function getTableDefinition(): TableDef {
    return tableDef;

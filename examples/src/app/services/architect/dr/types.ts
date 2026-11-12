@@ -1,4 +1,4 @@
-import { FieldsSetup, ObjectFieldConfiguration, StringFieldConfiguration } from '/deps/index.ts';
+import { FieldConfigFactory, FieldsSetup, ObjectFieldConfiguration } from '/deps/index.ts';
 import { DomainRequestName } from '@domains/types.ts';
 
 export const domainRequestName: DomainRequestName = 'architect';
@@ -20,26 +20,26 @@ export interface Rater {
 
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {
-      id: new StringFieldConfiguration({
+      id: FieldConfigFactory.createString({
          filtering: {
             byListOfValue: true,
          },
       }),
-      name: new StringFieldConfiguration({
+      name: FieldConfigFactory.createString({
          filtering: {
             byRangeOfValue: true,
             byListOfValue: true,
          },
       }),
       rating: new ObjectFieldConfiguration<Rating>({
-         rate: new StringFieldConfiguration({
+         rate: FieldConfigFactory.createString({
             filtering: {
                byRangeOfValue: true,
                byListOfValue: true,
             },
          }),
          rater: new ObjectFieldConfiguration<Rater>({
-            name: new StringFieldConfiguration({
+            name: FieldConfigFactory.createString({
                filtering: {
                   byRangeOfValue: true,
                   byListOfValue: true,

@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@jkhong/cli-js": "1.2.0",
-    "@jkhong/domain-request": "0.6.0",
+    "@jkhong/domain-request": "file:../../npm",
     "@koa/cors": "4.0.0",
     "@koa/router": "12.0.0",
     "koa": "2.14.1",

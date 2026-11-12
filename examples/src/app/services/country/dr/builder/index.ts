@@ -1,11 +1,4 @@
-import {
-   buildDomainRequestBuilderByRole,
-   buildDomainRequestFactory,
-   DomainConfig,
-   DomainRequestByRole,
-   Factory,
-   Persistence,
-} from '/deps/index.ts';
+import { buildDomainRequestFactory, createDomainRoleBuilder, DomainConfig, Factory, Persistence } from '/deps/index.ts';
 import { DomainRequestName, getRoles, Role } from '@domains/types.ts';
 import { domainRequestName, Fields, generateFieldsSetup } from '../types.ts';
 
@@ -19,12 +12,11 @@ export function createDomainConfig(role: Role): DomainConfig<DomainRequestName, 
    return mapping[role].createDomainConfig();
 }
 
-const mapping: DomainRequestByRole<Role, DomainRequestName, Fields> = buildDomainRequestBuilderByRole({
-   domainRequestName,
-   generateFieldsSetup,
-   rolesList: getRoles(),
-   rolesSpecifics: {
-      admin: {},
-      student: {},
-   },
-});
+const mapping = createDomainRoleBuilder(domainRequestName, generateFieldsSetup, getRoles())
+   .role('admin')
+   .withAllFields()
+   .and()
+   .role('student')
+   .withAllFields()
+   .and()
+   .build();

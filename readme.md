@@ -180,7 +180,7 @@ const select: SelectMethod = async (query, params) => {
 };
 ```
 
-The generated SQL avoids database specific syntax (`LIMIT … OFFSET …`, no `GROUP BY`), but it is only tested with MySQL.
+The generated SQL avoids database specific syntax (`LIMIT … OFFSET …`, no `GROUP BY`): it is tested with MySQL (unit tests) and runs on SQLite (examples).
 For a database using numbered placeholders (e.g. PostgreSQL), rewrite them: the generated SQL contains no other `?`.
 
 ```ts
@@ -286,7 +286,10 @@ import { generateApiClient } from '@jkhong/domain-request/tools';
 They all use the same domains, so the differences between them are only due to the runtime.
 For each server, you can generate a client to be run on deno, node or bun.
 
-The examples use the published version 0.7.0 of the library.
+The examples use the library sources of this repository: the deno example imports them directly,
+the node and bun examples depend on the npm package built from them (`make build-lib` in the example,
+done automatically by `make` the first time; run it again after changing the library).
+By default, they use an in memory SQLite database.
 
 ## Deprecated API
 

@@ -1,4 +1,4 @@
-import { FieldsSetup, StringFieldConfiguration } from '/deps/index.ts';
+import { FieldConfigFactory, FieldsSetup } from '/deps/index.ts';
 import { DomainRequestName } from '@domains/types.ts';
 
 export const domainRequestName: DomainRequestName = 'country';
@@ -11,18 +11,18 @@ export interface Fields {
 
 export function generateFieldsSetup(): FieldsSetup<Fields> {
    return {
-      id: new StringFieldConfiguration({
+      id: FieldConfigFactory.createString({
          filtering: {
             byListOfValue: true,
          },
       }),
-      name: new StringFieldConfiguration({
+      name: FieldConfigFactory.createString({
          filtering: {
             byRangeOfValue: true,
             byListOfValue: true,
          },
       }),
-      timezone: new StringFieldConfiguration({
+      timezone: FieldConfigFactory.createString({
          filtering: {
             byListOfValue: true,
          },

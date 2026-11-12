@@ -1,11 +1,14 @@
 import CLI from 'npm:@jkhong/cli-js';
-import Options from 'npm:@jkhong/cli-js/cli/domain/Options';
+import OptionsClass from 'npm:@jkhong/cli-js/cli/domain/Options';
 import { generateApiClient } from '../src/deps/index.ts';
 import { getDomainRequestName, getRoles, Role } from '../src/app/domains/types.ts';
 import { getDomainRequestHandler, init } from '../src/app/index.ts';
 import { getResourceDomainMapping } from '../src/interfaces/api/index.ts';
 import { loadConfig } from '../src/interfaces/index.ts';
 import { start } from '../src/start/index.ts';
+
+// the npm package exports the class as a value
+type Options = InstanceType<typeof OptionsClass>;
 
 async function launchServer(cliOptions: Options) {
    const config = await loadConfig(cliOptions.getSwitchValue('settings'));
