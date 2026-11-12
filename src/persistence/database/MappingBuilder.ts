@@ -13,6 +13,8 @@ import {
    unknownToString,
 } from './converters.ts';
 
+// object, as domains and tables are usually declared with interfaces, which are not assignable to Record
+// deno-lint-ignore ban-types
 export class MappingBuilder<Domain extends object, Table extends object> {
    private readonly mapping: Partial<TableMapping<Extract<keyof Domain, string>>> = {};
 

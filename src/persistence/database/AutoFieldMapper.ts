@@ -56,6 +56,8 @@ function buildDefaultMapper(kind: AutoMapFieldKind): {
 }
 
 export class AutoFieldMapper {
+   // object, as domains and tables are usually declared with interfaces, which are not assignable to Record
+   // deno-lint-ignore ban-types
    static generateMapping<Domain extends object, Table extends object>(
       tableDef: TableDef,
       domainShape: Domain,

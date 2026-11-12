@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.31.0
+      - run: make lint
+      - run: make check
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [old, new]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.31.0
+      # starts a mysql container, loads the schema, then runs the tests
+      - run: make unit-tests UNIT_TESTS_API=${{ matrix.api }}
+      - if: failure()
+        run: cat unit-tests.log

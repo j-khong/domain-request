@@ -5,7 +5,6 @@ examples/**/client
 examples/**/src/app
 examples/**/src/interfaces/api
 
-dbUtils.ts
 debug.ts
 tests-report
 
@@ -13,7 +12,7 @@ tests-report
 
 A-migrer
 notes.txt
-scripts/
+scripts/publish.sh
 
 
 # Logs

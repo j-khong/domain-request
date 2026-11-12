@@ -1,6 +1,5 @@
 import { DomainRequestBuilder } from '../builder.ts';
 import { FieldsSetup, DomainConfig, ObjectFieldConfiguration } from '../field-configuration/index.ts';
-import { RolePermissionsConfig } from './RolePermissions.ts';
 
 /**
  * Fluent builder for defining domains with role-based configurations
@@ -117,7 +116,7 @@ export class DomainRoleBuilder<DRN extends string, Fields, Role extends string> 
       roleConfig: RoleConfig<DRN, Fields, Role>,
       toIgnore: string[],
    ): DomainConfig<DRN, Fields> {
-      let fieldsSetup = this.generateFieldsSetup();
+      const fieldsSetup = this.generateFieldsSetup();
 
       // Apply field-level modifications if specified
       if (roleConfig.modifyFieldsSetup) {

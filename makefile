@@ -47,16 +47,18 @@ unit-tests: db-init
 		exit 1; \
 	fi; \
 	d=$$(date +%s); \
-	UNIT_TESTS_API=$$profile deno test --allow-all unit-tests-new/index.ts > unit-tests.log 2>&1 && \
+	UNIT_TESTS_API=$$profile DB_NAME=$(DB_NAME) DB_PORT=$(DB_PORT) DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASSWORD) \
+	deno test --allow-all $(TEST_FLAGS) unit-tests-new/index.ts > unit-tests.log 2>&1 && \
 	echo "✅ Tests ($$profile) took $$(($$(date +%s)-d)) seconds" || \
-	echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"
+	{ echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"; exit 1; }
 
 .PHONY: tests-coverage # generate tests coverage report
 tests-coverage:
 # brew install lcov
-	[ ! -d $(TESTS_REPORT) ] && make unit-tests || : && \
-	deno coverage $(TESTS_REPORT)/cov_profile --lcov --output=$(TESTS_REPORT)/cov_profile.lcov && \
-	genhtml -o $(TESTS_REPORT)/cov_profile/html $(TESTS_REPORT)/cov_profile.lcov && \
+	rm -fr $(TESTS_REPORT)
+	$(MAKE) unit-tests TEST_FLAGS="$(COVERAGE_OPTION)"
+	deno coverage $(TESTS_REPORT)/cov_profile --lcov --output=$(TESTS_REPORT)/cov_profile.lcov
+	genhtml -o $(TESTS_REPORT)/cov_profile/html $(TESTS_REPORT)/cov_profile.lcov
 	open $(TESTS_REPORT)/cov_profile/html/index.html
 
 .PHONY: labo
@@ -64,13 +66,17 @@ labo:
 	deno run --inspect --allow-all ./unit-tests-new/labo.ts
 #deno run --allow-net unit-tests-new/labo.ts
 
-.PHONY: lint
+.PHONY: lint # lint the library (explicit any are still too numerous to be forbidden)
 lint:
-	deno lint src
+	deno lint --rules-exclude=no-explicit-any src
+
+.PHONY: check # type check the library entry points
+check:
+	deno check src/index.ts src/tools.ts
 
 .PHONY: help # Generate list of targets with descriptions
 help:
-	@grep '^.PHONY: .* #' Makefile | sed 's/\.PHONY: \(.*\) # \(.*\)/\1 	 \2/' | expand -t30
+	@grep '^.PHONY: .* #' $(firstword $(MAKEFILE_LIST)) | sed 's/\.PHONY: \(.*\) # \(.*\)/\1 	 \2/' | expand -t30
 
 
 .PHONY: save
@@ -86,6 +92,5 @@ npm-create:
 	deno run -A scripts/build_npm.ts $(shell cat current_version.txt)
 
 .PHONY: npm-publish
-npm-publish:
-	make npm-create || : && \
+npm-publish: npm-create
 	cd npm && npm publish --access public
