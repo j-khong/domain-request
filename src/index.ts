@@ -12,4 +12,3 @@ export * from './domain-request/old/index.ts';
 
 export * from './persistence/index.ts';
 export * from './persistence/database/index.ts';
-

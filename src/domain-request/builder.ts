@@ -3,9 +3,21 @@ import { InputErrors, NaturalKey, Tree, BoolTree, RequestableFields } from './ty
 import { DomainConfig, FiltersTree, Options } from './field-configuration/index.ts';
 import { DomainRequestHandler } from './Factory.ts';
 
-export interface DomainResult {
+/**
+ * a result of a domain request: only the requested fields are set
+ * (any when the fields are unknown, so that untyped factories can still be cast to typed handlers)
+ */
+export type DomainResultItem<T> = unknown extends T
+   ? any
+   : T extends Array<infer U>
+     ? Array<DomainResultItem<U>>
+     : T extends Date | string | number | boolean | bigint | null | undefined
+       ? T
+       : { [Property in keyof T]?: DomainResultItem<T[Property]> };
+
+export interface DomainResult<Result = any> {
    domainName: string;
-   results: any[];
+   results: Result[];
    report: Report;
    total: number;
    errors: string[];

@@ -27,13 +27,24 @@ export abstract class ToDbSqlConverter<OriginalType> {
       this.buildInstruction = buildInstruction;
    }
 
-   private value: OriginalType[] | undefined;
-   setValue(value: unknown): void {
-      if (Array.isArray(value)) {
-         this.value = value.map((n: unknown) => this.typeConverter(n));
-      } else this.value = [this.typeConverter(value)];
+   /**
+    * @returns the value, or each value of a list, converted to the database type
+    */
+   convert(value: unknown): OriginalType[] {
+      return (Array.isArray(value) ? value : [value]).map((v: unknown) => this.typeConverter(v));
    }
 
+   private value: OriginalType[] | undefined;
+   /**
+    * @deprecated the value is shared by all the requests using this converter: use convert() instead
+    */
+   setValue(value: unknown): void {
+      this.value = this.convert(value);
+   }
+
+   /**
+    * @deprecated use convert() instead
+    */
    getValue(): OriginalType[] {
       if (this.value === undefined) {
          throw new Error('program error value not set');

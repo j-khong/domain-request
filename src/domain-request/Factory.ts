@@ -1,18 +1,21 @@
-import { DomainResult, DomainRequestBuilder, DomainRequest } from './builder.ts';
+import { DomainResult, DomainResultItem, DomainRequestBuilder, DomainRequest } from './builder.ts';
 import { Persistence } from '../persistence/index.ts';
 import { DomainConfig, FieldsSetup, ObjectFieldConfiguration } from './field-configuration/index.ts';
 
 export interface DomainRequestHandler<Role extends string, DRN extends string, DF> {
    getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DRN, DF>;
-   fetchDomain: (req: DomainRequest<DRN, DF>) => Promise<DomainResult>;
+   fetchDomain: (req: DomainRequest<DRN, DF>) => Promise<DomainResult<DomainResultItem<DF>>>;
 }
 
 export interface Factory<Role extends string, DRN extends string, Fields> {
    getAllRolesRequestBuilders: () => DomainBuildersByRole<Role, DRN, DomainRequestBuilder<DRN, Fields>>;
    getRoleDomainRequestBuilder: (role: Role) => DomainRequestBuilder<DRN, Fields>;
-   fetchDomain: (req: DomainRequest<DRN, Fields>) => Promise<DomainResult>;
+   fetchDomain: (req: DomainRequest<DRN, Fields>) => Promise<DomainResult<DomainResultItem<Fields>>>;
    // datastore: Persistence<DRN, Fields>;
 }
+
+// the fields are inferred from the request builders only: a datastore is often not typed with the domain
+type NoInfer<T> = [T][T extends any ? 0 : never];
 
 export function buildDomainRequestFactory<R extends string, DRN extends string, Fields>( //, TF extends string>(
    buildFctOfDomainRequestBuilderByRole: {
@@ -20,7 +23,7 @@ export function buildDomainRequestFactory<R extends string, DRN extends string, 
          buildRequestBuilder: () => DomainRequestBuilder<DRN, Fields>;
       };
    },
-   datastore: Persistence<DRN, Fields>,
+   datastore: Persistence<DRN, NoInfer<Fields>>,
 ): Factory<R, DRN, Fields> {
    const domainRequestBuilderByRole: {
       [Property in R]: DomainRequestBuilder<DRN, Fields>;

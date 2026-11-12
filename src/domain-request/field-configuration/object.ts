@@ -283,7 +283,6 @@ export class ObjectFieldConfiguration<Fields> extends DomainFieldConfiguration {
          errors.push(...res.errors);
       }
 
-      // console.log('filters:', JSON.stringify(filters, null, 2));
       return { errors, filters };
    }
 

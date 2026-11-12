@@ -19,9 +19,9 @@ import { FieldsSetup, DomainConfig, ObjectFieldConfiguration } from '../field-co
  *
  * After (fluent, self-documented):
  * ```
- * new DomainRoleBuilder(...)
+ * createDomainRoleBuilder(domainRequestName, generateFieldsSetup, roles)
  *    .role('admin').withAllFields().and()
- *    .role('student').withFields(['id', 'name']).restrictField('status', {...}).and()
+ *    .role('student').withFields('id', 'name').modifyFields((setup) => {...}).and()
  *    .build()
  * ```
  */

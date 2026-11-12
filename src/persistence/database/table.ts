@@ -18,9 +18,10 @@ export type SelectMethodResult = DbRecord[];
 export type SelectMethod = (query: string, params: SqlParam[]) => Promise<SelectMethodResult>;
 
 export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, unknown> {
-   private select: SelectMethod = (sql: string): Promise<SelectMethodResult> => {
-      console.log(`SELECT METHOD is not SET for ${this.tableDef.name}`, sql);
-      return Promise.resolve([]);
+   private select: SelectMethod = (): Promise<SelectMethodResult> => {
+      return Promise.reject(
+         new Error(`no select method set for table [${this.tableDef.name}]: pass it to the constructor or to init()`),
+      );
    };
 
    init(settings: unknown): void {
@@ -289,7 +290,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             continue;
          }
 
-         const resp = fieldMap.processOneToMany(domFieldName, req.fields[domFieldName]);
+         const resp = fieldMap.processOneToMany(domFieldName, req.fields[domFieldName], res.errors);
          if (resp === undefined) {
             continue;
          }
@@ -535,11 +536,7 @@ function populateValueTree(struct: any, fieldnames: DomainPath[], value: any): v
 }
 
 // executes the request, adds its report to the results, and its error if it failed
-async function executeAndReport(
-   select: SelectMethod,
-   sql: string,
-   results: DomainResult,
-): Promise<SelectMethodResult> {
+async function executeAndReport(select: SelectMethod, sql: string, results: DomainResult): Promise<SelectMethodResult> {
    const { res, report } = await executeRequest(select, sql);
    results.report.requests.push(report);
    if (report.error !== undefined) {

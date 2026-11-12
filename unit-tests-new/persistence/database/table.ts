@@ -32,7 +32,7 @@ function createRequest(values: {
    };
 }
 
-function createUsersTable(select: Db.SelectMethod) {
+function createUsersTable(select?: Db.SelectMethod) {
    const usersTable = { name: 'users', primaryKey: 'id' };
    return new Db.Table(
       usersTable,
@@ -138,6 +138,34 @@ describe('Database persistence without database', () => {
       assert(result.errors[1].startsWith('invalid filter value for domain field name [birthday]'), result.errors[1]);
       assert(calls[0].sql.includes('WHERE (1 = 0) AND (1 = 0)'), calls[0].sql);
       assertEquals(calls[0].params, []);
+   });
+
+   it('reports a missing select method', async () => {
+      const result = await createUsersTable().fetch(createRequest({ fields: { name: true } }));
+
+      assertEquals(
+         result.errors[0],
+         'database request failed: no select method set for table [users]: pass it to the constructor or to init()',
+      );
+   });
+
+   it('reports a domain field without persistence mapping', async () => {
+      const { select } = createSelect([[{ total: 1 }], [{ countries$name: 'france', countries$id: 1 }]]);
+
+      const result = await createCountriesTable(select).fetch(
+         createRequest({ fields: { name: true, students: { firstname: true, nickname: true } }, naturalKey: ['name'] }),
+      );
+
+      assertEquals(result.errors, [
+         'inconsistency between domain mapping and persistence mapping: cannot find domain key [nickname] in persistence mapping of [students]',
+      ]);
+   });
+
+   it('converts filter values without keeping them in the converter', () => {
+      const converter = new Db.ToDbSqlNumberConverter();
+
+      assertEquals(converter.convert(['1', 2]), [1, 2]);
+      assertEquals(converter.convert('3'), [3]);
    });
 
    it('reports the failure of a database request', async () => {
