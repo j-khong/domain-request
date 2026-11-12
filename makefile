@@ -8,6 +8,7 @@ DB_USER := root
 DB_PASSWORD := gWpYF4dZfW
 DB_PORT := 8106
 DB_SCHEMA := unit-tests-new/persistence/database/tables.sql
+# the mysql driver of the tests depends on an unpinned std module removed since: unit-tests-new/import_map.json pins it
 UNIT_TESTS_API ?= old
 
 .PHONY: db-up # start mysql container if not already running
@@ -48,7 +49,7 @@ unit-tests: db-init
 	fi; \
 	d=$$(date +%s); \
 	UNIT_TESTS_API=$$profile DB_NAME=$(DB_NAME) DB_PORT=$(DB_PORT) DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASSWORD) \
-	deno test --allow-all $(TEST_FLAGS) unit-tests-new/index.ts > unit-tests.log 2>&1 && \
+	deno test --allow-all --import-map=unit-tests-new/import_map.json $(TEST_FLAGS) unit-tests-new/index.ts > unit-tests.log 2>&1 && \
 	echo "✅ Tests ($$profile) took $$(($$(date +%s)-d)) seconds" || \
 	{ echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"; exit 1; }
 
