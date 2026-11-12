@@ -7,26 +7,9 @@
  * @deprecated Use DomainRoleBuilder from ../roles/DomainRoleBuilder.ts
  */
 
-import { DomainConfig, FieldsSetup, ObjectFieldConfiguration } from '../field-configuration/index.ts';
+import { DomainConfig, FieldsSetup } from '../field-configuration/index.ts';
 import { DomainRequestBuilder } from '../builder.ts';
-
-export type DomainRequestByRole<R extends string, DRN extends string, F> = {
-   [Property in R]: {
-      buildRequestBuilder: () => DomainRequestBuilder<DRN, F>;
-      /**
-       * @param toIgnore domain names to ignore, when 2 domains are mutually imported
-       */
-      createDomainConfig: (toIgnore?: string[]) => DomainConfig<DRN, F>;
-   };
-};
-
-type DomainBuildersByRole<
-   Role extends string,
-   Name extends string,
-   RequestBuilder extends DomainRequestBuilder<Name, any>,
-> = {
-   [Property in Role]: RequestBuilder;
-};
+import { createDomainConfig, DomainRequestByRole } from '../Factory.ts';
 
 class ConfigBuilderForRole<DomainRequestName extends string, Fields, Role extends string> {
    private readonly domainRequestName: DomainRequestName;
@@ -135,32 +118,4 @@ export function buildDomainRequestBuilderByRole<R extends string, DRN extends st
       }
    }
    return ret;
-}
-
-/**
- * @deprecated This is an internal implementation detail
- */
-export function createDomainConfig<DRN extends string, T>(
-   drn: DRN,
-   fields: FieldsSetup<T>,
-   authorizedFields?: (keyof T)[],
-): DomainConfig<DRN, T> {
-   const fieldsToUse = getAuthorizedFields(fields, authorizedFields);
-   return {
-      name: drn,
-      fields: new ObjectFieldConfiguration<T>(fieldsToUse),
-   };
-}
-
-function getAuthorizedFields<T>(fields: FieldsSetup<T>, authorizedFields?: (keyof T)[]): FieldsSetup<T> {
-   let fieldsToUse: FieldsSetup<T> = fields;
-   if (authorizedFields !== undefined) {
-      fieldsToUse = {} as FieldsSetup<T>;
-      for (const key in fields) {
-         if (authorizedFields.includes(key)) {
-            fieldsToUse[key] = fields[key];
-         }
-      }
-   }
-   return fieldsToUse;
 }

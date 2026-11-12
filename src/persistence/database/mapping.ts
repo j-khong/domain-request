@@ -4,6 +4,7 @@ import { Options } from '../../domain-request/field-configuration/object.ts';
 import {
    FilterArrayType,
    isComparison,
+   isComputedComparison,
    isFilteringFields,
    Operator,
 } from '../../domain-request/field-configuration/types.ts';
@@ -174,6 +175,67 @@ export class SameTableObjectMapping<T extends string> extends FieldMapping {
    }
 }
 
+export class SameTableComputedFieldMapping extends FieldMapping {
+   constructor(
+      tableDef: Readonly<TableDef>,
+      protected readonly fieldname: string,
+      protected readonly toDbConvert: ToDbSqlConverter<unknown>,
+      protected readonly toDomainConvert: (o: unknown) => unknown | undefined,
+   ) {
+      super(tableDef);
+   }
+
+   processField(domainFieldname: string, value: boolean): ProcessResult {
+      const dbAlias = createSqlAlias(this.tableDef.name, this.fieldname);
+      const dbFullFieldName = `${this.toDbConvert.prepare(value)} AS ${dbAlias}`;
+      const ret: ProcessResult = {
+         fieldnames: {
+            children: [
+               {
+                  domain: domainFieldname,
+                  toDomainConvert: this.toDomainConvert,
+                  dbAlias,
+                  dbFullFieldName,
+               },
+            ],
+            rootDomain: { name: domainFieldname, type: 'value' },
+         },
+         tablename: this.tableDef.name,
+         joins: [],
+      };
+      return ret;
+   }
+
+   processAllFilters<T>(
+      domainFieldname: Extract<keyof T, string>,
+      domainFilters: FilterArrayType<T>,
+      errors: string[],
+   ): { or: string[]; and: string[]; joins: string[] } {
+      const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
+
+      if (domainFilters !== undefined) {
+         const comparison = domainFilters[domainFieldname];
+         if (comparison !== undefined && isComputedComparison(comparison)) {
+            const comparisonMapper = comparisonOperatorMap[comparison.operator];
+            try {
+               this.toDbConvert.setValue(comparison.data);
+               ret.and.push(comparisonMapper.format(toSqlNumbers(comparison.value), this.toDbConvert));
+            } catch (e) {
+               errors.push(invalidFilterValue(domainFieldname, e));
+               ret.and.push(matchNothing);
+            }
+         } else {
+            errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
+         }
+      }
+      return ret;
+   }
+
+   getOrderBy(o: Options<string>): string[] {
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort === 'desc' ? 'desc' : 'asc'}`];
+   }
+}
+
 export class OneToOneTableMapping<T extends string> extends FieldMapping {
    constructor(
       tableDef: Readonly<TableDef>,
@@ -323,6 +385,18 @@ function useLeftJoins(pr: ProcessResult): void {
          useLeftJoins(child);
       }
    }
+}
+
+// the value of a computed comparison is written as is in the sql, so nothing else than numbers is accepted
+function toSqlNumbers(value: unknown): string {
+   return (Array.isArray(value) ? value : [value])
+      .map((v) => {
+         if (typeof v !== 'number' || !Number.isFinite(v)) {
+            throw new Error(`[${v}] is not a number`);
+         }
+         return v;
+      })
+      .join(',');
 }
 
 function otherTableProcessAllFilters<T>(

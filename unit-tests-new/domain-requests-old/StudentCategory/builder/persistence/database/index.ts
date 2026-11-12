@@ -7,7 +7,7 @@ import {
    ToDbSqlNumberConverter,
    ToDbSqlStringConverter,
    unknownToString,
-} from '../../../../../../src/persistence/database/old/index.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 import { DomainRequestName } from '../../../../types.ts';
 import { Fields } from '../../../types.ts';
 

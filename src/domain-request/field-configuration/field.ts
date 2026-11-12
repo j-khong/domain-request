@@ -1,5 +1,5 @@
-import { isString, isNumber, isDate, isIsoDate, isBoolean, isSomethingLike } from '../type-checkers.ts';
-import { getOperators, Operator, BoolTree, InputErrors, IsoDate } from '../types.ts';
+import { isString, isSomethingLike } from '../type-checkers.ts';
+import { getOperators, Operator, BoolTree, InputErrors } from '../types.ts';
 import { ValidatorCreator, FilterValidator } from '../validators.ts';
 import { FieldFilteringConfig, DomainFieldConfiguration, Comparison, FiltersTree } from './types.ts';
 
@@ -240,89 +240,3 @@ export class FieldConfiguration<T extends string | number | boolean | Date> exte
       this.conf.values.authorized.push(...v);
    }
 }
-
-type InputSpecializedFieldFilteringConfig<T> = {
-   filtering?: {
-      byRangeOfValue?: boolean;
-      byListOfValue?: boolean;
-   };
-   values?: {
-      authorized?: Array<T>;
-   };
-};
-
-export class StringFieldConfiguration extends FieldConfiguration<string> {
-   constructor(inconf: InputSpecializedFieldFilteringConfig<string>) {
-      super({
-         filtering: inconf.filtering,
-         values: {
-            default: '',
-            authorized: inconf.values?.authorized,
-            typeValidator: isString,
-            typeName: 'string',
-         },
-      });
-   }
-}
-
-export class NumberFieldConfiguration extends FieldConfiguration<number> {
-   constructor(inconf: InputSpecializedFieldFilteringConfig<number>) {
-      super({
-         filtering: inconf.filtering,
-         values: {
-            default: 0,
-            authorized: inconf.values?.authorized,
-            typeValidator: isNumber,
-            typeName: 'number',
-         },
-      });
-   }
-}
-
-export class DateFieldConfiguration extends FieldConfiguration<Date> {
-   constructor(inconf: InputSpecializedFieldFilteringConfig<Date>) {
-      super({
-         filtering: inconf.filtering,
-         values: {
-            default: new Date(),
-            authorized: inconf.values?.authorized,
-            typeValidator: isDate,
-            typeName: 'Date',
-         },
-      });
-   }
-}
-
-export class IsoDateFieldConfiguration extends FieldConfiguration<IsoDate> {
-   constructor(inconf: InputSpecializedFieldFilteringConfig<IsoDate>) {
-      super({
-         filtering: inconf.filtering,
-         values: {
-            default: '',
-            authorized: inconf.values?.authorized,
-            typeValidator: isIsoDate,
-            typeName: 'Iso Date string',
-         },
-      });
-   }
-}
-
-export class BooleanFieldConfiguration extends FieldConfiguration<boolean> {
-   constructor() {
-      super({
-         values: {
-            default: false,
-            typeValidator: isBoolean,
-            typeName: 'boolean',
-         },
-      });
-   }
-}
-
-/**
- * DEPRECATED: These field configuration classes have been moved to ../old/field-config-classes.ts
- * They are re-exported here for backwards compatibility.
- * Use FieldConfigFactory instead for new code.
- *
- * See: ../old/field-config-classes.ts
- */

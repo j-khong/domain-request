@@ -1,4 +1,5 @@
 import { IsoDate } from '../../domain-request/types.ts';
+import { Coordinates } from '../../domain-request/field-configuration/index.ts';
 import { isIsoDate, isDate } from '../../domain-request/type-checkers.ts';
 import { createSqlParam } from './params.ts';
 
@@ -46,6 +47,32 @@ export abstract class ToDbSqlConverter<OriginalType> {
    abstract prepare(v: OriginalType, deco?: string): unknown;
 }
 
+export class ToDbSqlCoordinatesConverter extends ToDbSqlConverter<Coordinates> {
+   constructor(private tableName: string) {
+      super(
+         (o: unknown) => {
+            const coord = o as Coordinates;
+            if (!isFiniteNumber(coord?.latitude) || !isFiniteNumber(coord?.longitude)) {
+               throw new Error(`cannot convert [${JSON.stringify(o)}] to coordinates`);
+            }
+            return coord;
+         },
+         (field: string, operator: string, value: unknown): string => `${value} ${operator} ${field}`,
+      );
+   }
+
+   prepare(coord: Coordinates): string {
+      // forcing numbers, so that nothing else than a number can be written in the sql
+      const latitude = Number(coord.latitude);
+      const longitude = Number(coord.longitude);
+      return `( 6371 * acos( cos(radians(${latitude})) * cos(radians(${this.tableName}.latitude)) * cos( radians(${this.tableName}.longitude) - radians(${longitude}) ) + sin(radians(${latitude})) * sin(radians(${this.tableName}.latitude)) ) )`;
+   }
+}
+
+function isFiniteNumber(o: unknown): boolean {
+   return typeof o === 'number' && Number.isFinite(o);
+}
+
 export class ToDbSqlStringConverter extends ToDbSqlConverter<string> {
    constructor(
       typeConverter: (o: unknown) => string = (o: unknown) => {
@@ -88,6 +115,12 @@ export class ToDbSqlDateConverter extends ToDbSqlStringConverter {
    }
 }
 
+export class ToDbSqlDatetimeConverter extends ToDbSqlStringConverter {
+   constructor() {
+      super(fromDatetimeToMysqlDatetime);
+   }
+}
+
 export class ToDbSqlBooleanConverter extends ToDbSqlNumberConverter {
    constructor() {
       super((o: unknown): number => {
@@ -104,6 +137,14 @@ function fromDateToMysqlDate(input: unknown): string {
    const d = getFunctionalDate(input);
    const date = [d.getFullYear(), format2digits(d.getMonth() + 1), format2digits(d.getDate())];
    return date.join('-');
+}
+
+function fromDatetimeToMysqlDatetime(input: unknown): string {
+   const d = getFunctionalDate(input);
+
+   const formattedDate = fromDateToMysqlDate(d);
+   const time = [d.getHours(), d.getMinutes(), d.getSeconds()];
+   return `${formattedDate} ${time.map((v) => format2digits(v)).join(':')}`;
 }
 
 function getFunctionalDate(input: unknown): Date {

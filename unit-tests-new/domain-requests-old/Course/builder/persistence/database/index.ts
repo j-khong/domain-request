@@ -13,7 +13,7 @@ import {
    unknownToBoolean,
    unknownToIsoDate,
    unknownToNumber,
-} from '../../../../../../src/persistence/database/old/index.ts';
+} from '../../../../../../src/persistence/database/index.ts';
 
 import { DomainRequestName } from '../../../../types.ts';
 import { Status, Fields } from '../../../types.ts';

@@ -46,14 +46,10 @@ unit-tests: db-init
 		echo "UNIT_TESTS_API must be 'old' or 'new' (got: $$profile)"; \
 		exit 1; \
 	fi; \
-	cd unit-tests-new/data-fetch && [ -L test.ts ] && rm test.ts || true && ln -s "test-$$profile.ts" test.ts && cd - && \
-	cd unit-tests-new && [ -L domain-requests ] && rm domain-requests || true && ln -s "domain-requests-$$profile" domain-requests && cd - && \
 	d=$$(date +%s); \
-	deno test --allow-all unit-tests-new/index.ts > unit-tests.log 2>&1 && \
+	UNIT_TESTS_API=$$profile deno test --allow-all unit-tests-new/index.ts > unit-tests.log 2>&1 && \
 	echo "✅ Tests ($$profile) took $$(($$(date +%s)-d)) seconds" || \
-	echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)" && \
-	cd unit-tests-new/data-fetch && [ -L test.ts ] && rm test.ts && cd - && \
-	cd unit-tests-new && [ -L domain-requests ] && rm domain-requests || :
+	echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"
 
 .PHONY: tests-coverage # generate tests coverage report
 tests-coverage:

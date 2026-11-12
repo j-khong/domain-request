@@ -12,7 +12,7 @@
  * 2. StringFieldConfiguration, NumberFieldConfiguration, etc. → Use FieldConfigFactory
  *    From: ../field-configuration/FieldConfigFactory.ts
  *
- * See MIGRATION_GUIDE.md in project root for detailed migration steps.
+ * See README.md in this folder for the migration examples.
  */
 
 export * from './Factory.ts';
