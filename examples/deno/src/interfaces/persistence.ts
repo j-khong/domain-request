@@ -1,4 +1,4 @@
-import { configLogger, MySqlClient, SelectMethodResult, SqliteClient } from '/deps/index.ts';
+import { configLogger, MySqlClient, SelectMethodResult, SqlParam, SqliteClient } from '/deps/index.ts';
 import { DbConf, MysqlDbConf, SqliteDbConf } from '@domains/ConfigurationFile.ts';
 
 await configLogger({ enable: false });
@@ -28,7 +28,7 @@ export async function buildDatabaseConnector(config: DbConf): Promise<void> {
 }
 
 abstract class DatabaseConnector {
-   abstract query(q: string, values?: unknown[]): Promise<SelectMethodResult>;
+   abstract query(q: string, values?: SqlParam[]): Promise<SelectMethodResult>;
    abstract close(): Promise<void>;
 }
 
@@ -49,7 +49,7 @@ class MySqlDatabaseConnector extends DatabaseConnector {
       return new MySqlDatabaseConnector(c);
    }
 
-   query(q: string, values?: unknown[]): Promise<SelectMethodResult> {
+   query(q: string, values?: SqlParam[]): Promise<SelectMethodResult> {
       return this.client.query(q, values);
    }
 
@@ -74,8 +74,8 @@ class SqliteDatabaseConnector extends DatabaseConnector {
       return new SqliteDatabaseConnector(c);
    }
 
-   async query(q: string, values?: unknown[]): Promise<SelectMethodResult> {
-      return this.client.queryEntries(q) as SelectMethodResult;
+   query(q: string, values?: SqlParam[]): Promise<SelectMethodResult> {
+      return Promise.resolve(this.client.queryEntries(q, values) as SelectMethodResult);
    }
 
    async close(): Promise<void> {

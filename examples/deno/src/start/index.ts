@@ -1,4 +1,4 @@
-import { Application, oakCors, Router, SelectMethodResult } from '/deps/index.ts';
+import { Application, oakCors, Router, SelectMethod } from '/deps/index.ts';
 import { ConfigFile } from '@domains/ConfigurationFile.ts';
 import { buildInterfaces, getDatabaseConnector, plugRoutes } from '/interfaces/index.ts';
 import { init as initDomainRequests } from '/app/index.ts';
@@ -9,9 +9,8 @@ const router = new Router();
 export async function start(config: ConfigFile): Promise<void> {
    await buildInterfaces(config);
 
-   initDomainRequests((query: string): Promise<SelectMethodResult> => {
-      return getDatabaseConnector().query(query);
-   });
+   const select: SelectMethod = (query, params) => getDatabaseConnector().query(query, params);
+   initDomainRequests(select);
 
    plugRoutes(router);
 

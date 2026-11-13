@@ -1,3 +1,4 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { Path } from '../deps/index.ts';
 import { DomainRequestHandler, generateRequestsTypes, SelectMethod, SelectMethodResult } from '../index.ts';
 
@@ -31,7 +32,7 @@ export async function generateApiClient<DomainRequestName extends string, Role e
 
 function createFolder(folder: string) {
    try {
-      Deno.mkdirSync(folder);
+      mkdirSync(folder);
    } catch (_e) {
       //
    }
@@ -144,10 +145,8 @@ async function generateClient<DomainRequestName extends string, Role extends str
    await writeFile(domainRoleFileName, content);
 }
 
-// const encoder = new TextEncoder();
-async function writeFile(filename: string, str: string) {
-   // const data = encoder.encode(str);
-   await Deno.writeTextFile(filename, str);
+function writeFile(filename: string, str: string) {
+   writeFileSync(filename, str);
 }
 
 async function genRequests<DomainRequestName extends string, Role extends string, DF>(

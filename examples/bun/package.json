@@ -12,7 +12,7 @@
     "@elysiajs/cors": "^0.7.1",
     "@elysiajs/swagger": "^0.7.3",
     "@jkhong/cli-js": "1.2.0",
-    "@jkhong/domain-request": "0.6.0",
+    "@jkhong/domain-request": "file:../../npm",
     "elysia": "^0.7.16",
     "mysql": "2.18.1",
     "sqlite": "^5.0.1",

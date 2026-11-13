@@ -3,8 +3,8 @@ import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { Options } from '../../domain-request/field-configuration/object.ts';
 import {
    FilterArrayType,
-   isComputedComparison,
    isComparison,
+   isComputedComparison,
    isFilteringFields,
    Operator,
 } from '../../domain-request/field-configuration/types.ts';
@@ -54,7 +54,12 @@ export function isChild(o: unknown): o is Child {
    );
 }
 
-export type DomainPath = { name: string; type: 'array' | 'object' | 'value' };
+export type DomainPath = {
+   name: string;
+   type: 'array' | 'object' | 'value';
+   /** for an array: sql alias of the column identifying one element of the array */
+   keyAlias?: string;
+};
 export type FieldNames = {
    rootDomain: DomainPath;
    children: Array<Child | ProcessResult>;
@@ -62,6 +67,8 @@ export type FieldNames = {
 export type ProcessResult = {
    fieldnames: FieldNames;
    tablename: string;
+   /** primary key of tablename, required to fetch a one to many nested in another one to many */
+   primaryKey?: string;
    joins: string[];
 };
 
@@ -86,6 +93,7 @@ export abstract class FieldMapping {
    processOneToMany(
       _domainFieldname: string,
       _value: boolean | RequestableFields<unknown>,
+      _errors: string[] = [],
    ): ProcessOneToManyResult | undefined {
       return undefined;
    }
@@ -139,13 +147,15 @@ export class SameTableMapping extends FieldMapping {
    }
 
    getOrderBy(o: Options<string>): string[] {
-      const defSort: 'asc' | 'desc' = 'asc';
-      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort === 'desc' ? 'desc' : 'asc'}`];
    }
 }
 
 export class SameTableObjectMapping<T extends string> extends FieldMapping {
-   constructor(tableDef: Readonly<TableDef>, protected readonly mapping: TableMapping<T>) {
+   constructor(
+      tableDef: Readonly<TableDef>,
+      protected readonly mapping: TableMapping<T>,
+   ) {
       super(tableDef);
    }
 
@@ -165,6 +175,7 @@ export class SameTableObjectMapping<T extends string> extends FieldMapping {
       return ret;
    }
 }
+
 export class SameTableComputedFieldMapping extends FieldMapping {
    constructor(
       tableDef: Readonly<TableDef>,
@@ -207,8 +218,13 @@ export class SameTableComputedFieldMapping extends FieldMapping {
          const comparison = domainFilters[domainFieldname];
          if (comparison !== undefined && isComputedComparison(comparison)) {
             const comparisonMapper = comparisonOperatorMap[comparison.operator];
-            this.toDbConvert.setValue(comparison.data);
-            ret.and.push(comparisonMapper.format(`${comparison.value}`, this.toDbConvert));
+            try {
+               const values = this.toDbConvert.convert(comparison.data);
+               ret.and.push(comparisonMapper.format(toSqlNumbers(comparison.value), values, this.toDbConvert));
+            } catch (e) {
+               errors.push(invalidFilterValue(domainFieldname, e));
+               ret.and.push(matchNothing);
+            }
          } else {
             errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
          }
@@ -217,8 +233,7 @@ export class SameTableComputedFieldMapping extends FieldMapping {
    }
 
    getOrderBy(o: Options<string>): string[] {
-      const defSort: 'asc' | 'desc' = 'asc';
-      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort || defSort}`];
+      return [`${this.tableDef.name}.${this.fieldname} ${o.orderby?.sort === 'desc' ? 'desc' : 'asc'}`];
    }
 }
 
@@ -275,7 +290,11 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       return ret;
    }
 
-   processOneToMany(domainFieldname: string, value: RequestableFields<unknown>): ProcessOneToManyResult | undefined {
+   processOneToMany(
+      domainFieldname: string,
+      value: RequestableFields<unknown>,
+      errors: string[] = [],
+   ): ProcessOneToManyResult | undefined {
       const joins: Set<string> = new Set();
       joins.add(this.buildJoin());
       const fieldnames: ProcessOneToManyResult['fieldnames'] = {
@@ -286,12 +305,10 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       for (const key in value) {
          const map = this.mapping[key as T] as FieldMapping;
          if (map === undefined) {
-            console.log(
-               `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
-            );
+            errors.push(missingPersistenceMapping(key, this.tableDef.name));
             continue;
          }
-         const res = map.processOneToMany(key, value[key as T]);
+         const res = map.processOneToMany(key, value[key as T], errors);
          if (res !== undefined) {
             fieldnames.children.push(res);
          }
@@ -306,7 +323,10 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
 }
 
 export class OneToManyTableMapping<T extends string> extends FieldMapping {
-   constructor(tableDef: Readonly<OneToManyTableDef>, protected readonly mapping: TableMapping<T>) {
+   constructor(
+      tableDef: Readonly<OneToManyTableDef>,
+      protected readonly mapping: TableMapping<T>,
+   ) {
       super(tableDef);
    }
 
@@ -315,7 +335,11 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       return `LEFT JOIN ${td.name} ON ${td.name}.${td.foreign.keyName} = ${td.foreign.otherTable.name}.${td.foreign.otherTable.primaryKey}`;
    }
 
-   processOneToMany(domainFieldname: string, value: RequestableFields<unknown>): ProcessOneToManyResult | undefined {
+   processOneToMany(
+      domainFieldname: string,
+      value: RequestableFields<unknown>,
+      errors: string[] = [],
+   ): ProcessOneToManyResult | undefined {
       const joins: Set<string> = new Set();
       joins.add(this.buildJoin());
       const fieldnames: ProcessOneToManyResult['fieldnames'] = {
@@ -325,15 +349,17 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       for (const key in value) {
          const map = this.mapping[key as T] as FieldMapping;
          if (map === undefined) {
-            console.log(
-               `inconsistency between domain mapping and persistence mapping: cannot find domain key [${key}] in persistence mapping of [${this.tableDef.name}]`,
-            );
+            errors.push(missingPersistenceMapping(key, this.tableDef.name));
             continue;
          }
-         if (map instanceof OneToManyTableMapping) {
-            console.error('TODO call processOneToMany instead');
+         const res =
+            map instanceof OneToManyTableMapping
+               ? map.processOneToMany(key, value[key as T] as RequestableFields<unknown>, errors)
+               : map.processField(key, value[key as T]);
+         if (res !== undefined && map instanceof OneToManyTableMapping) {
+            // an inner join in the nested one to many would remove the elements of this one without nested element
+            useLeftJoins(res);
          }
-         const res = map.processField(key, value[key as T]);
          if (res !== undefined) {
             fieldnames.children.push(res);
             res.joins.forEach((v) => joins.add(v));
@@ -343,6 +369,7 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       return {
          fieldnames,
          tablename: this.tableDef.name,
+         primaryKey: this.tableDef.primaryKey,
          joins: [...joins],
       };
    }
@@ -354,6 +381,31 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
    ): { or: string[]; and: string[]; joins: string[] } {
       return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
    }
+}
+
+function missingPersistenceMapping(domainKey: string, tableName: string): string {
+   return `inconsistency between domain mapping and persistence mapping: cannot find domain key [${domainKey}] in persistence mapping of [${tableName}]`;
+}
+
+function useLeftJoins(pr: ProcessResult): void {
+   pr.joins = pr.joins.map((join) => (join.startsWith('JOIN ') ? `LEFT ${join}` : join));
+   for (const child of pr.fieldnames.children) {
+      if (!isChild(child)) {
+         useLeftJoins(child);
+      }
+   }
+}
+
+// the value of a computed comparison is written as is in the sql, so nothing else than numbers is accepted
+function toSqlNumbers(value: unknown): string {
+   return (Array.isArray(value) ? value : [value])
+      .map((v) => {
+         if (typeof v !== 'number' || !Number.isFinite(v)) {
+            throw new Error(`[${v}] is not a number`);
+         }
+         return v;
+      })
+      .join(',');
 }
 
 function otherTableProcessAllFilters<T>(
@@ -451,8 +503,13 @@ function sameTableProcessAllFilters<T>(
       const comparison = domainFilters[domainFieldname];
       if (comparison !== undefined && isComparison(comparison)) {
          const comparisonMapper = comparisonOperatorMap[comparison.operator];
-         toDbConvert.setValue(comparison.value);
-         ret.and.push(comparisonMapper.format(fullFieldName, toDbConvert));
+         try {
+            const values = toDbConvert.convert(comparison.value);
+            ret.and.push(comparisonMapper.format(fullFieldName, values, toDbConvert));
+         } catch (e) {
+            errors.push(invalidFilterValue(domainFieldname, e));
+            ret.and.push(matchNothing);
+         }
       } else {
          errors.push(`cannot find comparison operator for domain field name [${domainFieldname}]`);
       }
@@ -460,51 +517,60 @@ function sameTableProcessAllFilters<T>(
    return ret;
 }
 
+// a filter with a value which cannot be converted must not widen the results, so it matches nothing
+const matchNothing = '1 = 0';
+
+function invalidFilterValue(domainFieldname: string, e: unknown): string {
+   return `invalid filter value for domain field name [${domainFieldname}]: ${e instanceof Error ? e.message : e}`;
+}
+
 type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
 
 function commonFormat(
    field: string,
    operator: DatabaseOperator,
+   values: unknown[],
    converter: ToDbSqlConverter<unknown>,
    deco?: string,
 ): string {
-   return converter
-      .getValue()
-      .map((v) => converter.buildInstruction(field, operator, converter.prepare(v, deco)))
-      .join(' OR ');
+   return values.map((v) => converter.buildInstruction(field, operator, converter.prepare(v, deco))).join(' OR ');
 }
 
 type ComparisonOperatorMap = {
    [key in Operator]: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>) => string;
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>) => string;
    };
 };
 
 const comparisonOperatorMap: ComparisonOperatorMap = {
    equals: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '=', converter),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, '=', values, converter),
    },
    greaterThan: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '>', converter),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, '>', values, converter),
    },
    greaterThanOrEquals: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '>=', converter),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, '>=', values, converter),
    },
    lesserThan: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '<', converter),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, '<', values, converter),
    },
    lesserThanOrEquals: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => commonFormat(field, '<=', converter),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, '<=', values, converter),
    },
    contains: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string =>
-         commonFormat(field, 'LIKE', converter, '%'),
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
+         commonFormat(field, 'LIKE', values, converter, '%'),
    },
    between: {
-      format: (field: string, converter: ToDbSqlConverter<unknown>): string => {
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string => {
          const buildInstruction = (v: unknown) => `${field} BETWEEN ${v}`;
 
-         const values = converter.getValue();
          if (values.length === 1) {
             const v = converter.prepare(values[0]);
             return buildInstruction(`${v} AND ${v}`);

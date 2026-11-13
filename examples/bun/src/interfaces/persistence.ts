@@ -92,7 +92,7 @@ class SqliteDatabaseConnector extends DatabaseConnector {
    }
 
    async query(q: string, values?: unknown[]): Promise<SelectMethodResult> {
-      const res = await this.client.all(q);
+      const res = await this.client.all(q, values);
       return res as SelectMethodResult;
    }
 

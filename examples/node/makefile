@@ -11,7 +11,8 @@ launch-server: install
 
 .PHONY: install
 install:
-	@echo '⚙️ installing deps...' && \
+	@[ -d ../../npm ] || $(MAKE) build-lib && \
+	echo '⚙️ installing deps...' && \
 	npm i && \
 	echo '✅ done' && \
 	echo '⚙️ linking code...' && \
@@ -21,6 +22,12 @@ install:
 	cd src/interfaces && ln -s ../../../src/interfaces/api && \
 	echo '✅ done'
 
+
+.PHONY: build-lib # build the npm package of the library from the sources of this repository
+build-lib:
+	@echo '⚙️ building the library...' && \
+	$(MAKE) -C ../.. npm-create && \
+	echo '✅ done'
 
 .PHONY: gen-client
 gen-client:

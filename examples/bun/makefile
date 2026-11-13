@@ -19,13 +19,25 @@ install-bun:
 	curl -fsSL https://bun.sh/install | bash ; \
 	echo '✅ done'; }
 
+.PHONY: build-lib # build the npm package of the library from the sources of this repository
+build-lib:
+	@echo '⚙️ building the library...' && \
+	$(MAKE) -C ../.. npm-create && \
+	echo '✅ done'
+
 .PHONY: install-deps
+# the deno shim used by the library calls fdatasync, which bun does not provide: it is patched where it is resolved
 install-deps:
-	@echo '⚙️ installing deps...' && \
+	@[ -d ../../npm ] || $(MAKE) build-lib && \
+	echo '⚙️ installing deps...' && \
 	bun install && \
-	sed -i -e '/^const _fdatasync/d' 'node_modules/@deno/shim-deno/dist/deno/stable/functions/fdatasync.js' && \
-	sed -i -e '/^exports.fdatasync = _fdata/d' 'node_modules/@deno/shim-deno/dist/deno/stable/functions/fdatasync.js' && \
-	echo 'exports.fdatasync = ()=>{};' >> 'node_modules/@deno/shim-deno/dist/deno/stable/functions/fdatasync.js' && \
+	for f in node_modules/@deno/shim-deno/dist/deno/stable/functions/fdatasync.js \
+		../../npm/node_modules/@deno/shim-deno/dist/deno/stable/functions/fdatasync.js; do \
+		[ -f "$$f" ] && ! grep -q '^exports.fdatasync = ()=>{};' "$$f" || continue; \
+		sed -i -e '/^const _fdatasync/d' "$$f" && \
+		sed -i -e '/^exports.fdatasync = _fdata/d' "$$f" && \
+		echo 'exports.fdatasync = ()=>{};' >> "$$f"; \
+	done && \
 	echo '✅ done'
 
 .PHONY: install-links
@@ -62,8 +74,8 @@ format-gen-client:
 	npx prettier --config .prettierrc --loglevel warn --write $(shell find $(GENERATED_CLIENT_FOLDER) -name "*.ts") && \
 	echo '✅ done'
 
-.PHONY: run-node-example
-run-node-example: check-server gen-client format-gen-client
+.PHONY: run-bun-example
+run-bun-example: check-server gen-client format-gen-client
 	@echo '🚀 launching the client' && \
 	[ -d example ] && rm -fr example || : && \
 	cp -fr ../node/example . && \
