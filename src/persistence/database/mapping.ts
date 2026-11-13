@@ -9,7 +9,14 @@ import {
    Operator,
 } from '../../domain-request/field-configuration/types.ts';
 import { processAllFilters, createRequestFullFieldName, createSqlAlias } from './functions.ts';
-import { ToDbSqlConverter } from './converters.ts';
+import {
+   ToDbSqlConverter,
+   ToDbSqlDateConverter,
+   ToDbSqlDatetimeConverter,
+   ToDbSqlStringConverter,
+   likeEscapeClause,
+} from './converters.ts';
+import { Dialect, defaultDialect } from './dialect.ts';
 
 export type TableMapping<DomainFieldNames extends string> = {
    [Property in DomainFieldNames]: FieldMapping;
@@ -86,6 +93,7 @@ export abstract class FieldMapping {
       _domainFieldname: string,
       _filters: FilterArrayType<unknown>,
       _errors: string[],
+      _dialect?: Dialect,
    ): { or: string[]; and: string[]; joins: string[] } {
       return { or: [], and: [], joins: [] };
    }
@@ -136,6 +144,7 @@ export class SameTableMapping extends FieldMapping {
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
+      dialect: Dialect = defaultDialect,
    ): { or: string[]; and: string[]; joins: string[] } {
       return sameTableProcessAllFilters(
          domainFieldname,
@@ -143,6 +152,7 @@ export class SameTableMapping extends FieldMapping {
          `${this.tableDef.name}.${this.fieldname}`,
          this.toDbConvert,
          errors,
+         dialect,
       );
    }
 
@@ -211,6 +221,7 @@ export class SameTableComputedFieldMapping extends FieldMapping {
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
+      dialect: Dialect = defaultDialect,
    ): { or: string[]; and: string[]; joins: string[] } {
       const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
 
@@ -220,7 +231,7 @@ export class SameTableComputedFieldMapping extends FieldMapping {
             const comparisonMapper = comparisonOperatorMap[comparison.operator];
             try {
                const values = this.toDbConvert.convert(comparison.data);
-               ret.and.push(comparisonMapper.format(toSqlNumbers(comparison.value), values, this.toDbConvert));
+               ret.and.push(comparisonMapper.format(toSqlNumbers(comparison.value), values, this.toDbConvert, dialect));
             } catch (e) {
                errors.push(invalidFilterValue(domainFieldname, e));
                ret.and.push(matchNothing);
@@ -270,8 +281,16 @@ export class OneToOneTableMapping<T extends string> extends FieldMapping {
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
+      dialect: Dialect = defaultDialect,
    ): { or: string[]; and: string[]; joins: string[] } {
-      return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
+      return otherTableProcessAllFilters(
+         domainFieldname,
+         domainFilters,
+         this.mapping,
+         this.buildJoin(),
+         errors,
+         dialect,
+      );
    }
 
    getOrderBy(o: Options<T>): string[] {
@@ -378,8 +397,16 @@ export class OneToManyTableMapping<T extends string> extends FieldMapping {
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
+      dialect: Dialect = defaultDialect,
    ): { or: string[]; and: string[]; joins: string[] } {
-      return otherTableProcessAllFilters(domainFieldname, domainFilters, this.mapping, this.buildJoin(), errors);
+      return otherTableProcessAllFilters(
+         domainFieldname,
+         domainFilters,
+         this.mapping,
+         this.buildJoin(),
+         errors,
+         dialect,
+      );
    }
 }
 
@@ -414,6 +441,7 @@ function otherTableProcessAllFilters<T>(
    mapping: TableMapping<string>,
    join: string,
    errors: string[],
+   dialect: Dialect,
 ): { or: string[]; and: string[]; joins: string[] } {
    const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [join] };
 
@@ -422,7 +450,7 @@ function otherTableProcessAllFilters<T>(
    }
    const filter = domainFilters[domainFieldname];
    if (filter !== undefined && isFilteringFields(filter)) {
-      const { or, and, joins } = processAllFilters(filter, mapping, errors);
+      const { or, and, joins } = processAllFilters(filter, mapping, errors, dialect);
 
       ret.or.push(...or);
       ret.and.push(...and);
@@ -471,6 +499,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
       domainFieldname: Extract<keyof T, string>,
       domainFilters: FilterArrayType<T>,
       errors: string[],
+      dialect: Dialect = defaultDialect,
    ): { or: string[]; and: string[]; joins: string[] } {
       const res = sameTableProcessAllFilters(
          domainFieldname,
@@ -478,6 +507,7 @@ export class OneToOneFieldMapping<T extends string> extends FieldMapping {
          `${this.tableDef.name}.${this.field}`,
          this.toDbConvert,
          errors,
+         dialect,
       );
       res.joins.push(this.buildJoin());
       return res;
@@ -496,6 +526,7 @@ function sameTableProcessAllFilters<T>(
    fullFieldName: string,
    toDbConvert: ToDbSqlConverter<unknown>,
    errors: string[],
+   dialect: Dialect,
 ): { or: string[]; and: string[]; joins: string[] } {
    const ret: { or: string[]; and: string[]; joins: string[] } = { or: [], and: [], joins: [] };
 
@@ -505,7 +536,7 @@ function sameTableProcessAllFilters<T>(
          const comparisonMapper = comparisonOperatorMap[comparison.operator];
          try {
             const values = toDbConvert.convert(comparison.value);
-            ret.and.push(comparisonMapper.format(fullFieldName, values, toDbConvert));
+            ret.and.push(comparisonMapper.format(fullFieldName, values, toDbConvert, dialect));
          } catch (e) {
             errors.push(invalidFilterValue(domainFieldname, e));
             ret.and.push(matchNothing);
@@ -524,7 +555,7 @@ function invalidFilterValue(domainFieldname: string, e: unknown): string {
    return `invalid filter value for domain field name [${domainFieldname}]: ${e instanceof Error ? e.message : e}`;
 }
 
-type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'IN' | 'BETWEEN';
+type DatabaseOperator = '=' | '= BINARY' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'LIKE BINARY' | 'IN' | 'BETWEEN';
 
 function commonFormat(
    field: string,
@@ -538,14 +569,74 @@ function commonFormat(
 
 type ComparisonOperatorMap = {
    [key in Operator]: {
-      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>) => string;
+      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>, dialect: Dialect) => string;
    };
 };
 
+// "LIKE" ignores the case or not depending on the collation of the column (mysql) or on the engine (sqlite),
+// so each dialect has its own form to get the same result: contains is case sensitive, icontains is not
+function containsFormat(
+   field: string,
+   values: unknown[],
+   converter: ToDbSqlConverter<unknown>,
+   dialect: Dialect,
+): string {
+   if (dialect === 'sqlite') {
+      // the LIKE of sqlite ignores the case of the ascii letters, instr does not and needs no escaping
+      return values.map((v) => `instr(${field}, ${converter.prepare(v)}) > 0`).join(' OR ');
+   }
+   // mysql: BINARY forces a comparison of the bytes, whatever the (usually case insensitive) collation of the column
+   const operator = dialect === 'mysql' ? 'LIKE BINARY' : 'LIKE';
+   return commonFormat(field, operator, values, converter, '%');
+}
+
+// "=" ignores the case or not depending on the collation of the column (mysql), like "LIKE":
+// equals is case sensitive, iequals is not
+function equalsFormat(
+   field: string,
+   values: unknown[],
+   converter: ToDbSqlConverter<unknown>,
+   dialect: Dialect,
+): string {
+   // mysql: BINARY forces a comparison of the bytes, only for the text: a number or a date is compared as is
+   const operator = dialect === 'mysql' && isTextConverter(converter) ? '= BINARY' : '=';
+   return commonFormat(field, operator, values, converter);
+}
+
+function isTextConverter(converter: ToDbSqlConverter<unknown>): boolean {
+   return (
+      converter instanceof ToDbSqlStringConverter &&
+      !(converter instanceof ToDbSqlDateConverter) &&
+      !(converter instanceof ToDbSqlDatetimeConverter)
+   );
+}
+
+function iequalsFormat(field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string {
+   return values
+      .map((v) => converter.buildInstruction(`LOWER(${field})`, '=', `LOWER(${converter.prepare(v)})`))
+      .join(' OR ');
+}
+
+function icontainsFormat(field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string {
+   return values
+      .map((v) => converter.buildInstruction(`LOWER(${field})`, 'LIKE', lowerPrepared(converter.prepare(v, '%'))))
+      .join(' OR ');
+}
+
+// the escape clause must stay out of LOWER()
+function lowerPrepared(prepared: unknown): string {
+   const sql = String(prepared);
+   return sql.endsWith(likeEscapeClause)
+      ? `LOWER(${sql.slice(0, -likeEscapeClause.length)})${likeEscapeClause}`
+      : `LOWER(${sql})`;
+}
+
 const comparisonOperatorMap: ComparisonOperatorMap = {
    equals: {
-      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
-         commonFormat(field, '=', values, converter),
+      format: equalsFormat,
+   },
+   iequals: {
+      format: iequalsFormat,
    },
    greaterThan: {
       format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
@@ -564,8 +655,10 @@ const comparisonOperatorMap: ComparisonOperatorMap = {
          commonFormat(field, '<=', values, converter),
    },
    contains: {
-      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
-         commonFormat(field, 'LIKE', values, converter, '%'),
+      format: containsFormat,
+   },
+   icontains: {
+      format: icontainsFormat,
    },
    between: {
       format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string => {

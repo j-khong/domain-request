@@ -1,3 +1,5 @@
+import { Dialect, defaultDialect } from './dialect.ts';
+
 export type SqlParam = string | number | boolean;
 
 const encoder = new TextEncoder();
@@ -7,7 +9,7 @@ const tokenRegex = /\{\{drp:((?:[0-9a-f]{2})+)\}\}/g;
 /**
  * Wraps a value in a token to embed in a sql fragment in place of the value itself.
  * The token only contains hexadecimal characters, so the value can never be interpreted as sql.
- * Tokens are swapped for "?" placeholders by extractSqlParams, just before the request is executed.
+ * Tokens are swapped for placeholders by extractSqlParams, just before the request is executed.
  */
 export function createSqlParam(value: SqlParam): string {
    const bytes = encoder.encode(JSON.stringify(value));
@@ -19,10 +21,13 @@ export function createSqlParam(value: SqlParam): string {
 }
 
 /**
- * Replaces every token created by createSqlParam with a "?" placeholder
+ * Replaces every token created by createSqlParam with a placeholder: "$1", "$2"... for postgres, "?" otherwise
  * @returns the sql to execute and the values to bind, in the order of the placeholders
  */
-export function extractSqlParams(sql: string): { sql: string; params: SqlParam[] } {
+export function extractSqlParams(
+   sql: string,
+   dialect: Dialect = defaultDialect,
+): { sql: string; params: SqlParam[] } {
    const params: SqlParam[] = [];
    const parameterized = sql.replace(tokenRegex, (_token: string, hex: string) => {
       const bytes = new Uint8Array(hex.length / 2);
@@ -30,7 +35,7 @@ export function extractSqlParams(sql: string): { sql: string; params: SqlParam[]
          bytes[i] = Number.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
       }
       params.push(JSON.parse(decoder.decode(bytes)));
-      return '?';
+      return dialect === 'postgres' ? `$${params.length}` : '?';
    });
    return { sql: parameterized, params };
 }

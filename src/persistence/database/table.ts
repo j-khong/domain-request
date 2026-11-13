@@ -3,6 +3,7 @@ import { isSomethingLike } from '../../domain-request/type-checkers.ts';
 import { TableDef, TableMapping, isChild, ProcessResult, DomainPath } from './mapping.ts';
 import { Persistence } from '../index.ts';
 import { processAllFilters, createRequestFullFieldName, createSqlAlias } from './functions.ts';
+import { Dialect, defaultDialect } from './dialect.ts';
 import { createSqlParam, extractSqlParams, SqlParam } from './params.ts';
 import { FiltersTree, isFilteringFields, Options } from '../../domain-request/field-configuration/index.ts';
 import { FilterArrayType } from '../../domain-request/field-configuration/types.ts';
@@ -12,12 +13,19 @@ interface DbRecord {
 }
 export type SelectMethodResult = DbRecord[];
 /**
- * @param query sql request, where the values coming from the filters are replaced with "?" placeholders
+ * @param query sql request, where the values coming from the filters are replaced with placeholders
+ * ("?", or "$1", "$2"... for postgres)
  * @param params values to bind to the placeholders, in the same order
  */
 export type SelectMethod = (query: string, params: SqlParam[]) => Promise<SelectMethodResult>;
 
+export type TableOptions = {
+   /** sql dialect of the database, "mysql" by default */
+   dialect?: Dialect;
+};
+
 export class Table<DomainRequestName extends string> implements Persistence<DomainRequestName, unknown> {
+   private dialect: Dialect = defaultDialect;
    private select: SelectMethod = (): Promise<SelectMethodResult> => {
       return Promise.reject(
          new Error(`no select method set for table [${this.tableDef.name}]: pass it to the constructor or to init()`),
@@ -28,27 +36,32 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       if (!isSomethingLike(settings)) {
          throw new Error('please pass a sql select method');
       }
-      this.select = (settings as { select: SelectMethod }).select;
+      const { select, dialect } = settings as { select: SelectMethod; dialect?: Dialect };
+      this.select = select;
+      this.dialect = dialect ?? this.dialect;
    }
 
    constructor(
       private readonly tableDef: TableDef,
       private readonly mapping: TableMapping<string>,
       select?: SelectMethod,
+      options?: TableOptions,
    ) {
       if (select !== undefined) {
          this.select = select;
       }
+      this.dialect = options?.dialect ?? this.dialect;
    }
 
    async fetch(req: DomainRequest<DomainRequestName, any>): Promise<DomainResult> {
       const tableDef = this.tableDef;
       const mapping = this.mapping;
       const select = this.select;
+      const dialect = this.dialect;
 
-      const { results, resultsByPk } = await Table.fetchOneToOne(tableDef, mapping, select, req);
+      const { results, resultsByPk } = await Table.fetchOneToOne(tableDef, mapping, select, req, dialect);
 
-      await Table.fetchOneToMany(tableDef, mapping, select, req, results, resultsByPk);
+      await Table.fetchOneToMany(tableDef, mapping, select, req, results, resultsByPk, dialect);
 
       return results;
    }
@@ -58,6 +71,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       mapping: TableMapping<Extract<keyof T, string>>,
       select: SelectMethod,
       req: DomainRequest<DRN, T>,
+      dialect: Dialect,
    ): Promise<{ results: DomainResult; resultsByPk: ResultsByPk }> {
       const results: DomainResult = {
          domainName: req.name,
@@ -126,7 +140,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
          and: andFiltersArr,
          or: orFiltersArr,
          joins: filtersJoins,
-      } = processAllFilters(req.filters, mapping, results.errors);
+      } = processAllFilters(req.filters, mapping, results.errors, dialect);
       if (orFiltersArr.length > 0) {
          andFiltersArr.push(`(${orFiltersArr.join(' OR ')})`);
       }
@@ -139,7 +153,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  FROM ${tableDef.name}
  ${[...new Set([...fieldsJoins, ...filtersJoins])].join('\n')}
  ${where}`;
-      const resCount = await executeAndReport(select, reqCountSql, results);
+      const resCount = await executeAndReport(select, reqCountSql, results, dialect);
       results.total = resCount.length > 0 ? Number.parseInt(resCount[0].total as string) : 0;
 
       const generatedOrderby = Table.buildOrderby(req.options, mapping, results.errors);
@@ -162,7 +176,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  ${orderby}
  ${buildLimit(req.options.pagination)}`;
 
-      const dbResults = await executeAndReport(select, reqSql, results);
+      const dbResults = await executeAndReport(select, reqSql, results, dialect);
 
       for (const dbRecord of dbResults) {
          const result = createResultAndPopulate(dbRecord, fieldsToMapResults);
@@ -212,6 +226,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
       req: DomainRequest<DRN, T>,
       res: DomainResult,
       resultsByPk: ResultsByPk,
+      dialect: Dialect,
    ): Promise<void> {
       if (resultsByPk.size === 0) {
          return;
@@ -325,6 +340,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
                extractFilter(key as Extract<keyof T, string>, req.filters),
                mapping,
                res.errors,
+               dialect,
             );
             if (and.length > 0) {
                andFiltersArr = and;
@@ -336,7 +352,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             orderby =
                generatedNestedOrderby.length > 0
                   ? `${generatedNestedOrderby}, ${orderByTieBreakers.join(', ')}`
-                  : `ORDER BY ${pk} ASC`;
+                  : `ORDER BY ${orderByTieBreakers.join(', ')}`;
             limit = buildLimit(fo.pagination);
          }
 
@@ -360,7 +376,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
  ${limit}
  `;
 
-         const dbResults = await executeAndReport(select, reqSql, res);
+         const dbResults = await executeAndReport(select, reqSql, res, dialect);
 
          for (const dbRecord of dbResults) {
             const toPopulate = resultsByPk.get(String(dbRecord[pkAlias]));
@@ -536,8 +552,13 @@ function populateValueTree(struct: any, fieldnames: DomainPath[], value: any): v
 }
 
 // executes the request, adds its report to the results, and its error if it failed
-async function executeAndReport(select: SelectMethod, sql: string, results: DomainResult): Promise<SelectMethodResult> {
-   const { res, report } = await executeRequest(select, sql);
+async function executeAndReport(
+   select: SelectMethod,
+   sql: string,
+   results: DomainResult,
+   dialect: Dialect,
+): Promise<SelectMethodResult> {
+   const { res, report } = await executeRequest(select, sql, dialect);
    results.report.requests.push(report);
    if (report.error !== undefined) {
       results.errors.push(`database request failed: ${report.error}`);
@@ -548,11 +569,12 @@ async function executeAndReport(select: SelectMethod, sql: string, results: Doma
 export async function executeRequest(
    select: SelectMethod,
    sql: string,
+   dialect: Dialect = defaultDialect,
 ): Promise<{
    res: SelectMethodResult;
    report: RequestReport;
 }> {
-   const { sql: request, params } = extractSqlParams(sql);
+   const { sql: request, params } = extractSqlParams(sql, dialect);
    const start = new Date();
    let res: SelectMethodResult = [];
    let error: string | undefined;

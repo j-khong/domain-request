@@ -98,13 +98,15 @@ export function getFiltersArrays(): FiltersArrays[] {
 export type FiltersTree<Type> = FilteringFields<Type>;
 
 const operators = [
-   'equals',
+   'equals', // case sensitive for strings
+   'iequals', // for strings, case insensitive
    'greaterThan',
    'greaterThanOrEquals',
    'lesserThan',
    'lesserThanOrEquals',
    'between',
-   'contains', // for strings
+   'contains', // for strings, case sensitive
+   'icontains', // for strings, case insensitive
 ] as const;
 export type Operator = typeof operators[number];
 

@@ -72,7 +72,7 @@ describe('Data fetch with filter on one to one fields', () => {
                name: { operator: 'contains', value: 'e' },
             },
             architect: {
-               name: { operator: 'equals', value: 'armando' },
+               name: { operator: 'iequals', value: 'armando' },
             },
          },
       };
@@ -189,7 +189,7 @@ describe('Data fetch with filter on one to one fields', () => {
             architect: {
                or: [
                   {
-                     name: { operator: 'equals', value: 'roberto' },
+                     name: { operator: 'iequals', value: 'roberto' },
                   },
                   { rating: { rate: { operator: 'equals', value: 'B' } } },
                ],
@@ -261,7 +261,7 @@ describe('Data fetch with filter on one to one fields', () => {
             architect: {
                or: [
                   {
-                     name: { operator: 'equals', value: 'roberto' },
+                     name: { operator: 'iequals', value: 'roberto' },
                   },
                   { rating: { rate: { operator: 'equals', value: 'B' } } },
                   { rating: { rater: { name: { operator: 'equals', value: 'S&P' } } } },
@@ -356,7 +356,7 @@ describe('Data fetch with filter on one to N fields', () => {
       const results = [
          {
             id: '1',
-            sponsors: [{ name: 'Carnegie' }, { name: 'Rockefeller' }],
+            sponsors: [{ name: 'Rockefeller' }, { name: 'Carnegie' }],
          },
          {
             id: '2',
@@ -589,7 +589,7 @@ describe('Data fetch with filter on one to N fields', () => {
             and: [
                {
                   sponsors: {
-                     name: { operator: 'contains', value: 'ford' },
+                     name: { operator: 'icontains', value: 'ford' },
                   },
                },
                {
@@ -614,7 +614,7 @@ describe('Data fetch with filter on one to N fields', () => {
       // same as previous but dont use and array
       (input.filters as any) = {
          sponsors: {
-            name: { operator: 'contains', value: 'ford' },
+            name: { operator: 'icontains', value: 'ford' },
          },
          opening_hours: {
             day: {

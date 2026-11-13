@@ -56,5 +56,5 @@ export function getTableMapping(): TableMapping<keyof Fields> {
 }
 
 export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {
-   return new Table(tableDef, mapping, select);
+   return new Table(tableDef, mapping, select, { dialect: 'sqlite' });
 }

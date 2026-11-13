@@ -1,5 +1,5 @@
 // filters
-// - 'equals',
+// - 'equals', case sensitive
 //   - natural key
 //   - date
 //   ✅ - string
@@ -8,6 +8,9 @@
 //   ✅ - iso date
 //   ✅ - custom simple
 //       ✅ - with unauthorized field value
+// - 'iequals', case insensitive
+//   ✅ - string
+//   ✅ - nested field
 // - 'greaterThan',
 //   ✅ - string
 //   ✅ - number
@@ -22,10 +25,13 @@
 //   ✅ - string
 //   ✅ - number
 //   ✅ - iso date
-// - 'contains',
+// - 'contains', case sensitive
 //   ✅ - string
-//   ✅ - number
-//   ✅ - iso date
+//   ✅ - number (not on postgres)
+//   ✅ - iso date (not on postgres)
+// - 'icontains', case insensitive
+//   ✅ - string
+//   ✅ - list of values, nested field, array element
 export * from './simple.ts';
 
 export * from './extended.ts';

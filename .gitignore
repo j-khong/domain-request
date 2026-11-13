@@ -12,6 +12,7 @@ tests-report
 
 A-migrer
 notes.txt
+.npmrc
 scripts/publish.sh
 
 

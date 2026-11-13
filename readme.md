@@ -157,7 +157,23 @@ The domains of `unit-tests-new/domain-requests-new` cover all these cases.
 ## Connecting your database
 
 The library generates the SQL, you run it: a `SelectMethod` receives the request and the values to bind.
-Filter values are never written in the SQL, they are passed as `params` for the `?` placeholders.
+Filter values are never written in the SQL, they are passed as `params` for the placeholders
+(`?`, or `$1`, `$2`... with the `postgres` dialect).
+
+> **Breaking change:** `equals` and `contains` are now case sensitive on every database for the text (they used to follow the collation
+> of the column on MySQL, which is usually case insensitive). Use the new `iequals` and `icontains` operators to keep the previous behavior.
+> This is also why a MySQL `equals` is now `= BINARY` and a MySQL `contains` is now `LIKE BINARY`: see "Value filtering".
+
+### Dialect
+
+The generated SQL is common to the databases, except for the placeholders and for `equals` / `iequals` / `contains` / `icontains`.
+Tell the library which database runs it with the `dialect` option: `'mysql'` (default), `'postgres'` or `'sqlite'`.
+
+```ts
+new Table(tableDef, mapping, select, { dialect: 'postgres' });
+// or, when the select method is set later
+table.init({ select, dialect: 'postgres' });
+```
 
 Deno, with [deno mysql](https://deno.land/x/mysql):
 
@@ -180,16 +196,53 @@ const select: SelectMethod = async (query, params) => {
 };
 ```
 
-The generated SQL avoids database specific syntax (`LIMIT … OFFSET …`, no `GROUP BY`): it is tested with MySQL (unit tests) and runs on SQLite (examples).
-For a database using numbered placeholders (e.g. PostgreSQL), rewrite them: the generated SQL contains no other `?`.
+Deno, with [deno-postgres](https://deno.land/x/postgres), and the `postgres` dialect (the `$1…$n` placeholders are generated):
 
 ```ts
+import { Pool } from 'https://deno.land/x/postgres@v0.17.0/mod.ts';
+
+const pool = new Pool({ hostname, user, password, database, options: { TimeZone: 'UTC' } }, 10, true);
 const select: SelectMethod = async (query, params) => {
-   let i = 0;
-   const { rows } = await pool.query(query.replace(/\?/g, () => `$${++i}`), params);
-   return rows;
+   const connection = await pool.connect();
+   try {
+      const { rows } = await connection.queryObject(query, params);
+      return rows as SelectMethodResult;
+   } finally {
+      connection.release();
+   }
 };
+// new Table(tableDef, mapping, select, { dialect: 'postgres' })
 ```
+
+Node.js, with [pg](https://www.npmjs.com/package/pg):
+
+```ts
+import pg from 'pg';
+
+const pool = new pg.Pool({ host, user, password, database });
+const select: SelectMethod = async (query, params) => {
+   const { rows } = await pool.query(query, params);
+   return rows as SelectMethodResult;
+};
+// new Table(tableDef, mapping, select, { dialect: 'postgres' })
+```
+
+The generated SQL avoids database specific syntax (`LIMIT … OFFSET …`, no `GROUP BY`): it is tested with MySQL and PostgreSQL (unit tests) and runs on SQLite (examples).
+
+### PostgreSQL
+
+- **Lowercase names**: the library writes the table and column names without quotes, and PostgreSQL lowercases the unquoted identifiers.
+  Name your tables and columns in lowercase (snake_case), or the results cannot be read back (the aliases are `table$column`).
+- **Numbers**: `bigint` (`COUNT`, `int8`) may be returned as a `bigint` or a string, and `numeric` as a string, depending on the driver.
+  The library converts them for the `number` fields and for `total`; for a custom conversion, accept these types.
+- **Booleans**: use a `boolean` column. The filters are written with `TRUE` / `FALSE`.
+- **Time zone**: the dates are sent as `YYYY-MM-DD HH:MM:SS` in the local time zone of the process.
+  Use a session time zone equal to it (e.g. a process with `TZ=UTC` and `timezone = 'UTC'` for the connection), so that the dates are read back unchanged.
+- **Text columns**: keep `varchar` or `text`. With `citext`, `equals` and `contains` would no longer be case sensitive.
+- **Limits** (the tests concerned are ignored on PostgreSQL):
+  - `contains` / `icontains` on a number or a date column fails (`operator does not exist: integer ~~ text`):
+    PostgreSQL does not compare a number or a date with the text of a `LIKE`, and there is no cast working on all the databases.
+    Only use them on text columns.
 
 ## Requests
 
@@ -214,14 +267,29 @@ Field names are written in snake_case in requests (`max_seats`), and in camelCas
    filters: {
       name: { operator: 'equals', value: 'Arts' },
       max_seats: { operator: 'lesser_than', value: 400 },
-      sponsors: { name: { operator: 'contains', value: 'e' } }, // filter on a sub field
+      sponsors: { name: { operator: 'icontains', value: 'E' } }, // filter on a sub field
    },
 }
 ```
 
-Operators: `equals`, `greater_than`, `greater_than_or_equals`, `lesser_than`, `lesser_than_or_equals`, `contains`,
+Operators: `equals`, `iequals`, `greater_than`, `greater_than_or_equals`, `lesser_than`, `lesser_than_or_equals`, `contains`, `icontains`,
 and `between` with `value: [min, max]` when the field allows `byRangeOfValue`.
 With `byListOfValue`, `value` can be a list: `{ operator: 'equals', value: ['Arts', 'History'] }`.
+
+`equals` and `contains` are **case sensitive**, `iequals` and `icontains` are case insensitive, on every database.
+The `%`, `_` and `!` of a `contains` / `icontains` value are matched literally. Generated SQL, by dialect:
+
+| dialect    | `equals`         | `iequals`                | `contains`                     | `icontains`                            |
+| ---------- | ---------------- | ------------------------ | ------------------------------ | -------------------------------------- |
+| `mysql`    | `col = BINARY ?` | `LOWER(col) = LOWER(?)`  | `col LIKE BINARY ? ESCAPE '!'` | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`  |
+| `postgres` | `col = $1`       | `LOWER(col) = LOWER($1)` | `col LIKE $1 ESCAPE '!'`       | `LOWER(col) LIKE LOWER($1) ESCAPE '!'` |
+| `sqlite`   | `col = ?`        | `LOWER(col) = LOWER(?)`  | `instr(col, ?) > 0`            | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`  |
+
+The MySQL `= BINARY` is only written for the text: a number, a date or a boolean is compared with `=` on every database.
+Only use `iequals` and `icontains` on text columns.
+
+Limits of `iequals` and `icontains`, which rely on `LOWER()`: the letters are lowercased as the database does it.
+With SQLite, `LOWER()` only handles the ASCII letters (`'É'` is not matched by `'é'`); with PostgreSQL and MySQL, it depends on the locale / collation of the database.
 
 Filters are combined with AND. To combine them differently, use `and` and `or` arrays:
 
@@ -298,10 +366,11 @@ see [src/domain-request/old](./src/domain-request/old/README.md) to migrate.
 
 ## Development
 
-Requires Deno 1.31 and Docker (the unit tests run against a MySQL container).
+Requires Deno 1.31 and Docker (the unit tests run against a MySQL or a PostgreSQL container, started by `make`).
 
 ```sh
 make unit-tests UNIT_TESTS_API=new   # or old, for the deprecated API
+make unit-tests UNIT_TESTS_DB=postgres # on PostgreSQL instead of MySQL (UNIT_TESTS_DB=mysql by default)
 make lint
 make check
 make tests-coverage                  # requires lcov

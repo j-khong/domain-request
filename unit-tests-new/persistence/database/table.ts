@@ -2,7 +2,7 @@ import { assert, assertEquals } from 'https://deno.land/std@0.149.0/testing/asse
 import { afterEach, describe, it } from '../../data-fetch/mod.ts';
 import { DomainRequest } from '../../mod.ts';
 import * as Db from '../../../src/persistence/database/index.ts';
-import { resetClient, select } from './dbUtils.ts';
+import { dialect, resetClient, select } from './dbUtils.ts';
 
 type Call = { sql: string; params: unknown[] };
 
@@ -45,7 +45,7 @@ function createUsersTable(select?: Db.SelectMethod) {
    );
 }
 
-function createCountriesTable(select: Db.SelectMethod) {
+function createCountriesTable(select: Db.SelectMethod, dialect?: Db.Dialect) {
    const countriesTable = { name: 'countries', primaryKey: 'id' };
    const studentsTable = {
       name: 'students',
@@ -87,6 +87,7 @@ function createCountriesTable(select: Db.SelectMethod) {
          students: new Db.OneToManyTableMapping(studentsTable, studentsMapping),
       },
       select,
+      { dialect },
    );
 }
 
@@ -102,7 +103,7 @@ describe('Database persistence without database', () => {
       assertEquals(result.errors, []);
       assertEquals(calls.length, 2);
       for (const call of calls) {
-         assert(call.sql.includes('users.name = ?'), call.sql);
+         assert(call.sql.includes('users.name = BINARY ?'), call.sql);
          assert(!call.sql.includes("'"), call.sql);
          assertEquals(call.params, [value]);
       }
@@ -116,7 +117,7 @@ describe('Database persistence without database', () => {
          createRequest({ fields: { name: true }, and: [{ name: { operator: 'contains', value: '50%_!' } }] }),
       );
 
-      assert(calls[0].sql.includes("users.name LIKE ? ESCAPE '!'"), calls[0].sql);
+      assert(calls[0].sql.includes("users.name LIKE BINARY ? ESCAPE '!'"), calls[0].sql);
       assertEquals(calls[0].params, ['%50!%!_!!%']);
    });
 
@@ -197,7 +198,7 @@ describe('Database persistence without database', () => {
       assert(sql.endsWith('ORDER BY countries.id ASC LIMIT 10 OFFSET 20'), sql);
       assert(
          sql.includes(
-            'WHERE countries.id IN (SELECT countries.id FROM countries LEFT JOIN students ON students.id_country = countries.id WHERE ((students.firstname = ?)))',
+            'WHERE countries.id IN (SELECT countries.id FROM countries LEFT JOIN students ON students.id_country = countries.id WHERE ((students.firstname = BINARY ?)))',
          ),
          sql,
       );
@@ -302,7 +303,7 @@ describe('Database persistence with database', () => {
    });
 
    it('does not let a filter value change the request', async () => {
-      const table = createCountriesTable(select);
+      const table = createCountriesTable(select, dialect);
 
       const injection = await table.fetch(
          createRequest({
@@ -327,7 +328,7 @@ describe('Database persistence with database', () => {
    });
 
    it('fetches a one to many nested in a one to many', async () => {
-      const result = await createCountriesTable(select).fetch(
+      const result = await createCountriesTable(select, dialect).fetch(
          createRequest({
             fields: { name: true, students: { firstname: true, applications: { course: true } } },
             naturalKey: ['name'],

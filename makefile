@@ -8,35 +8,79 @@ DB_USER := root
 DB_PASSWORD := gWpYF4dZfW
 DB_PORT := 8106
 DB_SCHEMA := unit-tests-new/persistence/database/tables.sql
+PG_CONTAINER := domain-request-postgres
+PG_IMAGE := postgres:16
+PG_NAME := domain_request
+PG_USER := postgres
+PG_PASSWORD := gWpYF4dZfW
+PG_PORT := 8107
+PG_SCHEMA := unit-tests-new/persistence/database/postgres.tables.sql
 # the mysql driver of the tests depends on an unpinned std module removed since: unit-tests-new/import_map.json pins it
 UNIT_TESTS_API ?= old
+# database of the tests: mysql or postgres
+UNIT_TESTS_DB ?= mysql
+# npm token of the project (git ignored), used instead of ~/.npmrc when present
+NPM_USERCONFIG := $(if $(wildcard .npmrc),--userconfig $(CURDIR)/.npmrc,)
 
-.PHONY: db-up # start mysql container if not already running
-db-up:
-	@docker inspect $(DB_CONTAINER) >/dev/null 2>&1 || \
-		docker run --name $(DB_CONTAINER) \
-		-e MYSQL_ROOT_PASSWORD=$(DB_PASSWORD) \
-		-e MYSQL_DATABASE=$(DB_NAME) \
-		-p $(DB_PORT):3306 \
-		-d $(DB_IMAGE)
-	@docker start $(DB_CONTAINER) >/dev/null 2>&1 || true
+.PHONY: db-check # fail if UNIT_TESTS_DB is not a supported database
+db-check:
+	@if [ "$(UNIT_TESTS_DB)" != "mysql" ] && [ "$(UNIT_TESTS_DB)" != "postgres" ]; then \
+		echo "UNIT_TESTS_DB must be 'mysql' or 'postgres' (got: $(UNIT_TESTS_DB))"; \
+		exit 1; \
+	fi
 
-.PHONY: db-wait # wait until mysql is ready to accept connections
-db-wait:
-	@echo "Waiting for MySQL on container $(DB_CONTAINER)..."
-	@until docker exec $(DB_CONTAINER) mysqladmin ping -h 127.0.0.1 -u$(DB_USER) -p$(DB_PASSWORD) --silent >/dev/null 2>&1; do \
-		sleep 1; \
-	done
+.PHONY: db-up # start the container of UNIT_TESTS_DB if not already running
+db-up: db-check
+	@if [ "$(UNIT_TESTS_DB)" = "postgres" ]; then \
+		docker inspect $(PG_CONTAINER) >/dev/null 2>&1 || \
+			docker run --name $(PG_CONTAINER) \
+			-e POSTGRES_USER=$(PG_USER) \
+			-e POSTGRES_PASSWORD=$(PG_PASSWORD) \
+			-e POSTGRES_DB=$(PG_NAME) \
+			-p $(PG_PORT):5432 \
+			-d $(PG_IMAGE); \
+		docker start $(PG_CONTAINER) >/dev/null 2>&1 || true; \
+	else \
+		docker inspect $(DB_CONTAINER) >/dev/null 2>&1 || \
+			docker run --name $(DB_CONTAINER) \
+			-e MYSQL_ROOT_PASSWORD=$(DB_PASSWORD) \
+			-e MYSQL_DATABASE=$(DB_NAME) \
+			-p $(DB_PORT):3306 \
+			-d $(DB_IMAGE); \
+		docker start $(DB_CONTAINER) >/dev/null 2>&1 || true; \
+	fi
+
+.PHONY: db-wait # wait until the database is ready to accept connections
+db-wait: db-check
+	@if [ "$(UNIT_TESTS_DB)" = "postgres" ]; then \
+		echo "Waiting for PostgreSQL on container $(PG_CONTAINER)..."; \
+		until docker exec $(PG_CONTAINER) pg_isready -h 127.0.0.1 -U $(PG_USER) -d $(PG_NAME) >/dev/null 2>&1; do \
+			sleep 1; \
+		done; \
+	else \
+		echo "Waiting for MySQL on container $(DB_CONTAINER)..."; \
+		until docker exec $(DB_CONTAINER) mysqladmin ping -h 127.0.0.1 -u$(DB_USER) -p$(DB_PASSWORD) --silent >/dev/null 2>&1; do \
+			sleep 1; \
+		done; \
+	fi
 
 .PHONY: db-init # initialize test schema and seed data
 db-init: db-up db-wait
-	@docker exec -i $(DB_CONTAINER) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) < $(DB_SCHEMA)
+	@if [ "$(UNIT_TESTS_DB)" = "postgres" ]; then \
+		docker exec -i $(PG_CONTAINER) psql -q -v ON_ERROR_STOP=1 -U $(PG_USER) -d $(PG_NAME) < $(PG_SCHEMA); \
+	else \
+		docker exec -i $(DB_CONTAINER) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) < $(DB_SCHEMA); \
+	fi
 
-.PHONY: db-down # stop mysql container
-db-down:
-	@docker stop $(DB_CONTAINER) >/dev/null 2>&1 || true
+.PHONY: db-down # stop the container of UNIT_TESTS_DB
+db-down: db-check
+	@if [ "$(UNIT_TESTS_DB)" = "postgres" ]; then \
+		docker stop $(PG_CONTAINER) >/dev/null 2>&1 || true; \
+	else \
+		docker stop $(DB_CONTAINER) >/dev/null 2>&1 || true; \
+	fi
 
-.PHONY: db-reset # drop and recreate schema in running container
+.PHONY: db-reset # drop and recreate schema in running container of UNIT_TESTS_DB
 db-reset: db-init
 
 .PHONY: unit-tests # launch unit tests
@@ -47,11 +91,16 @@ unit-tests: db-init
 		echo "UNIT_TESTS_API must be 'old' or 'new' (got: $$profile)"; \
 		exit 1; \
 	fi; \
+	if [ "$(UNIT_TESTS_DB)" = "postgres" ]; then \
+		name=$(PG_NAME); port=$(PG_PORT); user=$(PG_USER); password=$(PG_PASSWORD); \
+	else \
+		name=$(DB_NAME); port=$(DB_PORT); user=$(DB_USER); password=$(DB_PASSWORD); \
+	fi; \
 	d=$$(date +%s); \
-	UNIT_TESTS_API=$$profile DB_NAME=$(DB_NAME) DB_PORT=$(DB_PORT) DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASSWORD) \
+	TZ=UTC UNIT_TESTS_API=$$profile UNIT_TESTS_DB=$(UNIT_TESTS_DB) DB_NAME=$$name DB_PORT=$$port DB_USER=$$user DB_PASSWORD=$$password \
 	deno test --allow-all --import-map=unit-tests-new/import_map.json $(TEST_FLAGS) unit-tests-new/index.ts > unit-tests.log 2>&1 && \
-	echo "✅ Tests ($$profile) took $$(($$(date +%s)-d)) seconds" || \
-	{ echo "❌ Tests ($$profile) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"; exit 1; }
+	echo "✅ Tests ($$profile, $(UNIT_TESTS_DB)) took $$(($$(date +%s)-d)) seconds" || \
+	{ echo "❌ Tests ($$profile, $(UNIT_TESTS_DB)) failed after $$(($$(date +%s)-d)) seconds (check unit-tests.log)"; exit 1; }
 
 .PHONY: tests-coverage # generate tests coverage report
 tests-coverage:
@@ -79,19 +128,18 @@ check:
 help:
 	@grep '^.PHONY: .* #' $(firstword $(MAKEFILE_LIST)) | sed 's/\.PHONY: \(.*\) # \(.*\)/\1 	 \2/' | expand -t30
 
-
-.PHONY: save
-save:
-	rm -fr $(TESTS_REPORT)
-	rsync -av --delete --exclude "node_modules" --exclude "npm" --exclude "dist" --exclude "to_deploy" --exclude ".git" --exclude ".DS_Store" . "/Users/jk/julienkhong@yahoo.fr - Google Drive/My Drive/back-ups/domain-request/"
-
-
 .PHONY: npm-create
 npm-create:
 	[ -d examples/node/node_modules ] && rm -fr examples/node/node_modules || : && \
 	[ -d npm ] && rm -fr npm || : && \
 	deno run -A scripts/build_npm.ts $(shell cat current_version.txt)
 
+.PHONY: npm-check-login # fail if not logged in to npm (publishing then answers a misleading 404)
+npm-check-login:
+	@npm whoami $(NPM_USERCONFIG) 1>/dev/null 2>&1 && echo "✅ logged in to npm as $$(npm whoami $(NPM_USERCONFIG))" || { \
+	echo "❌ not logged in to npm: run 'npm login' first"; \
+	exit 1; }
+
 .PHONY: npm-publish
-npm-publish: npm-create
-	cd npm && npm publish --access public
+npm-publish: npm-check-login npm-create
+	cd npm && npm publish $(NPM_USERCONFIG) --access public
