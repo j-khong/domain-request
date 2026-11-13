@@ -9,7 +9,13 @@ import {
    Operator,
 } from '../../domain-request/field-configuration/types.ts';
 import { processAllFilters, createRequestFullFieldName, createSqlAlias } from './functions.ts';
-import { ToDbSqlConverter, likeEscapeClause } from './converters.ts';
+import {
+   ToDbSqlConverter,
+   ToDbSqlDateConverter,
+   ToDbSqlDatetimeConverter,
+   ToDbSqlStringConverter,
+   likeEscapeClause,
+} from './converters.ts';
 import { Dialect, defaultDialect } from './dialect.ts';
 
 export type TableMapping<DomainFieldNames extends string> = {
@@ -549,7 +555,7 @@ function invalidFilterValue(domainFieldname: string, e: unknown): string {
    return `invalid filter value for domain field name [${domainFieldname}]: ${e instanceof Error ? e.message : e}`;
 }
 
-type DatabaseOperator = '=' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'LIKE BINARY' | 'IN' | 'BETWEEN';
+type DatabaseOperator = '=' | '= BINARY' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'LIKE BINARY' | 'IN' | 'BETWEEN';
 
 function commonFormat(
    field: string,
@@ -584,6 +590,33 @@ function containsFormat(
    return commonFormat(field, operator, values, converter, '%');
 }
 
+// "=" ignores the case or not depending on the collation of the column (mysql), like "LIKE":
+// equals is case sensitive, iequals is not
+function equalsFormat(
+   field: string,
+   values: unknown[],
+   converter: ToDbSqlConverter<unknown>,
+   dialect: Dialect,
+): string {
+   // mysql: BINARY forces a comparison of the bytes, only for the text: a number or a date is compared as is
+   const operator = dialect === 'mysql' && isTextConverter(converter) ? '= BINARY' : '=';
+   return commonFormat(field, operator, values, converter);
+}
+
+function isTextConverter(converter: ToDbSqlConverter<unknown>): boolean {
+   return (
+      converter instanceof ToDbSqlStringConverter &&
+      !(converter instanceof ToDbSqlDateConverter) &&
+      !(converter instanceof ToDbSqlDatetimeConverter)
+   );
+}
+
+function iequalsFormat(field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string {
+   return values
+      .map((v) => converter.buildInstruction(`LOWER(${field})`, '=', `LOWER(${converter.prepare(v)})`))
+      .join(' OR ');
+}
+
 function icontainsFormat(field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string {
    return values
       .map((v) => converter.buildInstruction(`LOWER(${field})`, 'LIKE', lowerPrepared(converter.prepare(v, '%'))))
@@ -600,8 +633,10 @@ function lowerPrepared(prepared: unknown): string {
 
 const comparisonOperatorMap: ComparisonOperatorMap = {
    equals: {
-      format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>
-         commonFormat(field, '=', values, converter),
+      format: equalsFormat,
+   },
+   iequals: {
+      format: iequalsFormat,
    },
    greaterThan: {
       format: (field: string, values: unknown[], converter: ToDbSqlConverter<unknown>): string =>

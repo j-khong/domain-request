@@ -46,7 +46,8 @@ export type NestedFilteringFields<Type> = {
 };
 
 const operators = [
-   'equals',
+   'equals', // case sensitive for strings
+   'iequals', // for strings, case insensitive
    'greaterThan',
    'greaterThanOrEquals',
    'lesserThan',

@@ -160,13 +160,13 @@ The library generates the SQL, you run it: a `SelectMethod` receives the request
 Filter values are never written in the SQL, they are passed as `params` for the placeholders
 (`?`, or `$1`, `$2`... with the `postgres` dialect).
 
-> **Breaking change:** `contains` is now case sensitive on every database (it used to follow the collation of the column on MySQL,
-> which is usually case insensitive). Use the new `icontains` operator to keep the previous behavior.
-> This is also why a MySQL `contains` is now `LIKE BINARY`: see "Value filtering".
+> **Breaking change:** `equals` and `contains` are now case sensitive on every database for the text (they used to follow the collation
+> of the column on MySQL, which is usually case insensitive). Use the new `iequals` and `icontains` operators to keep the previous behavior.
+> This is also why a MySQL `equals` is now `= BINARY` and a MySQL `contains` is now `LIKE BINARY`: see "Value filtering".
 
 ### Dialect
 
-The generated SQL is common to the databases, except for the placeholders and for `contains` / `icontains`.
+The generated SQL is common to the databases, except for the placeholders and for `equals` / `iequals` / `contains` / `icontains`.
 Tell the library which database runs it with the `dialect` option: `'mysql'` (default), `'postgres'` or `'sqlite'`.
 
 ```ts
@@ -238,7 +238,7 @@ The generated SQL avoids database specific syntax (`LIMIT … OFFSET …`, no `G
 - **Booleans**: use a `boolean` column. The filters are written with `TRUE` / `FALSE`.
 - **Time zone**: the dates are sent as `YYYY-MM-DD HH:MM:SS` in the local time zone of the process.
   Use a session time zone equal to it (e.g. a process with `TZ=UTC` and `timezone = 'UTC'` for the connection), so that the dates are read back unchanged.
-- **Text columns**: keep `varchar` or `text`. With `citext`, `contains` would no longer be case sensitive.
+- **Text columns**: keep `varchar` or `text`. With `citext`, `equals` and `contains` would no longer be case sensitive.
 - **Limits** (the tests concerned are ignored on PostgreSQL):
   - `contains` / `icontains` on a number or a date column fails (`operator does not exist: integer ~~ text`):
     PostgreSQL does not compare a number or a date with the text of a `LIKE`, and there is no cast working on all the databases.
@@ -272,20 +272,23 @@ Field names are written in snake_case in requests (`max_seats`), and in camelCas
 }
 ```
 
-Operators: `equals`, `greater_than`, `greater_than_or_equals`, `lesser_than`, `lesser_than_or_equals`, `contains`, `icontains`,
+Operators: `equals`, `iequals`, `greater_than`, `greater_than_or_equals`, `lesser_than`, `lesser_than_or_equals`, `contains`, `icontains`,
 and `between` with `value: [min, max]` when the field allows `byRangeOfValue`.
 With `byListOfValue`, `value` can be a list: `{ operator: 'equals', value: ['Arts', 'History'] }`.
 
-`contains` is **case sensitive** and `icontains` is case insensitive, on every database.
-The `%`, `_` and `!` of the value are matched literally. Generated SQL, by dialect:
+`equals` and `contains` are **case sensitive**, `iequals` and `icontains` are case insensitive, on every database.
+The `%`, `_` and `!` of a `contains` / `icontains` value are matched literally. Generated SQL, by dialect:
 
-| dialect    | `contains`                             | `icontains`                                  |
-| ---------- | -------------------------------------- | -------------------------------------------- |
-| `mysql`    | `col LIKE BINARY ? ESCAPE '!'`         | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`        |
-| `postgres` | `col LIKE ? ESCAPE '!'`                | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`        |
-| `sqlite`   | `instr(col, ?) > 0`                    | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`        |
+| dialect    | `equals`         | `iequals`                | `contains`                     | `icontains`                            |
+| ---------- | ---------------- | ------------------------ | ------------------------------ | -------------------------------------- |
+| `mysql`    | `col = BINARY ?` | `LOWER(col) = LOWER(?)`  | `col LIKE BINARY ? ESCAPE '!'` | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`  |
+| `postgres` | `col = $1`       | `LOWER(col) = LOWER($1)` | `col LIKE $1 ESCAPE '!'`       | `LOWER(col) LIKE LOWER($1) ESCAPE '!'` |
+| `sqlite`   | `col = ?`        | `LOWER(col) = LOWER(?)`  | `instr(col, ?) > 0`            | `LOWER(col) LIKE LOWER(?) ESCAPE '!'`  |
 
-Limits of `icontains`, which relies on `LOWER()`: the letters are lowercased as the database does it.
+The MySQL `= BINARY` is only written for the text: a number, a date or a boolean is compared with `=` on every database.
+Only use `iequals` and `icontains` on text columns.
+
+Limits of `iequals` and `icontains`, which rely on `LOWER()`: the letters are lowercased as the database does it.
 With SQLite, `LOWER()` only handles the ASCII letters (`'É'` is not matched by `'é'`); with PostgreSQL and MySQL, it depends on the locale / collation of the database.
 
 Filters are combined with AND. To combine them differently, use `and` and `or` arrays:

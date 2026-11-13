@@ -352,7 +352,7 @@ export class Table<DomainRequestName extends string> implements Persistence<Doma
             orderby =
                generatedNestedOrderby.length > 0
                   ? `${generatedNestedOrderby}, ${orderByTieBreakers.join(', ')}`
-                  : `ORDER BY ${pk} ASC`;
+                  : `ORDER BY ${orderByTieBreakers.join(', ')}`;
             limit = buildLimit(fo.pagination);
          }
 

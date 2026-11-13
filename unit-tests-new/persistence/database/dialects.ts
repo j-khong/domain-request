@@ -84,6 +84,37 @@ describe('Database persistence: sql dialects', () => {
       assertEquals(sqlite.params, ['%Ab%']);
    });
 
+   it('generates a case sensitive equals for each dialect, only for the text on mysql', async () => {
+      const equals = { name: { operator: 'equals', value: 'Ab' } };
+      const mysql = await generateSql(equals, 'mysql');
+      assert(mysql.sql.includes('WHERE (users.name = BINARY ?)'), mysql.sql);
+      assertEquals(mysql.params, ['Ab']);
+
+      const postgres = await generateSql(equals, 'postgres');
+      assert(postgres.sql.includes('WHERE (users.name = $1)'), postgres.sql);
+
+      const sqlite = await generateSql(equals, 'sqlite');
+      assert(sqlite.sql.includes('WHERE (users.name = ?)'), sqlite.sql);
+
+      for (const dialect of ['mysql', 'postgres', 'sqlite'] as const) {
+         const { sql } = await generateSql({ age: { operator: 'equals', value: 18 } }, dialect);
+         assert(sql.includes('WHERE (users.age = 18)'), sql);
+      }
+   });
+
+   it('generates a case insensitive iequals for each dialect', async () => {
+      const iequals = { name: { operator: 'iequals', value: 'Ab' } };
+      const mysql = await generateSql(iequals, 'mysql');
+      assert(mysql.sql.includes('WHERE (LOWER(users.name) = LOWER(?))'), mysql.sql);
+      assertEquals(mysql.params, ['Ab']);
+
+      const postgres = await generateSql(iequals, 'postgres');
+      assert(postgres.sql.includes('WHERE (LOWER(users.name) = LOWER($1))'), postgres.sql);
+
+      const sqlite = await generateSql(iequals, 'sqlite');
+      assert(sqlite.sql.includes('WHERE (LOWER(users.name) = LOWER(?))'), sqlite.sql);
+   });
+
    it('combines the values of a list with OR', async () => {
       const filter = { name: { operator: 'icontains', value: ['a', 'b'] } };
       const { sql, params } = await generateSql(filter, 'postgres');
@@ -109,9 +140,7 @@ describe('Database persistence: sql dialects', () => {
       assertEquals((await generateSql({ name: { operator: 'icontains', value: '50%_!' } }, 'sqlite')).params, [
          '%50!%!_!!%',
       ]);
-      assertEquals((await generateSql({ name: { operator: 'contains', value: '50%_!' } }, 'sqlite')).params, [
-         '50%_!',
-      ]);
+      assertEquals((await generateSql({ name: { operator: 'contains', value: '50%_!' } }, 'sqlite')).params, ['50%_!']);
    });
 
    it('keeps the other operators the same for each dialect', async () => {

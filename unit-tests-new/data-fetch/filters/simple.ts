@@ -1046,6 +1046,36 @@ describe('Data fetch with filters for simple ', () => {
          });
       });
 
+      describe('equals is case sensitive', () => {
+         const check = async (operator: string, value: string, names: string[]) => {
+            const domainRequestName: DomainRequestName = 'course';
+            const input = { fields: { name: true }, filters: { name: { operator, value } } };
+            const byName: { [name: string]: string } = { 'Math 101': '1', Arts: '2', History: '3' };
+            const expected = {
+               domainName: domainRequestName,
+               total: names.length,
+               results: names.map((name) => ({ name, id: byName[name] })),
+            };
+            await test(input, 'admin', domainRequestName, expected);
+         };
+
+         it('equals matches the same case only', async () => {
+            await check('equals', 'Arts', ['Arts']);
+            await check('equals', 'arts', []);
+            await check('equals', 'ARTS', []);
+            await check('equals', 'math 101', []);
+         });
+
+         it('iequals matches whatever the case', async () => {
+            await check('iequals', 'Arts', ['Arts']);
+            await check('iequals', 'arts', ['Arts']);
+            await check('iequals', 'aRTS', ['Arts']);
+            await check('iequals', 'MATH 101', ['Math 101']);
+            // the whole value, not a part of it
+            await check('iequals', 'art', []);
+         });
+      });
+
       describe('contains and icontains escape the wildcards', () => {
          // no value of the data holds a "%", an "_" or a "!": if they were wildcards, they would match
          const check = async (operator: string, value: string, total: number) => {

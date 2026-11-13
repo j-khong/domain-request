@@ -1,5 +1,5 @@
 // filters
-// - 'equals',
+// - 'equals', case sensitive
 //   - natural key
 //   - date
 //   ✅ - string
@@ -8,6 +8,9 @@
 //   ✅ - iso date
 //   ✅ - custom simple
 //       ✅ - with unauthorized field value
+// - 'iequals', case insensitive
+//   ✅ - string
+//   ✅ - nested field
 // - 'greaterThan',
 //   ✅ - string
 //   ✅ - number

@@ -8,6 +8,7 @@ export class ValidatorCreator<T> {
       let validator: Validator = this.generateTypeValidator();
       const allTime: Operator[] = [
          'equals',
+         'iequals',
          'greaterThan',
          'greaterThanOrEquals',
          'lesserThan',
