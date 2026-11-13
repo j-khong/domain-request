@@ -1,5 +1,5 @@
 // https://github.com/denoland/dnt/
-import { build, emptyDir } from 'https://deno.land/x/dnt@0.33.1/mod.ts';
+import { build, emptyDir } from 'https://deno.land/x/dnt@0.37.0/mod.ts';
 import { copy } from 'https://deno.land/std@0.177.0/fs/mod.ts';
 
 await emptyDir('./npm');
@@ -9,10 +9,8 @@ await build({
    outDir: './npm',
    // the unit tests need a database: they are run with deno (make unit-tests), not in the npm package
    test: false,
-   shims: {
-      // see JS docs for overview and more options
-      deno: true,
-   },
+   // no shim: the sources only use node apis, so the package has no Deno dependency
+   shims: {},
    package: {
       // package.json properties
       name: '@jkhong/domain-request',
