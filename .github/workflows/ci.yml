@@ -23,12 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         api: [old, new]
+        db: [mysql, postgres]
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v1.31.0
-      # starts a mysql container, loads the schema, then runs the tests
-      - run: make unit-tests UNIT_TESTS_API=${{ matrix.api }}
+      # starts a mysql or postgres container, loads the schema, then runs the tests
+      - run: make unit-tests UNIT_TESTS_API=${{ matrix.api }} UNIT_TESTS_DB=${{ matrix.db }}
       - if: failure()
         run: cat unit-tests.log

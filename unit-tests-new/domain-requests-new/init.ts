@@ -20,10 +20,10 @@ import * as BuildingSponsor from './BuildingSponsor/index.ts';
 import * as BuildingSponsorPersistence from './BuildingSponsor/builder/persistence/database/index.ts';
 
 import { DomainRequestName, Role } from './types.ts';
-import { DomainRequestHandler, Factory, SelectMethodResult } from '../mod.ts';
+import { DomainRequestHandler, Factory, Dialect, SelectMethodResult } from '../mod.ts';
 
-export function init(select: (query: string) => Promise<SelectMethodResult>): void {
-   createFactories(select);
+export function init(select: (query: string) => Promise<SelectMethodResult>, dialect?: Dialect): void {
+   createFactories(select, dialect);
 }
 
 export function getDomainRequestHandler<DF>(
@@ -33,25 +33,25 @@ export function getDomainRequestHandler<DF>(
 }
 
 type GenericType = Factory<Role, DomainRequestName, unknown>;
-function createFactories(select: (query: string) => Promise<SelectMethodResult>): void {
+function createFactories(select: (query: string) => Promise<SelectMethodResult>, dialect?: Dialect): void {
    factories = {
-      architect: Architect.buildFactory(ArchitectPersistence.buildConnector(select)) as GenericType,
-      sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select)) as GenericType,
-      country: Country.buildFactory(CountryPersistence.buildTableConnector(select)) as GenericType,
-      course: Course.buildFactory(CoursePersistence.buildTableConnector(select)) as GenericType,
+      architect: Architect.buildFactory(ArchitectPersistence.buildConnector(select, dialect)) as GenericType,
+      sponsor: Sponsor.buildFactory(SponsorPersistence.buildTableConnector(select, dialect)) as GenericType,
+      country: Country.buildFactory(CountryPersistence.buildTableConnector(select, dialect)) as GenericType,
+      course: Course.buildFactory(CoursePersistence.buildTableConnector(select, dialect)) as GenericType,
       studentCategory: StudentCategory.buildFactory(
-         StudentCategoryPersistence.buildTableConnector(select),
+         StudentCategoryPersistence.buildTableConnector(select, dialect),
       ) as GenericType,
-      building: Building.buildFactory(BuildingPersistence.buildTableConnector(select)) as GenericType,
+      building: Building.buildFactory(BuildingPersistence.buildTableConnector(select, dialect)) as GenericType,
       buildingCategory: BuildingCategory.buildFactory(
-         BuildingCategoryPersistence.buildTableConnector(select),
+         BuildingCategoryPersistence.buildTableConnector(select, dialect),
       ) as GenericType,
-      student: Student.buildFactory(StudentPersistence.buildTableConnector(select)) as GenericType,
+      student: Student.buildFactory(StudentPersistence.buildTableConnector(select, dialect)) as GenericType,
       buildingSponsor: BuildingSponsor.buildFactory(
-         BuildingSponsorPersistence.buildTableConnector(select),
+         BuildingSponsorPersistence.buildTableConnector(select, dialect),
       ) as GenericType,
       courseApplication: CourseApplication.buildFactory(
-         CourseApplicationPersistence.buildTableConnector(select),
+         CourseApplicationPersistence.buildTableConnector(select, dialect),
       ) as GenericType,
    };
 }

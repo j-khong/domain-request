@@ -7,6 +7,7 @@ const defaultBuildInstruction = (field: string, operator: string, value: unknown
 
 // "\" is not usable as it is not handled the same way by all the databases
 const likeEscapeChar = '!';
+export const likeEscapeClause = ` ESCAPE '${likeEscapeChar}'`;
 
 function escapeLikeValue(v: string): string {
    return v.replace(/[!%_]/g, (c) => `${likeEscapeChar}${c}`);
@@ -100,7 +101,7 @@ export class ToDbSqlStringConverter extends ToDbSqlConverter<string> {
       if (deco === undefined) {
          return createSqlParam(v);
       }
-      return `${createSqlParam(`${deco}${escapeLikeValue(v)}${deco}`)} ESCAPE '${likeEscapeChar}'`;
+      return `${createSqlParam(`${deco}${escapeLikeValue(v)}${deco}`)}${likeEscapeClause}`;
    }
 }
 
@@ -141,6 +142,11 @@ export class ToDbSqlBooleanConverter extends ToDbSqlNumberConverter {
          }
          return r;
       });
+   }
+
+   // TRUE and FALSE work on mysql, postgres and sqlite 3.23+, whereas postgres refuses boolean = 0 or 1
+   prepare(v: number, deco?: string): string | number {
+      return deco === undefined ? (super.prepare(v) === 1 ? 'TRUE' : 'FALSE') : super.prepare(v, deco);
    }
 }
 

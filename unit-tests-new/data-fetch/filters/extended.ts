@@ -589,7 +589,7 @@ describe('Data fetch with filter on one to N fields', () => {
             and: [
                {
                   sponsors: {
-                     name: { operator: 'contains', value: 'ford' },
+                     name: { operator: 'icontains', value: 'ford' },
                   },
                },
                {
@@ -614,7 +614,7 @@ describe('Data fetch with filter on one to N fields', () => {
       // same as previous but dont use and array
       (input.filters as any) = {
          sponsors: {
-            name: { operator: 'contains', value: 'ford' },
+            name: { operator: 'icontains', value: 'ford' },
          },
          opening_hours: {
             day: {

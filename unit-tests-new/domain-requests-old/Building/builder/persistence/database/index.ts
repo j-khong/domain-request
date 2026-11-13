@@ -5,6 +5,7 @@ import {
    OneToOneTableMapping,
    OneToManyTableMapping,
    OneToOneFieldMapping,
+   Dialect,
    SelectMethod,
    Table,
    ToDbSqlNumberConverter,
@@ -168,9 +169,9 @@ function toDomainStatus(o: unknown): Status {
    return statusValueMapper.toDomainValue(o as DbStatus, 'closed');
 }
 
-export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {
+export function buildTableConnector(select: SelectMethod, dialect?: Dialect): Table<DomainRequestName> {
    // buildingMapping.openingHours.init(new Table(openingHoursTable, openingHoursMapping, select));
-   return new Table(buildingTable, buildingMapping, select);
+   return new Table(buildingTable, buildingMapping, select, { dialect });
 }
 
 export function getTableDefinition(): TableDef {

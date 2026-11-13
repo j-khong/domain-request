@@ -1,10 +1,12 @@
 import { TableMapping } from './mapping.ts';
+import { Dialect } from './dialect.ts';
 import { FilterArrayType, FilteringFields } from '../../domain-request/field-configuration/types.ts';
 
 export function processAllFilters<T>(
    filters: FilteringFields<T>,
    mapping: TableMapping<Extract<keyof T, string>>,
    errors: string[],
+   dialect?: Dialect,
 ): { or: string[]; and: string[]; joins: Set<string> } {
    const filtersArr: { or: string[]; and: string[]; joins: Set<string> } = {
       or: [],
@@ -12,11 +14,11 @@ export function processAllFilters<T>(
       joins: new Set<string>(),
    };
 
-   const and = processFilters(filters.and, mapping, errors);
+   const and = processFilters(filters.and, mapping, errors, dialect);
    filtersArr.and.push(...and.filters);
    addSetToSet(filtersArr.joins, and.joins);
 
-   const or = processFilters(filters.or, mapping, errors);
+   const or = processFilters(filters.or, mapping, errors, dialect);
    filtersArr.or.push(...or.filters);
    addSetToSet(filtersArr.joins, or.joins);
 
@@ -27,6 +29,7 @@ function processFilters<T>(
    filters: Array<FilterArrayType<T>>,
    mapping: TableMapping<Extract<keyof T, string>>,
    errors: string[],
+   dialect?: Dialect,
 ): { filters: string[]; joins: Set<string> } {
    const filtersArr: { filters: string[]; joins: Set<string> } = { filters: [], joins: new Set<string>() };
    for (const theFilter of filters) {
@@ -38,7 +41,7 @@ function processFilters<T>(
          continue;
       }
 
-      const res = fieldMap.processAllFilters(domFieldName, theFilter, errors);
+      const res = fieldMap.processAllFilters(domFieldName, theFilter, errors, dialect);
 
       if (res.or.length > 0) {
          res.and.push(`(${res.or.join(' OR ')})`);

@@ -52,7 +52,8 @@ const operators = [
    'lesserThan',
    'lesserThanOrEquals',
    'between',
-   'contains', // for strings
+   'contains', // for strings, case sensitive
+   'icontains', // for strings, case insensitive
 ] as const;
 export type Operator = typeof operators[number];
 export function getOperators(): Operator[] {

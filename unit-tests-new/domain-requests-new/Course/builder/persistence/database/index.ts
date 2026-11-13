@@ -3,6 +3,7 @@ import {
    TableMapping,
    MappingBuilder,
    SameTableMapping,
+   Dialect,
    SelectMethod,
    Table,
    ToDbSqlStringConverter,
@@ -82,6 +83,6 @@ const mapping: TableMapping<keyof Fields> = {
    status: new SameTableMapping(tableDef, 'status', new ToDbSqlStatusConverter(), toDomainStatus),
 };
 
-export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {
-   return new Table(tableDef, mapping, select);
+export function buildTableConnector(select: SelectMethod, dialect?: Dialect): Table<DomainRequestName> {
+   return new Table(tableDef, mapping, select, { dialect });
 }

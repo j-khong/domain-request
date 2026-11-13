@@ -13,9 +13,10 @@ export class ValidatorCreator<T> {
          'lesserThan',
          'lesserThanOrEquals',
          'contains',
+         'icontains',
       ];
       const range: Operator[] = ['between'];
-      const array: Operator[] = ['contains'];
+      const array: Operator[] = ['contains', 'icontains'];
       let acceptedOperatorsSet: Set<Operator> = new Set([...allTime]);
 
       if (filter !== undefined) {

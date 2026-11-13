@@ -1,7 +1,7 @@
 // the quick start of readme.md: keep both in sync
 import { assertEquals } from 'https://deno.land/std@0.149.0/testing/asserts.ts';
 import { afterEach, describe, it } from './data-fetch/mod.ts';
-import { resetClient, select } from './persistence/database/dbUtils.ts';
+import { dialect, resetClient, select } from './persistence/database/dbUtils.ts';
 import {
    buildDomainRequestFactory,
    createDomainRoleBuilder,
@@ -57,7 +57,8 @@ const countryMapping = new MappingBuilder<Country, CountryRow>(
    .build();
 
 function createCountryFactory(select: SelectMethod) {
-   return buildDomainRequestFactory(countryByRole, new Table(countriesTable, countryMapping, select));
+   // the readme uses the default dialect (mysql), the tests also run on postgres
+   return buildDomainRequestFactory(countryByRole, new Table(countriesTable, countryMapping, select, { dialect }));
 }
 
 describe('Readme quick start', () => {

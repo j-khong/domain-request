@@ -4,6 +4,7 @@ import {
    MappingBuilder,
    SameTableMapping,
    OneToOneTableMapping,
+   Dialect,
    SelectMethod,
    Table,
 } from '../../../../../../src/persistence/database/index.ts';
@@ -78,6 +79,6 @@ export function getTableMapping(): TableMapping<keyof Fields> {
    return mapping;
 }
 
-export function buildTableConnector(select: SelectMethod): Table<DomainRequestName> {
-   return new Table(tableDef, mapping, select);
+export function buildTableConnector(select: SelectMethod, dialect?: Dialect): Table<DomainRequestName> {
+   return new Table(tableDef, mapping, select, { dialect });
 }

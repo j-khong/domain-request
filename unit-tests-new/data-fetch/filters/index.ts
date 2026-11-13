@@ -22,10 +22,13 @@
 //   ✅ - string
 //   ✅ - number
 //   ✅ - iso date
-// - 'contains',
+// - 'contains', case sensitive
 //   ✅ - string
-//   ✅ - number
-//   ✅ - iso date
+//   ✅ - number (not on postgres)
+//   ✅ - iso date (not on postgres)
+// - 'icontains', case insensitive
+//   ✅ - string
+//   ✅ - list of values, nested field, array element
 export * from './simple.ts';
 
 export * from './extended.ts';

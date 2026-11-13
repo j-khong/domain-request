@@ -116,7 +116,7 @@ describe('Database persistence without database', () => {
          createRequest({ fields: { name: true }, and: [{ name: { operator: 'contains', value: '50%_!' } }] }),
       );
 
-      assert(calls[0].sql.includes("users.name LIKE ? ESCAPE '!'"), calls[0].sql);
+      assert(calls[0].sql.includes("users.name LIKE BINARY ? ESCAPE '!'"), calls[0].sql);
       assertEquals(calls[0].params, ['%50!%!_!!%']);
    });
 
