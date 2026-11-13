@@ -1,0 +1,74 @@
+name: On merge to main > Release
+
+# Au merge d'une branche de dev dans main :
+#  - bump du semver de current_version.txt selon le préfixe du titre de PR
+#  - commit "🚀 new version X" + tag annoté "X"
+#  - suppression de la branche de dev mergée
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute new version from PR title
+        id: version
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$TITLE" =~ ^\[major\] ]]; then LEVEL=major
+          elif [[ "$TITLE" =~ ^\[minor\] ]]; then LEVEL=minor
+          elif [[ "$TITLE" =~ ^\[patch\] ]]; then LEVEL=patch
+          else
+            echo "::error::Titre de PR sans préfixe [patch|minor|major] : bump impossible."
+            exit 1
+          fi
+
+          CUR=$(tr -d '[:space:]' < current_version.txt)
+          IFS='.' read -r MA MI PA <<< "$CUR"
+          case "$LEVEL" in
+            major) MA=$((MA + 1)); MI=0; PA=0 ;;
+            minor) MI=$((MI + 1)); PA=0 ;;
+            patch) PA=$((PA + 1)) ;;
+          esac
+          NEW="$MA.$MI.$PA"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "Bump $LEVEL : $CUR -> $NEW"
+
+      - name: Bump current_version.txt, commit and tag
+        env:
+          NEW: ${{ steps.version.outputs.new }}
+        run: |
+          echo "$NEW" > current_version.txt
+          git add current_version.txt
+          git commit -m "🚀 new version $NEW"
+          git tag -a "$NEW" -m "🚀 new version $NEW"
+
+          git push origin main
+          git push origin "$NEW"
+
+      - name: Delete merged dev branch
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref != 'main'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git push origin --delete "$BRANCH" || echo "Branche $BRANCH déjà supprimée."

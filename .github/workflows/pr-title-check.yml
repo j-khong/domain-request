@@ -1,0 +1,25 @@
+name: On PR to main > Check title semver prefix
+
+# Toute PR vers main doit avoir un titre préfixé par [patch], [minor] ou [major] :
+# c'est ce préfixe qui pilote le bump de current_version.txt au merge.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title prefix
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR title: $TITLE"
+          if [[ "$TITLE" =~ ^\[(patch|minor|major)\] ]]; then
+            echo "✅ Titre valide (préfixe semver présent)."
+          else
+            echo "::error::Le titre de la PR doit commencer par [patch], [minor] ou [major]."
+            exit 1
+          fi
