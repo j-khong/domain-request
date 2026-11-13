@@ -19,6 +19,8 @@ PG_SCHEMA := unit-tests-new/persistence/database/postgres.tables.sql
 UNIT_TESTS_API ?= old
 # database of the tests: mysql or postgres
 UNIT_TESTS_DB ?= mysql
+# npm token of the project (git ignored), used instead of ~/.npmrc when present
+NPM_USERCONFIG := $(if $(wildcard .npmrc),--userconfig $(CURDIR)/.npmrc,)
 
 .PHONY: db-check # fail if UNIT_TESTS_DB is not a supported database
 db-check:
@@ -126,19 +128,18 @@ check:
 help:
 	@grep '^.PHONY: .* #' $(firstword $(MAKEFILE_LIST)) | sed 's/\.PHONY: \(.*\) # \(.*\)/\1 	 \2/' | expand -t30
 
-
-.PHONY: save
-save:
-	rm -fr $(TESTS_REPORT)
-	rsync -av --delete --exclude "node_modules" --exclude "npm" --exclude "dist" --exclude "to_deploy" --exclude ".git" --exclude ".DS_Store" . "/Users/jk/julienkhong@yahoo.fr - Google Drive/My Drive/back-ups/domain-request/"
-
-
 .PHONY: npm-create
 npm-create:
 	[ -d examples/node/node_modules ] && rm -fr examples/node/node_modules || : && \
 	[ -d npm ] && rm -fr npm || : && \
 	deno run -A scripts/build_npm.ts $(shell cat current_version.txt)
 
+.PHONY: npm-check-login # fail if not logged in to npm (publishing then answers a misleading 404)
+npm-check-login:
+	@npm whoami $(NPM_USERCONFIG) 1>/dev/null 2>&1 && echo "✅ logged in to npm as $$(npm whoami $(NPM_USERCONFIG))" || { \
+	echo "❌ not logged in to npm: run 'npm login' first"; \
+	exit 1; }
+
 .PHONY: npm-publish
-npm-publish: npm-create
-	cd npm && npm publish --access public
+npm-publish: npm-check-login npm-create
+	cd npm && npm publish $(NPM_USERCONFIG) --access public
